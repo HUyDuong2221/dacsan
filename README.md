@@ -20,12 +20,13 @@ Truy cập:
 
 | Thành phần | URL |
 | --- | --- |
-| Website độc giả | http://localhost:3000 |
-| CMS | http://localhost:3000/admin |
+| Website độc giả | http://localhost:8080 |
+| CMS | http://localhost:8080/admin |
+| Frontend trực tiếp (ảnh/API sẽ không tải được) | http://localhost:3000 |
 | REST API / Swagger | http://localhost:8000/docs |
 | Healthcheck | http://localhost:8000/health |
 
-Tùy chọn proxy Nginx ở `http://localhost:8080`: `docker compose --profile proxy up -d --build`. Đây là cấu hình local HTTP, **không** thay thế TLS production.
+Nginx proxy (cổng `PROXY_PORT`, mặc định 8080) luôn chạy và là cổng vào duy nhất: trang, `/api` và `/media` cùng một địa chỉ nên không bị gắn cứng `localhost`. Trên server test, đặt `PROXY_BIND=0.0.0.0` (HTTP thuần) hoặc đặt tunnel/proxy TLS trước cổng này. Cấu hình này **không** thay thế TLS production.
 
 Tài khoản demo mặc định **chỉ dành cho môi trường phát triển**: `admin@example.local` / `ChangeMe123!`. Đổi các biến `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `SECRET_KEY`, `POSTGRES_PASSWORD` và chuỗi `DATABASE_URL` trong `.env` trước khi triển khai public. Seed chỉ tạo admin khi chưa tồn tại, thay biến môi trường không reset mật khẩu tài khoản hiện hữu.
 
