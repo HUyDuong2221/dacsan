@@ -1,0 +1,13 @@
+.env
+**/__pycache__/
+**/.pytest_cache/
+**/.next/
+**/node_modules/
+*.pyc
+*.pyo
+.DS_Store
+.vscode/
+media/
+*.tsbuildinfo
+.venv/
+venv/
