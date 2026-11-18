@@ -118,3 +118,4 @@ Các yêu cầu chưa hoàn thiện được ghi trong `docs/STATUS.md`. Không 
 - Migration SQLite, seed idempotent: **PASS**.
 - FastAPI TestClient public API/auth/CMS update: **PASS** trên SQLite.
 - Docker Compose build và Next.js production build: **CHƯA KIỂM CHỨNG** do môi trường đóng gói không có Docker và không có mạng npm. Các dependency cần được cài khi bạn chạy project ở môi trường có internet.
+# dacsan
