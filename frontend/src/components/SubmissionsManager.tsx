@@ -83,7 +83,7 @@ export default function SubmissionsManager({ token, role, onAuthError }: { token
         <Portal>
           <div className="drawer-wrap" style={{ alignItems: 'center', justifyContent: 'center' }}>
             <div className="drawer-bg" onClick={() => setSel(null)} />
-            <div style={{ position: 'relative', background: 'var(--bg)', width: 'min(820px, 96vw)', maxHeight: '94vh', overflow: 'auto', padding: 24, boxShadow: '0 0 40px rgba(23,37,47,.25)' }}>
+            <div className="modal-card" style={{ position: 'relative', background: 'var(--bg)', width: 'min(820px, 96vw)', maxHeight: '94vh', overflow: 'auto', padding: 24, boxShadow: '0 0 40px rgba(23,37,47,.25)' }}>
               <div className="row" style={{ justifyContent: 'space-between' }}>
                 <div className="kicker">Bài gửi · mã {sel.code}</div>
                 <button className="btn ghost sm" onClick={() => setSel(null)}>✕ Đóng</button>

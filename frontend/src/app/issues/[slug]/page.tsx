@@ -27,12 +27,14 @@ export default async function IssuePage({ params, searchParams }: Props) {
           <Cover issue={issue} text={`bìa ${issue.label.toLowerCase()}`} />
           <div>
             <div className="lbl">CHUYÊN MỤC</div>
-            <Link href={base} className={`f ${!active ? 'on' : ''}`}><span>Tất cả</span><span className="mono">{d.total}</span></Link>
-            {groups.map((g: any) => (
-              <Link key={g.field} href={`${base}?field=${encodeURIComponent(g.field)}`} className={`f ${active === g.field ? 'on' : ''}`}>
-                <span>{g.field}</span><span className="mono">{g.items.length}</span>
-              </Link>
-            ))}
+            <div className="flist">
+              <Link href={base} className={`f ${!active ? 'on' : ''}`}><span>Tất cả</span><span className="mono">{d.total}</span></Link>
+              {groups.map((g: any) => (
+                <Link key={g.field} href={`${base}?field=${encodeURIComponent(g.field)}`} className={`f ${active === g.field ? 'on' : ''}`}>
+                  <span>{g.field}</span><span className="mono">{g.items.length}</span>
+                </Link>
+              ))}
+            </div>
           </div>
           {issue.pdf_url && <Link href={`${base}/pdf`} className="btn ghost">Đọc PDF cả số</Link>}
         </aside>

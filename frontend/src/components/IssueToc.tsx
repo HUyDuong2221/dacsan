@@ -36,7 +36,7 @@ export default function IssueToc({ issue, token, onAuthError, role }: { issue: a
         <Portal>
         <div className="drawer-wrap" style={{ alignItems: 'center', justifyContent: 'center' }}>
           <div className="drawer-bg" onClick={() => setOpen(false)} />
-          <div style={{ position: 'relative', background: 'var(--bg)', width: 'min(1200px, 96vw)', maxHeight: '94vh', display: 'flex', flexDirection: 'column', boxShadow: '0 0 40px rgba(23,37,47,.25)' }}>
+          <div className="modal-card" style={{ position: 'relative', background: 'var(--bg)', width: 'min(1200px, 96vw)', maxHeight: '94vh', display: 'flex', flexDirection: 'column', boxShadow: '0 0 40px rgba(23,37,47,.25)' }}>
             <div className="row" style={{ justifyContent: 'space-between', padding: '18px 22px', borderBottom: '1px solid var(--line)' }}>
               <div>
                 <div className="kicker">Mục lục của số đặc san</div>

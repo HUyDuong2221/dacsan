@@ -52,7 +52,7 @@ export default function ArticleReader({ a }: { a: any }) {
         <div className="wrap">
           <div className="row" style={{ gap: 12 }}>
             <button className="btn ghost sm" onClick={() => setDrawer(true)}>☰ Mục lục số</button>
-            <Link href={`/issues/${a.issue.slug}`} style={{ color: '#32424c', fontSize: 14 }}>Đặc san {a.issue.label.toLowerCase()}</Link>
+            <Link href={`/issues/${a.issue.slug}`} className="ctx-label" style={{ color: '#32424c', fontSize: 14 }}>Đặc san {a.issue.label.toLowerCase()}</Link>
             <span className="mono muted" style={{ fontSize: 11.5 }}>Bài {a.position.index}/{a.position.total}</span>
           </div>
           <div className="row" style={{ gap: 8 }}>
@@ -124,13 +124,13 @@ export default function ArticleReader({ a }: { a: any }) {
 
       <div className="wrap alayout">
         <aside className="aside-l">
-          {a.has_fulltext && <div className="mono muted" style={{ fontSize: 11.5, letterSpacing: '.08em', marginBottom: 12 }}>NỘI DUNG BÀI</div>}
+          {a.has_fulltext && <div className="toc-label mono muted" style={{ fontSize: 11.5, letterSpacing: '.08em', marginBottom: 12 }}>NỘI DUNG BÀI</div>}
           <nav>
             {a.toc.map((t: string, k: number) => (
               <a key={k} href={a.lead && k === 0 ? '#h-lead' : `#h-${a.lead ? k - 1 : k}`}>{t}</a>
             ))}
           </nav>
-          <div style={{ marginTop: 26 }}>
+          <div className="fs-box" style={{ marginTop: 26 }}>
             <div className="mono muted" style={{ fontSize: 11.5, letterSpacing: '.08em', marginBottom: 10 }}>CỠ CHỮ</div>
             <div className="row" style={{ gap: 6 }}>
               <button className="btn ghost sm" onClick={() => setSize((s) => Math.max(14, s - 1))}>A−</button>
