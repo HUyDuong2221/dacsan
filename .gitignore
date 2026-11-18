@@ -11,3 +11,5 @@ media/
 *.tsbuildinfo
 .venv/
 venv/
+.env.production
+backups/

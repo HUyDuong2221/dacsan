@@ -1,0 +1,26 @@
+{
+	email {$ACME_EMAIL}
+}
+
+{$DOMAIN} {
+	encode zstd gzip
+
+	# PDF import allows 60 MB in the API; leave headroom for multipart overhead.
+	request_body {
+		max_size 64MB
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "SAMEORIGIN"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+
+	# Only the public API and media go to the backend. /docs, /openapi.json and /health stay unreachable.
+	@backend path /api/* /media/*
+	reverse_proxy @backend backend:8000
+
+	reverse_proxy frontend:3000
+}
