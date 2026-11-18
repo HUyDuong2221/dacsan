@@ -101,9 +101,16 @@ def test_manual_creation_publication_and_withdrawal(editorial_client):
     assert client.get(f"/api/v1/issues/{issue['slug']}").status_code == 404
     detail = client.get(base).json()
     assert detail['status'] == 'draft'
-    assert all(a['status'] == 'draft' for a in detail['sections'][0]['articles'])
+    assert [a['status'] for a in detail['sections'][0]['articles']] == ['published', 'draft']  # unpublish keeps per-article status
     assert attach_pdf(client, issue['id']).status_code == 200
     assert not client.get(f'/api/v1/admin/articles/{article_id}').json()['full_text_verified']
+    # PATCH null semantics: required fields reject null, optional text can be cleared.
+    assert client.patch(f'/api/v1/admin/articles/{article_id}', json={'title': None}).status_code == 422
+    assert client.patch(f'/api/v1/admin/articles/{article_id}', json={'summary': 'x'}).status_code == 200
+    assert client.patch(f'/api/v1/admin/articles/{article_id}', json={'summary': None}).status_code == 200
+    assert client.get(f'/api/v1/admin/articles/{article_id}').json()['summary'] == ''
+    assert client.patch(f'/api/v1/admin/articles/{article_id}', json={'section_id': None}).status_code == 200
+    assert client.patch(base, json={'title': None}).status_code == 422
 
 
 def test_issue_identity_and_article_section_validation(editorial_client):

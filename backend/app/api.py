@@ -19,6 +19,17 @@ public = APIRouter(tags=['Public'])
 admin = APIRouter(prefix='/admin', tags=['Editorial CMS'])
 
 
+def apply_changes(obj, changes: dict, required: set[str], nullable: set[str] = frozenset()):
+    """Apply a PATCH body. Fields sent as null are cleared only if allowed; required fields reject null."""
+    for k, v in changes.items():
+        if v is None:
+            if k in required:
+                raise HTTPException(422, f'Trường "{k}" không được để trống.')
+            if k not in nullable:
+                v = ''
+        setattr(obj, k, v)
+
+
 def issue_json(o: Issue, with_detail=False, for_admin=False):
     out = dict(id=o.id, number=o.number, month=o.month, year=o.year, slug=o.slug,
         title=o.title, theme=o.theme, description=o.description, cover_key=o.cover_key,
@@ -151,11 +162,12 @@ def patch_issue(issue_id:str,body:IssuePatch,db:Session=Depends(get_db),user:Use
     changes=body.model_dump(exclude_unset=True)
     number=changes.get('number') or o.number
     year=changes.get('year') or o.year
+    if any(changes.get(k,1) is None for k in ('number','month','year','title')):
+        raise HTTPException(422,'Số, tháng, năm và tiêu đề không được để trống.')
     if db.scalar(select(Issue.id).where(Issue.id!=issue_id,Issue.number==number,Issue.year==year)):
         raise HTTPException(409,'Số phát hành này đã tồn tại trong năm đã chọn.')
     # Preserve the slug so existing links keep working after metadata corrections.
-    for k,v in changes.items():
-        if v is not None: setattr(o,k,v)
+    apply_changes(o,changes,required={'number','month','year','title'})
     try: db.commit()
     except IntegrityError:
         db.rollback()
@@ -178,17 +190,20 @@ def publish_issue(issue_id:str,db:Session=Depends(get_db),user:User=Depends(requ
     if any(a.pdf_page_start < 1 or a.pdf_page_end < a.pdf_page_start or a.pdf_page_end > o.page_count for a in o.articles):
         raise HTTPException(422,'Có bài viết có trang PDF nằm ngoài tài liệu. Vui lòng sửa trước khi xuất bản.')
     o.status='published';o.published_at=utc_now()
-    for article in o.articles: article.status='published'
+    # Only promote drafts: articles an editor deliberately set to another status keep it.
+    for article in o.articles:
+        if article.status=='draft': article.status='published'
     db.add(AuditLog(actor_id=user.id,action='publish_issue',target_id=issue_id))
-    db.commit(); return {'ok':True,'slug':o.slug}
+    db.commit()
+    return {'ok':True,'slug':o.slug,'unverified_articles':sum(1 for a in o.articles if not a.full_text_verified)}
 
 
 @admin.post('/issues/{issue_id}/unpublish')
 def unpublish_issue(issue_id:str,db:Session=Depends(get_db),user:User=Depends(require_admin)):
-    o=db.scalar(select(Issue).where(Issue.id==issue_id).options(selectinload(Issue.articles)))
+    o=db.get(Issue,issue_id)
     if not o: raise HTTPException(404,'Không tìm thấy số.')
+    # Public queries all require the issue to be published, so per-article status is left untouched.
     o.status='draft';o.published_at=None
-    for article in o.articles: article.status='draft'
     db.add(AuditLog(actor_id=user.id,action='unpublish_issue',target_id=issue_id))
     db.commit()
     return {'ok':True}
@@ -229,8 +244,7 @@ def patch_article(article_id:str,body:ArticlePatch,db:Session=Depends(get_db),us
             raise HTTPException(422,'Chuyên mục không thuộc số đặc san này.')
     if 'body_html' in changes and changes['body_html'] is not None:
         changes['body_html']=bleach.clean(changes['body_html'], tags=SAFE_TAGS,attributes=SAFE_ATTRS,protocols=['http','https'], strip=True)
-    for k,v in changes.items():
-        if v is not None: setattr(a,k,v)
+    apply_changes(a,changes,required={'title','print_page_start','print_page_end','pdf_page_start','pdf_page_end','full_text_verified'},nullable={'section_id'})
     if a.full_text_verified and not a.body_html.strip():
         raise HTTPException(422,'Không thể đánh dấu đã hiệu đính khi toàn văn còn trống.')
     if a.print_page_end < a.print_page_start:
