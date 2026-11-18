@@ -1,22 +1,31 @@
+function Lines({ text }: { text?: string }) {
+  return (
+    <>
+      {(text || '').split('\n').map((ln, i) => {
+        const m = ln.match(/^(Chủ tịch:)\s*(.*)$/);
+        return <div key={i}>{m ? <>{m[1]} <strong>{m[2]}</strong></> : ln}</div>;
+      })}
+    </>
+  );
+}
+
 export default function Footer({ site }: { site: Record<string, string> }) {
   return (
     <footer className="footer">
       <div className="wrap cols">
         <div>
-          <div className="serif" style={{ fontSize: 20, fontWeight: 700, color: '#fff', marginBottom: 12, lineHeight: 1.3 }}>
-            Đặc san Khoa học &amp; Phát triển thành phố Đà Nẵng
-          </div>
-          <div>Cơ quan chủ quản: {site.org_name}</div>
+          <div className="t">Đặc san Khoa học &amp; Phát triển thành phố Đà Nẵng</div>
+          <p>Cơ quan chủ quản: {site.org_name}.</p>
         </div>
-        <div>
+        <div className="blk">
           <h4>LÃNH ĐẠO LIÊN HIỆP HỘI (2026–2031)</h4>
-          <div className="prewrap">{site.leaders}</div>
+          <Lines text={site.leaders} />
         </div>
-        <div>
+        <div className="blk">
           <h4>LIÊN HỆ</h4>
-          <div className="prewrap">{site.contact}</div>
+          <Lines text={site.contact} />
         </div>
-        <div>
+        <div className="blk">
           <h4>GIẤY PHÉP</h4>
           <div>{site.license}</div>
           <div>ISSN {site.issn}</div>

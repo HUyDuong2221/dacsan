@@ -31,6 +31,8 @@ export default function ArticleReader({ a }: { a: any }) {
   const [scope, setScope] = useState<'issue' | 'all'>('issue');
   const [note, setNote] = useState('');
   const blocks = parse(a.body || '');
+  const pageNo = parseInt(String(a.page_label).replace(/\D/g, ''), 10);
+  const pdfHref = `/issues/${a.issue.slug}/pdf${pageNo > 0 ? `?page=${pageNo}` : ''}`;
   let hi = 0;
 
   async function copy(text: string, msg: string) {
@@ -163,7 +165,7 @@ export default function ArticleReader({ a }: { a: any }) {
                 Bài này hiện chỉ có trong bản in {a.issue.label.toLowerCase()}. Bản số hóa toàn văn đang được biên tập và sẽ cập nhật tại đây.
               </p>
               <div className="row">
-                {a.pdf_url && <a className="btn" href={a.pdf_url} target="_blank" rel="noopener noreferrer">Xem trang in ({a.page_label})</a>}
+                {a.pdf_url && <Link className="btn" href={pdfHref}>Xem trang in ({a.page_label})</Link>}
                 <button className="btn ghost" onClick={() => setDrawer(true)}>Mở mục lục số</button>
               </div>
             </div>
@@ -184,7 +186,7 @@ export default function ArticleReader({ a }: { a: any }) {
             </button>
           </div>
           <div className="row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 8 }}>
-            {a.pdf_url ? <a className="btn ghost" href={a.pdf_url} download>Tải PDF bản in của số</a> : <span className="btn ghost disabled">Chưa có PDF của số</span>}
+            {a.pdf_url ? <Link className="btn ghost" href={pdfHref}>Đọc PDF bản in của số</Link> : <span className="btn ghost disabled">Chưa có PDF của số</span>}
             <button className="btn ghost" onClick={() => copy(window.location.href, 'Đã sao chép liên kết')}>Chia sẻ liên kết</button>
           </div>
           {a.related.length > 0 && (

@@ -12,7 +12,7 @@ export type FieldDef = {
   required?: boolean;
   hint?: string;
 };
-export type ResourceDef = { key: string; title: string; fields: FieldDef[]; readonly?: boolean };
+export type ResourceDef = { key: string; title: string; fields: FieldDef[]; readonly?: boolean; addLabel?: string; editLabel?: string };
 
 export async function adm(path: string, token: string, init: RequestInit = {}) {
   const isForm = init.body instanceof FormData;
@@ -31,7 +31,7 @@ export async function adm(path: string, token: string, init: RequestInit = {}) {
   return data;
 }
 
-export default function ResourceManager({ res, token, onAuthError }: { res: ResourceDef; token: string; onAuthError: () => void }) {
+export default function ResourceManager({ res, token, onAuthError, rowExtra, query, defaults }: { res: ResourceDef; token: string; onAuthError: () => void; rowExtra?: (row: any) => React.ReactNode; query?: string; defaults?: Record<string, any> }) {
   const [rows, setRows] = useState<any[]>([]);
   const [opts, setOpts] = useState<Record<string, { value: string; label: string }[]>>({});
   const [edit, setEdit] = useState<any | null>(null);
@@ -45,7 +45,7 @@ export default function ResourceManager({ res, token, onAuthError }: { res: Reso
   }, [onAuthError]);
 
   const load = useCallback(async () => {
-    try { setRows(await adm(`/${res.key}`, token)); setErr(''); } catch (e) { fail(e); }
+    try { setRows(await adm(`/${res.key}${query ? `?${query}` : ''}`, token)); setErr(''); } catch (e) { fail(e); }
   }, [res.key, token, fail]);
 
   useEffect(() => {
@@ -94,13 +94,16 @@ export default function ResourceManager({ res, token, onAuthError }: { res: Reso
     } catch (e) { fail(e); }
   }
 
-  const blank = () => Object.fromEntries(res.fields.map((f) => [f.key, f.type === 'bool' ? false : f.type === 'select' && f.options ? f.options[0].value : '']));
+  const blank = () => ({
+    ...Object.fromEntries(res.fields.map((f) => [f.key, f.type === 'bool' ? false : f.type === 'select' && f.options ? f.options[0].value : f.key === 'sort_order' ? rows.length : ''])),
+    ...(defaults || {}),
+  });
 
   return (
     <div>
       <div className="row" style={{ marginBottom: 16 }}>
         <input className="input" style={{ maxWidth: 320 }} placeholder="Lọc nhanh…" value={filter} onChange={(e) => setFilter(e.target.value)} />
-        {!res.readonly && <button className="btn" onClick={() => setEdit(blank())}>+ Thêm mới</button>}
+        {!res.readonly && <button className="btn" onClick={() => setEdit(blank())}>+ {res.addLabel || 'Thêm mới'}</button>}
         <span className="muted">{shown.length}/{rows.length} mục</span>
       </div>
       {err && <div className="err">{err}</div>}
@@ -108,6 +111,9 @@ export default function ResourceManager({ res, token, onAuthError }: { res: Reso
 
       {edit && (
         <form className="form" onSubmit={save}>
+          <h3 className="full serif" style={{ fontSize: 20 }}>
+            {edit.id ? res.editLabel || 'Sửa' : res.addLabel || 'Thêm mới'}
+          </h3>
           {res.fields.map((f) => (
             <label key={f.key} className={f.full || f.type === 'textarea' ? 'full' : ''}>
               <span>{f.label}{f.required && ' *'}</span>
@@ -148,6 +154,7 @@ export default function ResourceManager({ res, token, onAuthError }: { res: Reso
                 <td className="mono">{r.id}</td>
                 {listFields.map((f) => <td key={f.key}>{show(f, r[f.key])}</td>)}
                 <td style={{ whiteSpace: 'nowrap' }}>
+                  {rowExtra && <>{rowExtra(r)}{' '}</>}
                   {!res.readonly && <button className="btn ghost sm" onClick={() => setEdit({ ...r })}>Sửa</button>}{' '}
                   <button className="btn danger sm" onClick={() => remove(r)}>Xóa</button>
                 </td>

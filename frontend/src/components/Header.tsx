@@ -20,12 +20,18 @@ export default function Header() {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/logo.jpg" alt="Đặc san Khoa học & Phát triển thành phố Đà Nẵng" />
         </Link>
-        <button className="menu-btn" onClick={() => setOpen(!open)} aria-expanded={open}>☰ Menu</button>
+        <button className="menu-btn" onClick={() => setOpen(!open)} aria-expanded={open}>
+          <span className="bars"><span /><span /><span /></span>
+          Menu
+        </button>
         <nav className={`nav ${open ? 'open' : ''}`} onClick={() => setOpen(false)}>
           {NAV.map((n) => (
-            <Link key={n.href} href={n.href} className={n.match(path) ? 'on' : ''}>{n.label}</Link>
+            <div key={n.href} className={`it ${n.match(path) ? 'on' : ''}`}>
+              <Link href={n.href}>{n.label}</Link>
+              <i />
+            </div>
           ))}
-          <Link href="/search" className="btn ghost sm">Tìm bài báo</Link>
+          <Link href="/search" className="search">Tìm bài báo</Link>
         </nav>
       </div>
     </header>

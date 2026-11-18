@@ -41,6 +41,7 @@ class Issue(Stamped, Base):
     number: Mapped[int] = mapped_column(Integer, unique=True)
     label: Mapped[str] = mapped_column(String(80))  # "Số 17 (6-2026)"
     year: Mapped[int] = mapped_column(Integer, default=2026)
+    published_at: Mapped[date | None] = mapped_column(Date, nullable=True)  # Ngày đăng
     theme: Mapped[str] = mapped_column(String(400))
     summary: Mapped[str | None] = mapped_column(Text, nullable=True)
     cover_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
@@ -49,13 +50,15 @@ class Issue(Stamped, Base):
     printed_articles: Mapped[int | None] = mapped_column(Integer, nullable=True)
     published: Mapped[bool] = mapped_column(Boolean, default=False)
 
-    articles: Mapped[list["Article"]] = relationship(
+    entries: Mapped[list["TocEntry"]] = relationship(
         back_populates="issue", cascade="all, delete-orphan", passive_deletes=True
     )
 
 
-class Article(Stamped, Base):
-    __tablename__ = "articles"
+class TocEntry(Stamped, Base):
+    """Một dòng trong mục lục của số đặc san. Toàn văn (lead/body) là tùy chọn; không có thì hiện "chỉ có bản in"."""
+
+    __tablename__ = "toc_entries"
     id: Mapped[int] = mapped_column(primary_key=True)
     slug: Mapped[str] = mapped_column(String(300), unique=True, index=True)
     issue_id: Mapped[int] = mapped_column(ForeignKey("issues.id", ondelete="CASCADE"), index=True)
@@ -71,9 +74,8 @@ class Article(Stamped, Base):
     is_research: Mapped[bool] = mapped_column(Boolean, default=False)  # Nghiên cứu – Trao đổi
     featured: Mapped[bool] = mapped_column(Boolean, default=False)  # hero slide
     hero_excerpt: Mapped[str | None] = mapped_column(Text, nullable=True)
-    status: Mapped[str] = mapped_column(String(20), default="draft")  # draft | published
 
-    issue: Mapped[Issue] = relationship(back_populates="articles", lazy="joined")
+    issue: Mapped[Issue] = relationship(back_populates="entries", lazy="joined")
     field: Mapped[Field | None] = relationship(lazy="joined")
 
 

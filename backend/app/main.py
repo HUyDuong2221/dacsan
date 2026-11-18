@@ -25,7 +25,15 @@ def init_db() -> None:
             if attempt == 29:
                 raise
             time.sleep(2)
+    with engine.begin() as conn:  # đổi tên bảng cũ "articles" -> "toc_entries" (DB tạo từ phiên bản trước)
+        conn.execute(text(
+            "DO $$ BEGIN IF to_regclass('public.articles') IS NOT NULL AND to_regclass('public.toc_entries') IS NULL "
+            "THEN ALTER TABLE articles RENAME TO toc_entries; END IF; END $$"
+        ))
+        conn.execute(text("ALTER TABLE IF EXISTS toc_entries DROP COLUMN IF EXISTS status"))
     Base.metadata.create_all(engine)
+    with engine.begin() as conn:  # nâng cấp nhẹ cho DB đã có (chưa dùng Alembic)
+        conn.execute(text("ALTER TABLE issues ADD COLUMN IF NOT EXISTS published_at DATE"))
     with SessionLocal() as db:
         email = settings.admin_email.strip().lower()
         if not db.scalars(select(User).where(User.email == email)).first():

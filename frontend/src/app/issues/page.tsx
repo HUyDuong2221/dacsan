@@ -21,15 +21,15 @@ export default async function Issues() {
 
       {latest && (
         <div className="row" style={{ alignItems: 'flex-start', gap: 44, paddingBottom: 44, marginBottom: 44, borderBottom: '1px solid var(--line)' }}>
-          <Link href={`/issues/${latest.slug}`} style={{ flex: '0 1 240px' }}><Cover issue={latest} /></Link>
+          <Link href={`/issues/${latest.slug}`} style={{ flex: '0 1 240px' }}><Cover issue={latest} text={`bìa ${latest.label.toLowerCase()}`} /></Link>
           <div style={{ flex: '1 1 420px' }}>
             <div className="kicker" style={{ marginBottom: 12 }}>Số mới nhất · {latest.label}</div>
             <h2 className="serif" style={{ fontSize: 'clamp(24px,2.8vw,32px)', lineHeight: 1.2, marginBottom: 14 }}>{latest.theme}</h2>
             <p style={{ color: 'var(--ink2)', maxWidth: '64ch', lineHeight: 1.66 }}>{latest.summary}</p>
             <div className="row" style={{ margin: '20px 0' }}>
               <Link href={`/issues/${latest.slug}`} className="btn">Xem mục lục {latest.label.toLowerCase()}</Link>
-              {latest.pdf_url && <a href={latest.pdf_url} className="btn ghost" download>Tải bản PDF của số</a>}
-              <span className="muted">{latest.article_count} bài{latest.page_count ? ` · ${latest.page_count} trang` : ''}</span>
+              {latest.pdf_url && <Link href={`/issues/${latest.slug}/pdf`} className="btn ghost">Đọc bản PDF của số</Link>}
+              <span className="muted">{latest.published_at ? `Ngày đăng ${fmtDate(latest.published_at)} · ` : ''}{latest.article_count} bài{latest.page_count ? ` · ${latest.page_count} trang` : ''}</span>
             </div>
             <div className="row" style={{ gap: 8 }}>
               {d.fields.map((f: string) => <span key={f} className="chip">{f}</span>)}
@@ -56,7 +56,7 @@ export default async function Issues() {
       )}
 
       <h2 className="serif" style={{ fontSize: 24, marginBottom: 26 }}>Các số trước</h2>
-      <div className="issue-grid" style={{ gridTemplateColumns: 'repeat(auto-fill,minmax(230px,1fr))', gap: 32 }}>
+      <div className="issue-grid auto">
         {older.map((i: any) => <IssueCard key={i.slug} i={i} />)}
       </div>
     </div>

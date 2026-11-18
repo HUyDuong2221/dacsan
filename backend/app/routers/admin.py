@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 
 from ..config import settings
 from ..db import get_db
-from ..models import Activity, Article, Document, Field, Issue, Notice, Setting, Subscriber, User
+from ..models import Activity, TocEntry, Document, Field, Issue, Notice, Setting, Subscriber, User
 from ..security import check_login_allowed, make_token, record_fail, require_admin, verify_password
 from ..util import slugify
 
@@ -89,7 +89,22 @@ def coerce(model, data: dict, partial: bool) -> dict:
     return out
 
 
-def crud(model, prefix: str, order, slug_from: str | None = None):
+def prepare_issue(data: dict, existing: Issue | None) -> None:
+    """Nhãn ("Số 17 (6-2026)") và năm tự sinh từ Số đặc san + Ngày đăng, không nhập tay."""
+    if "number" not in data and "published_at" not in data:
+        return
+    number = data.get("number", existing.number if existing else None)
+    raw = data.get("published_at", existing.published_at if existing else None)
+    try:
+        n = int(number)
+        d = raw if isinstance(raw, date) else (date.fromisoformat(str(raw)[:10]) if raw else None)
+    except (TypeError, ValueError):
+        return  # để coerce() báo lỗi 422 đúng trường
+    data["label"] = f"Số {n:02d}" + (f" ({d.month}-{d.year})" if d else "")
+    data["year"] = d.year if d else (existing.year if existing else date.today().year)
+
+
+def crud(model, prefix: str, order, slug_from: str | None = None, prepare=None):
     r = APIRouter(prefix=prefix, dependencies=[Depends(require_admin)])
 
     def unique_slug(db: Session, base: str, exclude_id: int | None = None) -> str:
@@ -113,6 +128,8 @@ def crud(model, prefix: str, order, slug_from: str | None = None):
 
     @r.post("", status_code=201)
     def create(data: dict, db: Session = Depends(get_db)):
+        if prepare:
+            prepare(data, None)
         vals = coerce(model, data, partial=False)
         if slug_from:
             vals["slug"] = unique_slug(db, data.get("slug") or data.get(slug_from) or "muc")
@@ -131,6 +148,8 @@ def crud(model, prefix: str, order, slug_from: str | None = None):
         obj = db.get(model, obj_id)
         if not obj:
             raise HTTPException(404, "Không tìm thấy")
+        if prepare:
+            prepare(data, obj)
         for k, v in coerce(model, data, partial=True).items():
             setattr(obj, k, v)
         if slug_from and not obj.slug:
@@ -155,8 +174,8 @@ def crud(model, prefix: str, order, slug_from: str | None = None):
     return r
 
 
-router.include_router(crud(Issue, "/issues", [Issue.number.desc()], slug_from="label"))
-router.include_router(crud(Article, "/articles", [Article.issue_id.desc(), Article.sort_order, Article.id], slug_from="title"))
+router.include_router(crud(Issue, "/issues", [Issue.number.desc()], slug_from="label", prepare=prepare_issue))
+router.include_router(crud(TocEntry, "/toc-entries", [TocEntry.issue_id.desc(), TocEntry.sort_order, TocEntry.id], slug_from="title"))
 router.include_router(crud(Field, "/fields", [Field.sort_order, Field.id]))
 router.include_router(crud(Activity, "/activities", [Activity.event_date.desc().nullslast()]))
 router.include_router(crud(Notice, "/notices", [Notice.notice_date.desc().nullslast()]))
@@ -199,3 +218,85 @@ async def upload(file: UploadFile):
                 raise HTTPException(413, f"Tệp vượt quá {settings.max_upload_mb}MB")
             f.write(chunk)
     return {"url": f"/media/{name}"}
+
+
+# ---------- mục lục từ PDF ----------
+class TocItem(BaseModel):
+    field: str = ""
+    author: str = ""
+    title: str
+    page: int
+
+
+class TocImportIn(BaseModel):
+    items: list[TocItem]
+
+
+def _issue_pdf_path(db: Session, issue_id: int) -> tuple[Issue, str]:
+    issue = db.get(Issue, issue_id)
+    if not issue:
+        raise HTTPException(404, "Không tìm thấy số đặc san")
+    url = issue.pdf_url or ""
+    if not url.startswith("/media/"):
+        raise HTTPException(422, "Số này chưa có file PDF tải lên từ trang quản trị")
+    path = os.path.join(settings.media_dir, os.path.basename(url))
+    if not os.path.isfile(path):
+        raise HTTPException(422, "Không tìm thấy file PDF trên máy chủ, hãy tải lại")
+    return issue, path
+
+
+@router.post("/issues/{issue_id}/toc/preview", dependencies=[Depends(require_admin)])
+def toc_preview(issue_id: int, db: Session = Depends(get_db)):
+    from ..toc import extract_toc
+
+    _, path = _issue_pdf_path(db, issue_id)
+    try:
+        return extract_toc(path)
+    except ValueError as e:
+        raise HTTPException(422, str(e))
+
+
+@router.post("/issues/{issue_id}/toc/import", dependencies=[Depends(require_admin)])
+def toc_import(issue_id: int, body: TocImportIn, db: Session = Depends(get_db)):
+    """Tạo các dòng mục lục của số từ danh sách đã được biên tập viên xác nhận. Gọi lại không tạo trùng."""
+    issue = db.get(Issue, issue_id)
+    if not issue:
+        raise HTTPException(404, "Không tìm thấy số đặc san")
+    if not 1 <= len(body.items) <= 500:
+        raise HTTPException(422, "Số mục không hợp lệ")
+
+    fields = {slugify(f.name): f for f in db.scalars(select(Field))}
+    existing = db.scalars(select(TocEntry).where(TocEntry.issue_id == issue.id)).all()
+    seen = {(slugify(a.title), a.page_label) for a in existing}
+    order = max((a.sort_order for a in existing), default=-1) + 1
+    created = skipped = 0
+    for it in body.items:
+        title = " ".join(it.title.split())
+        if not title or it.page < 1:
+            skipped += 1
+            continue
+        label = f"tr. {it.page}"
+        if (slugify(title), label) in seen:
+            skipped += 1
+            continue
+        field = None
+        name = " ".join(it.field.split())
+        if name:
+            field = fields.get(slugify(name))
+            if not field:
+                field = Field(name=name[:200], sort_order=len(fields))
+                db.add(field)
+                db.flush()
+                fields[slugify(name)] = field
+        base, n = slugify(title), 1
+        slug = base
+        while db.scalars(select(TocEntry.id).where(TocEntry.slug == slug)).first():
+            n += 1
+            slug = f"{base}-{n}"
+        db.add(TocEntry(slug=slug, issue_id=issue.id, field_id=field.id if field else None, title=title[:600],
+                       author=it.author.strip()[:300], page_label=label, sort_order=order))
+        seen.add((slugify(title), label))
+        order += 1
+        created += 1
+    db.commit()
+    return {"created": created, "skipped": skipped}

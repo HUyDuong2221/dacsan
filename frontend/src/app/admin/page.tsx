@@ -1,41 +1,21 @@
 'use client';
 import { useEffect, useState } from 'react';
 import ResourceManager, { ResourceDef, adm } from '@/components/ResourceManager';
-
-const STATUS = [{ value: 'draft', label: 'Nháp' }, { value: 'published', label: 'Đã xuất bản' }];
+import IssueToc from '@/components/IssueToc';
 
 const RESOURCES: ResourceDef[] = [
   {
-    key: 'articles', title: 'Bài viết',
+    key: 'issues', title: 'Số đặc san', addLabel: 'Thêm số đặc san mới', editLabel: 'Sửa số đặc san',
     fields: [
-      { key: 'title', label: 'Tiêu đề', required: true, list: true, full: true },
-      { key: 'author', label: 'Tác giả', list: true },
-      { key: 'issue_id', label: 'Số phát hành', required: true, list: true, optionsFrom: { resource: 'issues', labelKey: 'label' } },
-      { key: 'field_id', label: 'Chuyên mục', list: true, optionsFrom: { resource: 'fields', labelKey: 'name' } },
-      { key: 'page_label', label: 'Trang in', hint: 'VD: tr. 13', list: true },
-      { key: 'sort_order', label: 'Thứ tự trong số', type: 'number', list: true },
-      { key: 'status', label: 'Trạng thái', type: 'select', options: STATUS, required: true, list: true },
-      { key: 'is_front', label: 'Trang đầu số', type: 'bool' },
-      { key: 'is_research', label: 'Nghiên cứu – Trao đổi', type: 'bool' },
-      { key: 'featured', label: 'Hiện ở slide trang chủ', type: 'bool', list: true },
-      { key: 'hero_excerpt', label: 'Đoạn trích cho slide', type: 'textarea' },
-      { key: 'lead', label: 'Lời dẫn', type: 'textarea' },
-      { key: 'body', label: 'Toàn văn', type: 'textarea', hint: 'Đề mục: dòng bắt đầu bằng "## ". Các đoạn cách nhau một dòng trống. Ảnh: ![chú thích](/media/anh.jpg). Để trống = chỉ có bản in.' },
-    ],
-  },
-  {
-    key: 'issues', title: 'Số phát hành',
-    fields: [
-      { key: 'number', label: 'Số', type: 'number', required: true, list: true },
-      { key: 'label', label: 'Nhãn', required: true, list: true, hint: 'VD: Số 18 (8-2026)' },
-      { key: 'year', label: 'Năm', type: 'number', list: true },
+      { key: 'number', label: 'Số đặc san', type: 'number', required: true, list: true, hint: 'Số thứ tự, ví dụ 18. Nhãn hiển thị (VD: Số 18 (8-2026)) tự tạo từ Số đặc san và Ngày đăng.' },
+      { key: 'published_at', label: 'Ngày đăng', type: 'date', required: true, list: true },
       { key: 'theme', label: 'Chủ đề', required: true, list: true, full: true },
       { key: 'summary', label: 'Giới thiệu', type: 'textarea' },
       { key: 'cover_url', label: 'Ảnh bìa', type: 'file' },
-      { key: 'pdf_url', label: 'PDF cả số', type: 'file' },
+      { key: 'pdf_url', label: 'File PDF', type: 'file' },
       { key: 'page_count', label: 'Số trang', type: 'number' },
-      { key: 'printed_articles', label: 'Số bài (số cũ chưa nhập bài)', type: 'number' },
-      { key: 'published', label: 'Xuất bản', type: 'bool', list: true },
+      { key: 'printed_articles', label: 'Số bài (cho số cũ chưa nhập mục lục)', type: 'number' },
+      { key: 'published', label: 'Công bố trên website', type: 'bool', list: true, hint: 'Chưa tick thì số và mục lục của số chưa hiện ra ngoài.' },
     ],
   },
   { key: 'fields', title: 'Chuyên mục', fields: [
@@ -109,7 +89,10 @@ export default function Admin() {
       <div className="tabs">
         {RESOURCES.map((r) => <button key={r.key} className={tab === r.key ? 'on' : ''} onClick={() => setTab(r.key)}>{r.title}</button>)}
       </div>
-      <ResourceManager key={res.key} res={res} token={token} onAuthError={logout} />
+      <ResourceManager
+        key={res.key} res={res} token={token} onAuthError={logout}
+        rowExtra={res.key === 'issues' ? (row) => <IssueToc issue={row} token={token} onAuthError={logout} /> : undefined}
+      />
     </div>
   );
 }

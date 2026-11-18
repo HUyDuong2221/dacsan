@@ -27,11 +27,11 @@ Trình duyệt chỉ gọi cùng origin: Next chuyển tiếp `/api/*` và `/med
 ## API
 
 - `GET /api/v1/public/...`: `home`, `issues`, `issues/{slug}`, `articles/{slug}`, `search?q=&issue=`, `research`, `documents`, `notices`, `activities`, `fields`, `site`, `POST subscribe`, `POST chat`
-- `/api/v1/admin/...` (Bearer JWT): `POST auth/login`, CRUD `issues|articles|fields|activities|notices|documents|settings`, `GET/DELETE subscribers`, `POST upload`
+- `/api/v1/admin/...` (Bearer JWT): `POST auth/login`, CRUD `issues|toc-entries|fields|activities|notices|documents|settings` (`toc-entries` = mục lục của số; lọc bằng `?issue_id=`), `POST issues/{id}/toc/preview` và `toc/import` (tạo mục lục từ PDF), `GET/DELETE subscribers`, `POST upload`
 
 ## Định dạng toàn văn bài
 
-Ô "Toàn văn" trong admin dùng markdown rút gọn: `## Đề mục`, đoạn cách nhau một dòng trống, ảnh `![chú thích](/media/x.jpg)`. Bài không có toàn văn sẽ hiện thông báo "chỉ có bản in".
+Ô "Toàn văn" (tùy chọn) của mỗi dòng mục lục trong admin dùng markdown rút gọn: `## Đề mục`, đoạn cách nhau một dòng trống, ảnh `![chú thích](/media/x.jpg)`. Dòng mục lục không có toàn văn sẽ hiện thông báo "chỉ có bản in".
 
 ## Test
 

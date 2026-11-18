@@ -4,7 +4,7 @@ from datetime import date
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from .models import Activity, Article, Document, Field, Issue, Notice, Setting
+from .models import Activity, TocEntry, Document, Field, Issue, Notice, Setting
 from .util import slugify
 
 FIELDS = ["Đại hội đại biểu LHH Đà Nẵng lần thứ I", "Nhân vật", "Câu chuyện văn hóa", "Câu chuyện quốc tế", "Thông tin"]
@@ -78,9 +78,14 @@ OLD_ISSUES = [  # (số, kỳ, năm, chủ đề, số bài, số trang)
     (11, "6-2025", 2025, "Y tế cơ sở và sức khỏe cộng đồng", 18, 118),
     (10, "4-2025", 2025, "Khoa học công nghệ với nông nghiệp đô thị", 19, 116),
     (9, "2-2025", 2025, "Hạ tầng dữ liệu và chính quyền số", 20, 122),
+    (8, "12-2024", 2024, "Trí thức xứ Quảng với sự nghiệp phát triển", 18, 114),
+    (7, "10-2024", 2024, "Bảo tồn đa dạng sinh học bán đảo Sơn Trà", 17, 112),
+    (6, "8-2024", 2024, "Giáo dục và đào tạo nhân lực kỹ thuật", 19, 118),
+    (5, "6-2024", 2024, "Năng lượng tái tạo cho đô thị ven biển", 18, 110),
 ]
 
 SETTINGS = {
+    "hero_intro": "Toàn văn đọc trực tiếp trên web, không cần tải PDF. Mục lục giữ đúng thứ tự chuyên mục của bản in, kèm số trang để đối chiếu.",
     "org_name": "Liên hiệp các Hội Khoa học và Kỹ thuật thành phố Đà Nẵng",
     "issn": "2734-9098",
     "leaders": "Chủ tịch: TS Võ Công Trí\nPhó Chủ tịch: ThS Lê Văn Trung\nPhó Chủ tịch: ThS Nguyễn Thị Hoài Nam\nTổng Thư ký: ThS Huỳnh Phạm Duy Hoàng",
@@ -107,11 +112,12 @@ def seed(db: Session) -> None:
 
     for num, period, year, theme, n_art, pages in OLD_ISSUES:
         label = f"Số {num:02d} ({period})"
-        db.add(Issue(slug=slugify(label), number=num, label=label, year=year, theme=theme,
+        month = int(period.split("-")[0])
+        db.add(Issue(slug=slugify(label), number=num, label=label, year=year, theme=theme, published_at=date(year, month, 1),
                      printed_articles=n_art, page_count=pages, published=True))
 
     issue = Issue(
-        slug="so-17-6-2026", number=17, label="Số 17 (6-2026)", year=2026,
+        slug="so-17-6-2026", number=17, label="Số 17 (6-2026)", year=2026, published_at=date(2026, 6, 1),
         theme="Đại hội đại biểu Liên hiệp các Hội Khoa học và Kỹ thuật thành phố Đà Nẵng lần thứ I",
         summary="Số đặc biệt dành trọn cho Đại hội lần thứ I, nhiệm kỳ 2026–2031: tham luận và bài viết chọn lọc về khoa học công nghệ, đổi mới sáng tạo và chuyển đổi số của thành phố.",
         page_count=136, published=True,
@@ -125,12 +131,11 @@ def seed(db: Session) -> None:
         if slug in used:
             slug = f"{slug}-{i}"
         used.add(slug)
-        db.add(Article(
+        db.add(TocEntry(
             slug=slug, issue_id=issue.id, field_id=fields[field].id, title=title, author=author,
             page_label=f"tr. {page}", sort_order=i, is_front=i < 2, is_research=i in RESEARCH,
-            featured=i in HERO or i == 0, hero_excerpt=HERO.get(i) or ("Toàn văn đọc trực tiếp trên web, không cần tải PDF." if i == 0 else None),
+            featured=i in HERO, hero_excerpt=HERO.get(i),
             lead=SAMPLE_LEAD if i == 2 else None, body=SAMPLE_BODY if i == 2 else None,
-            status="published",
         ))
 
     d = date

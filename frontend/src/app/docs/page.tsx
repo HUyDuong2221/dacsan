@@ -17,11 +17,11 @@ export default async function Docs() {
             <>
               <div className="tag">{d.doc_type}</div>
               <h3>{d.title}</h3>
-              <div className="meta">Cập nhật {fmtDate(d.updated)}{d.file_url ? ' · Tải về' : ' · Chưa có tệp'}</div>
+              <div className="meta">Cập nhật {fmtDate(d.updated)}{d.file_url ? ' · Mở tệp' : ' · Chưa có tệp'}</div>
             </>
           );
           return d.file_url
-            ? <a key={d.id} className="card" href={d.file_url} download>{inner}</a>
+            ? <a key={d.id} className="card" href={d.file_url} target="_blank" rel="noopener noreferrer">{inner}</a>
             : <div key={d.id} className="card">{inner}</div>;
         })}
       </div>

@@ -6,7 +6,7 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
 from ..db import get_db
-from ..models import Activity, Article, Document, Field, Issue, Notice, Setting, Subscriber
+from ..models import Activity, TocEntry, Document, Field, Issue, Notice, Setting, Subscriber
 from ..util import headings
 
 router = APIRouter()
@@ -14,11 +14,11 @@ EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 
 # ---------- serializers ----------
-def has_text(a: Article) -> bool:
+def has_text(a: TocEntry) -> bool:
     return bool(a.body and a.body.strip())
 
 
-def article_card(a: Article) -> dict:
+def article_card(a: TocEntry) -> dict:
     return {
         "id": a.id,
         "slug": a.slug,
@@ -37,6 +37,7 @@ def issue_card(i: Issue, counts: dict[int, int]) -> dict:
         "slug": i.slug,
         "number": i.number,
         "label": i.label,
+        "published_at": i.published_at.isoformat() if i.published_at else None,
         "theme": i.theme,
         "summary": i.summary,
         "cover_url": i.cover_url,
@@ -48,13 +49,13 @@ def issue_card(i: Issue, counts: dict[int, int]) -> dict:
 
 def counts(db: Session) -> dict[int, int]:
     rows = db.execute(
-        select(Article.issue_id, func.count()).where(Article.status == "published").group_by(Article.issue_id)
+        select(TocEntry.issue_id, func.count()).group_by(TocEntry.issue_id)
     ).all()
     return {r[0]: r[1] for r in rows}
 
 
 def published_articles():
-    return select(Article).join(Issue).where(Article.status == "published", Issue.published.is_(True))
+    return select(TocEntry).join(Issue).where(Issue.published.is_(True))
 
 
 def activity_dict(a: Activity) -> dict:
@@ -66,7 +67,7 @@ def notice_dict(n: Notice) -> dict:
 
 
 def ordered(q):
-    return q.order_by(Article.sort_order, Article.id)
+    return q.order_by(TocEntry.sort_order, TocEntry.id)
 
 
 def latest_issue(db: Session) -> Issue | None:
@@ -93,23 +94,46 @@ def fields(db: Session = Depends(get_db)):
 def home(db: Session = Depends(get_db)):
     c = counts(db)
     latest = latest_issue(db)
-    hero = db.scalars(
-        ordered(published_articles().where(Article.featured.is_(True))).limit(6)
+    site_ = {s.key: s.value for s in db.scalars(select(Setting))}
+    slides = []
+    if latest:
+        slides.append({
+            "key": f"issue-{latest.slug}",
+            "kicker": f"Đặc san {latest.label.lower()}",
+            "title": latest.theme,
+            "excerpt": site_.get("hero_intro", ""),
+            "href": f"/issues/{latest.slug}",
+        })
+    featured = db.scalars(
+        ordered(published_articles().where(TocEntry.featured.is_(True), TocEntry.is_front.is_(False))).limit(5)
     ).unique().all()
-    issues = db.scalars(select(Issue).where(Issue.published.is_(True)).order_by(Issue.number.desc()).limit(8)).all()
+    for a in featured:
+        slides.append({
+            "key": a.slug,
+            "kicker": f"{a.author} · {a.page_label}",
+            "title": a.title,
+            "excerpt": a.hero_excerpt or a.lead or "",
+            "href": f"/articles/{a.slug}",
+        })
+    recent = db.scalars(
+        select(Issue).where(Issue.published.is_(True), Issue.id != (latest.id if latest else 0))
+        .order_by(Issue.number.desc()).limit(8)
+    ).all()
     in_issue = []
     if latest:
-        in_issue = db.scalars(ordered(published_articles().where(Article.issue_id == latest.id))).unique().all()
+        in_issue = db.scalars(ordered(published_articles().where(TocEntry.issue_id == latest.id))).unique().all()
     acts = db.scalars(select(Activity).where(Activity.published.is_(True)).order_by(Activity.event_date.desc().nullslast()).limit(5)).all()
+    n_issues, y0, y1 = db.execute(
+        select(func.count(), func.min(Issue.year), func.max(Issue.year)).where(Issue.published.is_(True))
+    ).one()
     return {
         "latest_issue": issue_card(latest, c) if latest else None,
-        "hero": [
-            {**article_card(a), "excerpt": a.hero_excerpt or (a.lead or "")} for a in hero
-        ],
+        "hero": slides,
         "articles": [article_card(a) for a in in_issue],
         "fields": [f.name for f in db.scalars(select(Field).order_by(Field.sort_order, Field.id))],
-        "issues": [issue_card(i, c) for i in issues],
+        "issues": [issue_card(i, c) for i in recent],
         "activities": [activity_dict(a) for a in acts],
+        "stats": {"issue_count": n_issues, "year_from": y0, "year_to": y1},
     }
 
 
@@ -131,7 +155,7 @@ def issue_detail(slug: str, db: Session = Depends(get_db)):
     i = db.scalars(select(Issue).where(Issue.slug == slug, Issue.published.is_(True))).first()
     if not i:
         raise HTTPException(404, "Không tìm thấy số này")
-    arts = db.scalars(ordered(published_articles().where(Article.issue_id == i.id))).unique().all()
+    arts = db.scalars(ordered(published_articles().where(TocEntry.issue_id == i.id))).unique().all()
     groups: list[dict] = []
     for a in arts:
         if a.is_front:
@@ -152,10 +176,10 @@ def issue_detail(slug: str, db: Session = Depends(get_db)):
 
 @router.get("/articles/{slug}")
 def article_detail(slug: str, db: Session = Depends(get_db)):
-    a = db.scalars(published_articles().where(Article.slug == slug)).unique().first()
+    a = db.scalars(published_articles().where(TocEntry.slug == slug)).unique().first()
     if not a:
         raise HTTPException(404, "Không tìm thấy bài viết")
-    siblings = db.scalars(ordered(published_articles().where(Article.issue_id == a.issue_id))).unique().all()
+    siblings = db.scalars(ordered(published_articles().where(TocEntry.issue_id == a.issue_id))).unique().all()
     pos = next(k for k, s in enumerate(siblings) if s.id == a.id)
     prev_, next_ = siblings[(pos - 1) % len(siblings)], siblings[(pos + 1) % len(siblings)]
     toc = ([ "Lời dẫn" ] if a.lead else []) + headings(a.body)
@@ -192,19 +216,19 @@ def search(
     db: Session = Depends(get_db),
 ):
     stmt = published_articles().where(
-        or_(like(Article.title, q), like(Article.author, q), like(Article.lead, q), like(Article.body, q))
+        or_(like(TocEntry.title, q), like(TocEntry.author, q), like(TocEntry.lead, q), like(TocEntry.body, q))
     )
     if issue:
         stmt = stmt.where(Issue.slug == issue)
     if field:
-        stmt = stmt.join(Field, Article.field_id == Field.id).where(Field.name == field)
-    rows = db.scalars(stmt.order_by(Issue.number.desc(), Article.sort_order).limit(50)).unique().all()
+        stmt = stmt.join(Field, TocEntry.field_id == Field.id).where(Field.name == field)
+    rows = db.scalars(stmt.order_by(Issue.number.desc(), TocEntry.sort_order).limit(50)).unique().all()
     return {"q": q, "count": len(rows), "results": [article_card(a) for a in rows]}
 
 
 @router.get("/research")
 def research(db: Session = Depends(get_db)):
-    rows = db.scalars(published_articles().where(Article.is_research.is_(True)).order_by(Issue.number.desc(), Article.sort_order)).unique().all()
+    rows = db.scalars(published_articles().where(TocEntry.is_research.is_(True)).order_by(Issue.number.desc(), TocEntry.sort_order)).unique().all()
     return [article_card(a) for a in rows]
 
 
@@ -255,9 +279,9 @@ def chat(body: ChatIn, db: Session = Depends(get_db)):
     if "gửi bài" in low or "thể lệ" in low or "bản thảo" in low:
         return {"answer": "Xem thể lệ gửi bài, mẫu bản thảo và quy trình phản biện tại mục Tư liệu.", "link": "/docs", "articles": []}
     words = [w for w in re.split(r"\W+", q) if len(w) >= 3]
-    conds = [like(Article.title, q), like(Article.author, q)]
-    conds += [like(Article.title, w) for w in words[:6]] + [like(Article.author, w) for w in words[:6]]
-    rows = db.scalars(published_articles().where(or_(*conds)).order_by(Issue.number.desc(), Article.sort_order).limit(5)).unique().all()
+    conds = [like(TocEntry.title, q), like(TocEntry.author, q)]
+    conds += [like(TocEntry.title, w) for w in words[:6]] + [like(TocEntry.author, w) for w in words[:6]]
+    rows = db.scalars(published_articles().where(or_(*conds)).order_by(Issue.number.desc(), TocEntry.sort_order).limit(5)).unique().all()
     if not rows:
         return {"answer": "Chưa tìm thấy bài phù hợp. Hãy thử tên tác giả hoặc từ khóa trong tiêu đề.", "link": None, "articles": []}
     return {"answer": f"Tìm thấy {len(rows)} bài phù hợp:", "link": None, "articles": [article_card(a) for a in rows]}
