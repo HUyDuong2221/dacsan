@@ -11,10 +11,14 @@ from sqlalchemy.orm import Session
 from ..config import settings
 from ..db import get_db
 from ..models import Activity, TocEntry, Document, Field, Issue, Notice, Setting, Subscriber, User
-from ..security import check_login_allowed, make_token, record_fail, require_admin, verify_password
+from ..security import check_login_allowed, current_user, hash_password, make_token, record_fail, require_roles, verify_password
 from ..util import slugify
 
 router = APIRouter()
+
+ADMIN = ("admin",)
+EDIT = ("admin", "editor")
+STAFF = ("admin", "editor", "contributor")
 
 
 # ---------- đăng nhập ----------
@@ -30,12 +34,30 @@ def login(body: LoginIn, request: Request, db: Session = Depends(get_db)):
     if not user or not verify_password(body.password, user.password_hash):
         record_fail(ip)
         raise HTTPException(401, "Sai email hoặc mật khẩu")
-    return {"token": make_token(user), "email": user.email}
+    if not user.is_active:
+        raise HTTPException(401, "Tài khoản đã bị khóa, hãy liên hệ quản trị viên")
+    return {"token": make_token(user), "email": user.email, "role": user.role, "full_name": user.full_name}
 
 
 @router.get("/auth/me")
-def me(user: User = Depends(require_admin)):
-    return {"email": user.email, "role": user.role}
+def me(user: User = Depends(current_user)):
+    return {"email": user.email, "role": user.role, "full_name": user.full_name}
+
+
+class ChangePasswordIn(BaseModel):
+    old_password: str
+    new_password: str
+
+
+@router.post("/auth/change-password")
+def change_password(body: ChangePasswordIn, user: User = Depends(current_user), db: Session = Depends(get_db)):
+    if not verify_password(body.old_password, user.password_hash):
+        raise HTTPException(422, "Mật khẩu hiện tại không đúng")
+    if len(body.new_password) < 8:
+        raise HTTPException(422, "Mật khẩu mới phải có ít nhất 8 ký tự")
+    user.password_hash = hash_password(body.new_password)
+    db.commit()
+    return {"ok": True}
 
 
 # ---------- CRUD tổng quát ----------
@@ -104,8 +126,25 @@ def prepare_issue(data: dict, existing: Issue | None) -> None:
     data["year"] = d.year if d else (existing.year if existing else date.today().year)
 
 
-def crud(model, prefix: str, order, slug_from: str | None = None, prepare=None):
-    r = APIRouter(prefix=prefix, dependencies=[Depends(require_admin)])
+def guard_entry(user: User, db: Session, data: dict, obj: TocEntry | None) -> None:
+    """Cộng tác viên chỉ được nhập/sửa mục lục của số CHƯA công bố."""
+    if user.role != "contributor":
+        return
+    ids = {obj.issue_id} if obj else set()
+    try:
+        if data.get("issue_id") not in (None, ""):
+            ids.add(int(data["issue_id"]))
+    except (TypeError, ValueError):
+        pass
+    for i in ids:
+        issue = db.get(Issue, i)
+        if issue and issue.published:
+            raise HTTPException(403, "Số này đã công bố, chỉ biên tập viên được sửa")
+
+
+def crud(model, prefix: str, order, slug_from: str | None = None, prepare=None,
+         read=STAFF, write=EDIT, remove=EDIT, guard=None):
+    r = APIRouter(prefix=prefix)
 
     def unique_slug(db: Session, base: str, exclude_id: int | None = None) -> str:
         base = slugify(base)
@@ -116,7 +155,7 @@ def crud(model, prefix: str, order, slug_from: str | None = None, prepare=None):
                 return slug
             slug, n = f"{base}-{n}", n + 1
 
-    @r.get("")
+    @r.get("", dependencies=[Depends(require_roles(*read))])
     def list_(request: Request, db: Session = Depends(get_db)):
         stmt = select(model)
         for k, v in request.query_params.items():
@@ -127,7 +166,9 @@ def crud(model, prefix: str, order, slug_from: str | None = None, prepare=None):
         return [to_dict(o) for o in db.scalars(stmt.order_by(*order)).unique().all()]
 
     @r.post("", status_code=201)
-    def create(data: dict, db: Session = Depends(get_db)):
+    def create(data: dict, db: Session = Depends(get_db), user: User = Depends(require_roles(*write))):
+        if guard:
+            guard(user, db, data, None)
         if prepare:
             prepare(data, None)
         vals = coerce(model, data, partial=False)
@@ -144,10 +185,12 @@ def crud(model, prefix: str, order, slug_from: str | None = None, prepare=None):
         return to_dict(obj)
 
     @r.put("/{obj_id}")
-    def update(obj_id: int, data: dict, db: Session = Depends(get_db)):
+    def update(obj_id: int, data: dict, db: Session = Depends(get_db), user: User = Depends(require_roles(*write))):
         obj = db.get(model, obj_id)
         if not obj:
             raise HTTPException(404, "Không tìm thấy")
+        if guard:
+            guard(user, db, data, obj)
         if prepare:
             prepare(data, obj)
         for k, v in coerce(model, data, partial=True).items():
@@ -163,7 +206,7 @@ def crud(model, prefix: str, order, slug_from: str | None = None, prepare=None):
             raise HTTPException(409, "Dữ liệu trùng hoặc tham chiếu không hợp lệ")
         return to_dict(obj)
 
-    @r.delete("/{obj_id}", status_code=204)
+    @r.delete("/{obj_id}", status_code=204, dependencies=[Depends(require_roles(*remove))])
     def delete(obj_id: int, db: Session = Depends(get_db)):
         obj = db.get(model, obj_id)
         if not obj:
@@ -175,20 +218,21 @@ def crud(model, prefix: str, order, slug_from: str | None = None, prepare=None):
 
 
 router.include_router(crud(Issue, "/issues", [Issue.number.desc()], slug_from="label", prepare=prepare_issue))
-router.include_router(crud(TocEntry, "/toc-entries", [TocEntry.issue_id.desc(), TocEntry.sort_order, TocEntry.id], slug_from="title"))
+router.include_router(crud(TocEntry, "/toc-entries", [TocEntry.issue_id.desc(), TocEntry.sort_order, TocEntry.id], slug_from="title",
+                           write=STAFF, guard=guard_entry))
 router.include_router(crud(Field, "/fields", [Field.sort_order, Field.id]))
-router.include_router(crud(Activity, "/activities", [Activity.event_date.desc().nullslast()]))
-router.include_router(crud(Notice, "/notices", [Notice.notice_date.desc().nullslast()]))
-router.include_router(crud(Document, "/documents", [Document.sort_order, Document.id]))
-router.include_router(crud(Setting, "/settings", [Setting.key]))
+router.include_router(crud(Activity, "/activities", [Activity.event_date.desc().nullslast()], read=EDIT))
+router.include_router(crud(Notice, "/notices", [Notice.notice_date.desc().nullslast()], read=EDIT))
+router.include_router(crud(Document, "/documents", [Document.sort_order, Document.id], read=EDIT))
+router.include_router(crud(Setting, "/settings", [Setting.key], read=ADMIN, write=ADMIN, remove=ADMIN))
 
 
-@router.get("/subscribers", dependencies=[Depends(require_admin)])
+@router.get("/subscribers", dependencies=[Depends(require_roles(*ADMIN))])
 def subscribers(db: Session = Depends(get_db)):
     return [to_dict(s) for s in db.scalars(select(Subscriber).order_by(Subscriber.id.desc()))]
 
 
-@router.delete("/subscribers/{sid}", status_code=204, dependencies=[Depends(require_admin)])
+@router.delete("/subscribers/{sid}", status_code=204, dependencies=[Depends(require_roles(*ADMIN))])
 def delete_subscriber(sid: int, db: Session = Depends(get_db)):
     s = db.get(Subscriber, sid)
     if s:
@@ -200,7 +244,7 @@ def delete_subscriber(sid: int, db: Session = Depends(get_db)):
 ALLOWED = {".jpg", ".jpeg", ".png", ".webp", ".pdf", ".doc", ".docx", ".xls", ".xlsx"}
 
 
-@router.post("/upload", dependencies=[Depends(require_admin)])
+@router.post("/upload", dependencies=[Depends(require_roles(*STAFF))])
 async def upload(file: UploadFile):
     ext = os.path.splitext(file.filename or "")[1].lower()
     if ext not in ALLOWED:
@@ -220,6 +264,24 @@ async def upload(file: UploadFile):
     return {"url": f"/media/{name}"}
 
 
+class MergeIn(BaseModel):
+    target_id: int
+
+
+@router.post("/fields/{field_id}/merge", dependencies=[Depends(require_roles(*EDIT))])
+def merge_field(field_id: int, body: MergeIn, db: Session = Depends(get_db)):
+    """Gộp chuyên mục vào chuyên mục khác: chuyển mọi dòng mục lục sang chuyên mục đích rồi xóa chuyên mục nguồn."""
+    src, dst = db.get(Field, field_id), db.get(Field, body.target_id)
+    if not src or not dst:
+        raise HTTPException(404, "Không tìm thấy chuyên mục")
+    if src.id == dst.id:
+        raise HTTPException(422, "Chọn một chuyên mục khác để gộp")
+    moved = db.query(TocEntry).filter(TocEntry.field_id == src.id).update({TocEntry.field_id: dst.id})
+    db.delete(src)
+    db.commit()
+    return {"moved": moved}
+
+
 # ---------- mục lục từ PDF ----------
 class TocItem(BaseModel):
     field: str = ""
@@ -230,6 +292,7 @@ class TocItem(BaseModel):
 
 class TocImportIn(BaseModel):
     items: list[TocItem]
+    replace: bool = False  # true = xóa mục lục hiện có của số rồi tạo lại
 
 
 def _issue_pdf_path(db: Session, issue_id: int) -> tuple[Issue, str]:
@@ -245,7 +308,7 @@ def _issue_pdf_path(db: Session, issue_id: int) -> tuple[Issue, str]:
     return issue, path
 
 
-@router.post("/issues/{issue_id}/toc/preview", dependencies=[Depends(require_admin)])
+@router.post("/issues/{issue_id}/toc/preview", dependencies=[Depends(require_roles(*EDIT))])
 def toc_preview(issue_id: int, db: Session = Depends(get_db)):
     from ..toc import extract_toc
 
@@ -256,7 +319,7 @@ def toc_preview(issue_id: int, db: Session = Depends(get_db)):
         raise HTTPException(422, str(e))
 
 
-@router.post("/issues/{issue_id}/toc/import", dependencies=[Depends(require_admin)])
+@router.post("/issues/{issue_id}/toc/import", dependencies=[Depends(require_roles(*EDIT))])
 def toc_import(issue_id: int, body: TocImportIn, db: Session = Depends(get_db)):
     """Tạo các dòng mục lục của số từ danh sách đã được biên tập viên xác nhận. Gọi lại không tạo trùng."""
     issue = db.get(Issue, issue_id)
@@ -265,6 +328,10 @@ def toc_import(issue_id: int, body: TocImportIn, db: Session = Depends(get_db)):
     if not 1 <= len(body.items) <= 500:
         raise HTTPException(422, "Số mục không hợp lệ")
 
+    if body.replace:
+        for e in db.scalars(select(TocEntry).where(TocEntry.issue_id == issue.id)).all():
+            db.delete(e)
+        db.flush()
     fields = {slugify(f.name): f for f in db.scalars(select(Field))}
     existing = db.scalars(select(TocEntry).where(TocEntry.issue_id == issue.id)).all()
     seen = {(slugify(a.title), a.page_label) for a in existing}
@@ -272,10 +339,10 @@ def toc_import(issue_id: int, body: TocImportIn, db: Session = Depends(get_db)):
     created = skipped = 0
     for it in body.items:
         title = " ".join(it.title.split())
-        if not title or it.page < 1:
+        if not title or it.page < 0:
             skipped += 1
             continue
-        label = f"tr. {it.page}"
+        label = f"tr. {it.page}" if it.page > 0 else ""
         if (slugify(title), label) in seen:
             skipped += 1
             continue

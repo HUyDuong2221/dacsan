@@ -4,15 +4,16 @@ import { useCallback, useEffect, useState } from 'react';
 export type FieldDef = {
   key: string;
   label: string;
-  type?: 'text' | 'textarea' | 'number' | 'bool' | 'date' | 'select' | 'file';
+  type?: 'text' | 'textarea' | 'number' | 'bool' | 'date' | 'select' | 'file' | 'password';
   options?: { value: string; label: string }[];
   optionsFrom?: { resource: string; labelKey: string };
   list?: boolean;
   full?: boolean;
   required?: boolean;
   hint?: string;
+  def?: any; // giá trị mặc định khi thêm mới
 };
-export type ResourceDef = { key: string; title: string; fields: FieldDef[]; readonly?: boolean; addLabel?: string; editLabel?: string };
+export type ResourceDef = { key: string; title: string; fields: FieldDef[]; readonly?: boolean; noDelete?: boolean; addLabel?: string; editLabel?: string };
 
 export async function adm(path: string, token: string, init: RequestInit = {}) {
   const isForm = init.body instanceof FormData;
@@ -63,6 +64,7 @@ export default function ResourceManager({ res, token, onAuthError, rowExtra, que
   const show = (f: FieldDef, v: any) => {
     if (f.type === 'bool') return v ? '✓' : '';
     if (f.optionsFrom) return opts[f.key]?.find((o) => o.value === String(v))?.label ?? v;
+    if (f.options) return f.options.find((o) => o.value === String(v))?.label ?? v;
     return v == null ? '' : String(v).slice(0, 90);
   };
   const shown = filter
@@ -95,7 +97,7 @@ export default function ResourceManager({ res, token, onAuthError, rowExtra, que
   }
 
   const blank = () => ({
-    ...Object.fromEntries(res.fields.map((f) => [f.key, f.type === 'bool' ? false : f.type === 'select' && f.options ? f.options[0].value : f.key === 'sort_order' ? rows.length : ''])),
+    ...Object.fromEntries(res.fields.map((f) => [f.key, f.def !== undefined ? f.def : f.type === 'bool' ? false : f.type === 'select' && f.options ? f.options[0].value : f.key === 'sort_order' ? rows.length : ''])),
     ...(defaults || {}),
   });
 
@@ -132,7 +134,8 @@ export default function ResourceManager({ res, token, onAuthError, rowExtra, que
                   <input type="file" onChange={(e) => e.target.files?.[0] && upload(f.key, e.target.files[0])} />
                 </div>
               ) : (
-                <input className="input" type={f.type === 'number' ? 'number' : f.type === 'date' ? 'date' : 'text'} required={f.required}
+                <input className="input" type={f.type === 'number' ? 'number' : f.type === 'date' ? 'date' : f.type === 'password' ? 'password' : 'text'} required={f.required}
+                  autoComplete={f.type === 'password' ? 'new-password' : undefined}
                   value={edit[f.key] ?? ''} onChange={(e) => setEdit({ ...edit, [f.key]: e.target.value })} />
               )}
               {f.hint && <small className="muted">{f.hint}</small>}
@@ -156,7 +159,7 @@ export default function ResourceManager({ res, token, onAuthError, rowExtra, que
                 <td style={{ whiteSpace: 'nowrap' }}>
                   {rowExtra && <>{rowExtra(r)}{' '}</>}
                   {!res.readonly && <button className="btn ghost sm" onClick={() => setEdit({ ...r })}>Sửa</button>}{' '}
-                  <button className="btn danger sm" onClick={() => remove(r)}>Xóa</button>
+                  {!res.noDelete && <button className="btn danger sm" onClick={() => remove(r)}>Xóa</button>}
                 </td>
               </tr>
             ))}

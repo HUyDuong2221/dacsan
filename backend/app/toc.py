@@ -8,6 +8,7 @@ Hai nguồn, theo thứ tự ưu tiên:
 Kết quả chỉ là ĐỀ XUẤT để biên tập viên xem lại, không tự xuất bản.
 """
 import re
+from collections import Counter
 
 import fitz  # PyMuPDF
 
@@ -23,8 +24,12 @@ def _is_upper(s: str) -> bool:
 
 
 def _field_name(s: str) -> str:
-    s = " ".join(s.split()).strip(" .:-–—")
-    return s.capitalize() if _is_upper(s) else s
+    """Tên phần giữ nguyên như in trong PDF (VD "TRÍ THỨC, KHOA HỌC VÀ TỔ CHỨC HỘI"), chỉ gọn khoảng trắng."""
+    return " ".join(s.split()).strip(" .:-–—")
+
+
+def _norm(ln: str) -> str:
+    return re.sub(r"[\d\W_]+", " ", ln.lower()).strip()
 
 
 def split_author(text: str) -> tuple[str, str]:
@@ -80,34 +85,57 @@ def _from_text(doc: "fitz.Document") -> list[dict]:
     best = max(scanned, key=lambda s: s[2])
     if best[2] < 5:
         return []
+    # Dòng lặp lại ở nhiều trang (tiêu đề chạy đầu trang, số trang…) không phải tên phần hay mục lục
+    seen = Counter()
+    for _, lines, _n in scanned:
+        seen.update({_norm(ln) for ln in lines if len(_norm(ln)) >= 6})
+    headers = {k for k, v in seen.items() if v >= 3}
+
     pages = [best]
     nxt = next((s for s in scanned if s[0] == best[0] + 1), None)
     if nxt and nxt[2] >= 3:
         pages.append(nxt)
 
     items, buf, field = [], [], ""
+    after_heading = False
+
+    def emit(text: str, page: int) -> None:
+        text = text.strip()
+        if len(text) >= 4:
+            author, title = split_author(text)
+            items.append({"field": field, "author": author, "title": title, "page": page})
+
     for _, lines, _n in pages:
         for ln in lines:
             ln = ln.strip()
-            if not ln:
+            if not ln or _norm(ln) in headers or ln.upper() in SKIP_HEADS:
                 continue
+            if re.match(r"^\d{1,3}\s+\S", ln) and _is_upper(re.sub(r"^\d{1,3}\s+", "", ln)):
+                continue  # "4 ĐẶC SAN KHOA HỌC…" = tiêu đề chạy đầu trang kèm số trang
             m = TRAIL.match(ln)
             if re.fullmatch(r"\d{1,3}", ln):
                 head, num = "", int(ln)
             elif m:
                 head, num = m.group(1).strip(), int(m.group(2))
             else:
-                if not buf and _is_upper(ln) and ln.upper() not in SKIP_HEADS:
-                    field = _field_name(ln)
-                elif ln.upper() not in SKIP_HEADS or buf:
+                if _is_upper(ln):  # dòng IN HOA không có số trang = tên phần
+                    if buf:  # dòng chờ trước đó không có số trang (VD "Lời thưa") -> mục chưa rõ trang
+                        emit(" ".join(buf), 0)
+                        buf = []
+                    field = _field_name(f"{field} {ln}") if after_heading else _field_name(ln)
+                    after_heading = True
+                else:
                     buf.append(ln)
+                    after_heading = False
                 continue
+            after_heading = False
             text = " ".join(buf + ([head] if head else [])).strip()
             buf = []
             if len(text) < 4 or not 1 <= num <= len(doc):
                 continue
-            author, title = split_author(text)
-            items.append({"field": field, "author": author, "title": title, "page": num})
+            emit(text, num)
+    if buf:
+        emit(" ".join(buf), 0)
     return items if len(items) >= 5 else []
 
 

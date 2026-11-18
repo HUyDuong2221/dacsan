@@ -1,6 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { useState } from 'react';
+import Portal from './Portal';
 
 type Block = { t: 'h'; text: string; id: string } | { t: 'p'; text: string } | { t: 'img'; alt: string; src: string };
 
@@ -79,6 +80,7 @@ export default function ArticleReader({ a }: { a: any }) {
       </div>
 
       {drawer && (
+        <Portal>
         <div className="drawer-wrap">
           <div className="drawer-bg" onClick={() => setDrawer(false)} />
           <aside className="drawer">
@@ -104,6 +106,7 @@ export default function ArticleReader({ a }: { a: any }) {
             </div>
           </aside>
         </div>
+        </Portal>
       )}
 
       <div className="ahead">

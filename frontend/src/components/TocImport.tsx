@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { adm } from './ResourceManager';
+import Portal from './Portal';
 
 type Item = { field: string; author: string; title: string; page: number; on: boolean };
 
@@ -11,11 +12,12 @@ export default function TocImport({ issue, token, onAuthError, onDone }: { issue
   const [source, setSource] = useState('');
   const [err, setErr] = useState('');
   const [done, setDone] = useState('');
+  const [replace, setReplace] = useState(false);
 
   const fail = (e: any) => (e.status === 401 ? onAuthError() : setErr(e.message));
 
   async function start() {
-    setOpen(true); setBusy(true); setErr(''); setDone(''); setItems([]);
+    setOpen(true); setBusy(true); setErr(''); setDone(''); setItems([]); setReplace(false);
     try {
       const d = await adm(`/issues/${issue.id}/toc/preview`, token, { method: 'POST' });
       setSource(d.source);
@@ -28,7 +30,7 @@ export default function TocImport({ issue, token, onAuthError, onDone }: { issue
     const chosen = items.filter((i) => i.on && i.title.trim()).map(({ on, ...rest }) => ({ ...rest, page: Number(rest.page) }));
     setBusy(true); setErr('');
     try {
-      const d = await adm(`/issues/${issue.id}/toc/import`, token, { method: 'POST', body: JSON.stringify({ items: chosen }) });
+      const d = await adm(`/issues/${issue.id}/toc/import`, token, { method: 'POST', body: JSON.stringify({ items: chosen, replace }) });
       setDone(`Đã thêm ${d.created} dòng vào mục lục${d.skipped ? `, bỏ qua ${d.skipped} dòng đã có` : ''}. Bạn có thể chỉnh từng dòng hoặc nhập toàn văn ở danh sách mục lục.`);
       setItems([]);
       onDone?.();
@@ -43,6 +45,7 @@ export default function TocImport({ issue, token, onAuthError, onDone }: { issue
     <>
       <button className="btn ghost sm" onClick={start} title={issue.pdf_url ? '' : 'Cần tải file PDF lên trước'}>Tạo mục lục từ PDF</button>
       {open && (
+        <Portal>
         <div className="drawer-wrap" style={{ alignItems: 'center', justifyContent: 'center' }}>
           <div className="drawer-bg" onClick={() => !busy && setOpen(false)} />
           <div style={{ position: 'relative', background: 'var(--bg)', width: 'min(1100px, 96vw)', maxHeight: '92vh', display: 'flex', flexDirection: 'column', boxShadow: '0 0 40px rgba(23,37,47,.25)' }}>
@@ -73,12 +76,16 @@ export default function TocImport({ issue, token, onAuthError, onDone }: { issue
                             <td><input className="input" style={{ minWidth: 150, padding: 6 }} value={it.field} onChange={(e) => set(k, { field: e.target.value })} /></td>
                             <td><input className="input" style={{ minWidth: 130, padding: 6 }} value={it.author} onChange={(e) => set(k, { author: e.target.value })} /></td>
                             <td><input className="input" style={{ minWidth: 300, padding: 6 }} value={it.title} onChange={(e) => set(k, { title: e.target.value })} /></td>
-                            <td><input className="input" type="number" style={{ width: 70, padding: 6 }} value={it.page} onChange={(e) => set(k, { page: Number(e.target.value) })} /></td>
+                            <td><input className="input" type="number" min={0} title="0 = chưa rõ trang" style={{ width: 70, padding: 6 }} value={it.page} onChange={(e) => set(k, { page: Number(e.target.value) })} /></td>
                           </tr>
                         ))}
                       </tbody>
                     </table>
                   </div>
+                  <label className="row" style={{ marginTop: 14, gap: 8, fontSize: 14 }}>
+                    <input type="checkbox" checked={replace} onChange={(e) => setReplace(e.target.checked)} />
+                    Xóa mục lục hiện có của số này rồi tạo lại (dùng khi mục lục đã nhập sai; toàn văn đã nhập cho các dòng cũ cũng bị xóa)
+                  </label>
                   <div className="row" style={{ marginTop: 16 }}>
                     <button className="btn" disabled={busy || !count} onClick={create}>Thêm {count} dòng vào mục lục</button>
                     <button className="btn ghost" onClick={() => setOpen(false)}>Hủy</button>
@@ -88,6 +95,7 @@ export default function TocImport({ issue, token, onAuthError, onDone }: { issue
             </div>
           </div>
         </div>
+        </Portal>
       )}
     </>
   );

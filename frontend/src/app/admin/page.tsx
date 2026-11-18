@@ -2,6 +2,17 @@
 import { useEffect, useState } from 'react';
 import ResourceManager, { ResourceDef, adm } from '@/components/ResourceManager';
 import IssueToc from '@/components/IssueToc';
+import SubmissionsManager from '@/components/SubmissionsManager';
+
+const ROLE_LABELS: Record<string, string> = { admin: 'Quản trị viên', editor: 'Biên tập viên', contributor: 'Cộng tác viên' };
+const STAFF = ['admin', 'editor', 'contributor'];
+const EDIT = ['admin', 'editor'];
+const ADMIN = ['admin'];
+// Vai trò được thấy từng thẻ (máy chủ vẫn kiểm tra quyền ở mọi API)
+const TAB_ROLES: Record<string, string[]> = {
+  issues: STAFF, submissions: EDIT, fields: EDIT, activities: EDIT, notices: EDIT, documents: EDIT,
+  users: ADMIN, settings: ADMIN, subscribers: ADMIN,
+};
 
 const RESOURCES: ResourceDef[] = [
   {
@@ -18,6 +29,7 @@ const RESOURCES: ResourceDef[] = [
       { key: 'published', label: 'Công bố trên website', type: 'bool', list: true, hint: 'Chưa tick thì số và mục lục của số chưa hiện ra ngoài.' },
     ],
   },
+  { key: 'submissions', title: 'Bài gửi', fields: [] },
   { key: 'fields', title: 'Chuyên mục', fields: [
     { key: 'name', label: 'Tên', required: true, list: true }, { key: 'sort_order', label: 'Thứ tự', type: 'number', list: true }] },
   { key: 'activities', title: 'Hoạt động', fields: [
@@ -29,6 +41,14 @@ const RESOURCES: ResourceDef[] = [
   { key: 'documents', title: 'Tư liệu', fields: [
     { key: 'title', label: 'Tiêu đề', required: true, list: true, full: true }, { key: 'doc_type', label: 'Loại', list: true },
     { key: 'file_url', label: 'Tệp', type: 'file' }, { key: 'sort_order', label: 'Thứ tự', type: 'number', list: true }, { key: 'published', label: 'Hiển thị', type: 'bool', list: true }] },
+  { key: 'users', title: 'Người dùng', addLabel: 'Thêm người dùng', editLabel: 'Sửa người dùng', fields: [
+    { key: 'email', label: 'Email đăng nhập', required: true, list: true },
+    { key: 'full_name', label: 'Họ tên', list: true },
+    { key: 'role', label: 'Vai trò', type: 'select', required: true, list: true, def: 'contributor',
+      options: [{ value: 'contributor', label: 'Cộng tác viên' }, { value: 'editor', label: 'Biên tập viên' }, { value: 'admin', label: 'Quản trị viên' }] },
+    { key: 'is_active', label: 'Đang hoạt động', type: 'bool', list: true, def: true, hint: 'Bỏ tick để khóa tài khoản (có hiệu lực ngay).' },
+    { key: 'password', label: 'Mật khẩu', type: 'password', hint: 'Tối thiểu 8 ký tự. Khi sửa: để trống = giữ nguyên mật khẩu.' },
+  ] },
   { key: 'settings', title: 'Cấu hình site', fields: [
     { key: 'key', label: 'Khóa', required: true, list: true, hint: 'org_name, issn, leaders, contact, license, copyright' },
     { key: 'value', label: 'Giá trị', type: 'textarea', list: true }] },
@@ -38,15 +58,22 @@ const RESOURCES: ResourceDef[] = [
 export default function Admin() {
   const [token, setToken] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
-  const [tab, setTab] = useState(RESOURCES[0].key);
+  const [tab, setTab] = useState('issues');
   const [email, setEmail] = useState('');
   const [pw, setPw] = useState('');
   const [err, setErr] = useState('');
+  const [me, setMe] = useState<{ email: string; full_name: string; role: string } | null>(null);
+  const [pwOpen, setPwOpen] = useState(false);
 
   useEffect(() => {
     try { setToken(localStorage.getItem('dacsan_token')); } catch {}
     setReady(true);
   }, []);
+
+  useEffect(() => {
+    if (!token) { setMe(null); return; }
+    adm('/auth/me', token).then(setMe).catch(() => logout());
+  }, [token]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function logout() {
     try { localStorage.removeItem('dacsan_token'); } catch {}
@@ -79,20 +106,70 @@ export default function Admin() {
       </div>
     );
 
-  const res = RESOURCES.find((r) => r.key === tab)!;
+  if (!me) return <div className="wrap page"><p className="muted">Đang tải…</p></div>;
+
+  const role = me.role;
+  const tabs = RESOURCES.filter((r) => (TAB_ROLES[r.key] || ADMIN).includes(role));
+  const cur = tabs.find((r) => r.key === tab) || tabs[0];
+  // cộng tác viên chỉ xem danh sách số, vào "Mục lục" để nhập; không thêm/sửa/xóa số
+  const res: ResourceDef = cur.key === 'issues' && role === 'contributor' ? { ...cur, readonly: true, noDelete: true } : cur;
+
   return (
     <div className="wrap page">
       <div className="row" style={{ justifyContent: 'space-between', marginBottom: 22 }}>
-        <h1 className="serif" style={{ fontSize: 32 }}>Quản trị nội dung</h1>
-        <button className="btn ghost" onClick={logout}>Đăng xuất</button>
+        <div>
+          <h1 className="serif" style={{ fontSize: 32 }}>Quản trị nội dung</h1>
+          <div className="muted">{me.full_name || me.email} · <b>{ROLE_LABELS[role] || role}</b></div>
+        </div>
+        <div className="row">
+          <button className="btn ghost" onClick={() => setPwOpen(!pwOpen)}>Đổi mật khẩu</button>
+          <button className="btn ghost" onClick={logout}>Đăng xuất</button>
+        </div>
       </div>
+      {pwOpen && <ChangePassword token={token} onDone={() => setPwOpen(false)} onAuthError={logout} />}
       <div className="tabs">
-        {RESOURCES.map((r) => <button key={r.key} className={tab === r.key ? 'on' : ''} onClick={() => setTab(r.key)}>{r.title}</button>)}
+        {tabs.map((r) => <button key={r.key} className={cur.key === r.key ? 'on' : ''} onClick={() => setTab(r.key)}>{r.title}</button>)}
       </div>
-      <ResourceManager
-        key={res.key} res={res} token={token} onAuthError={logout}
-        rowExtra={res.key === 'issues' ? (row) => <IssueToc issue={row} token={token} onAuthError={logout} /> : undefined}
-      />
+      {cur.key === 'users' && (
+        <p className="muted" style={{ marginTop: 0, lineHeight: 1.7 }}>
+          <b>Quản trị viên</b>: toàn quyền, gồm quản lý người dùng, cấu hình site, danh sách đăng ký email. ·{' '}
+          <b>Biên tập viên</b>: quản lý số đặc san, mục lục, chuyên mục, hoạt động, thông báo, tư liệu và xử lý bài gửi; được công bố và xóa. ·{' '}
+          <b>Cộng tác viên</b>: chỉ nhập/sửa mục lục và toàn văn của số <b>chưa công bố</b>; không công bố, không xóa, không xem bài gửi.
+        </p>
+      )}
+      {cur.key === 'submissions' ? (
+        <SubmissionsManager token={token} role={role} onAuthError={logout} />
+      ) : (
+        <ResourceManager
+          key={cur.key} res={res} token={token} onAuthError={logout}
+          rowExtra={cur.key === 'issues' ? (row) => <IssueToc issue={row} token={token} role={role} onAuthError={logout} /> : undefined}
+        />
+      )}
     </div>
+  );
+}
+
+function ChangePassword({ token, onDone, onAuthError }: { token: string; onDone: () => void; onAuthError: () => void }) {
+  const [oldP, setOld] = useState('');
+  const [newP, setNew] = useState('');
+  const [msg, setMsg] = useState('');
+  const [err, setErr] = useState('');
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    setErr(''); setMsg('');
+    try {
+      await adm('/auth/change-password', token, { method: 'POST', body: JSON.stringify({ old_password: oldP, new_password: newP }) });
+      setMsg('Đã đổi mật khẩu'); setOld(''); setNew('');
+      setTimeout(onDone, 1200);
+    } catch (e: any) { e.status === 401 ? onAuthError() : setErr(e.message); }
+  }
+  return (
+    <form className="form" style={{ maxWidth: 520 }} onSubmit={submit}>
+      <label className="full">Mật khẩu hiện tại<input className="input" type="password" required value={oldP} onChange={(e) => setOld(e.target.value)} autoComplete="current-password" /></label>
+      <label className="full">Mật khẩu mới (tối thiểu 8 ký tự)<input className="input" type="password" required minLength={8} value={newP} onChange={(e) => setNew(e.target.value)} autoComplete="new-password" /></label>
+      {err && <div className="err full">{err}</div>}
+      {msg && <div className="ok full">{msg}</div>}
+      <div className="full row"><button className="btn">Đổi mật khẩu</button><button type="button" className="btn ghost" onClick={onDone}>Hủy</button></div>
+    </form>
   );
 }

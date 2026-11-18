@@ -29,8 +29,10 @@ services:
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin12345}
       SEED_DEMO: ${SEED_DEMO:-true}
       MEDIA_DIR: /data/media
+      PRIVATE_DIR: /data/private
     volumes:
       - media:/data/media
+      - private:/data/private   # bản thảo gửi về, không công khai
     ports:
       - "127.0.0.1:${BACKEND_PORT:-8000}:8000"   # chỉ để xem Swagger tại /docs; bỏ dòng này khi production
 
@@ -50,3 +52,4 @@ services:
 volumes:
   pgdata:
   media:
+  private:

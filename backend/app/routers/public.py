@@ -66,6 +66,15 @@ def notice_dict(n: Notice) -> dict:
     return {"id": n.id, "tag": n.tag, "title": n.title, "content": n.content, "date": n.notice_date.isoformat() if n.notice_date else None}
 
 
+def sections_of(entries) -> list[str]:
+    """Các phần (chuyên mục) của một số, theo thứ tự xuất hiện trong mục lục."""
+    out: list[str] = []
+    for e in entries:
+        if e.field and e.field.name not in out:
+            out.append(e.field.name)
+    return out
+
+
 def ordered(q):
     return q.order_by(TocEntry.sort_order, TocEntry.id)
 
@@ -130,7 +139,7 @@ def home(db: Session = Depends(get_db)):
         "latest_issue": issue_card(latest, c) if latest else None,
         "hero": slides,
         "articles": [article_card(a) for a in in_issue],
-        "fields": [f.name for f in db.scalars(select(Field).order_by(Field.sort_order, Field.id))],
+        "fields": sections_of(in_issue),
         "issues": [issue_card(i, c) for i in recent],
         "activities": [activity_dict(a) for a in acts],
         "stats": {"issue_count": n_issues, "year_from": y0, "year_to": y1},
@@ -142,7 +151,8 @@ def issues(db: Session = Depends(get_db)):
     c = counts(db)
     rows = db.scalars(select(Issue).where(Issue.published.is_(True)).order_by(Issue.number.desc())).all()
     notices = db.scalars(select(Notice).where(Notice.published.is_(True)).order_by(Notice.notice_date.desc().nullslast()).limit(6)).all()
-    fields_ = [f.name for f in db.scalars(select(Field).order_by(Field.sort_order, Field.id))]
+    top = rows[0] if rows else None
+    fields_ = sections_of(db.scalars(ordered(published_articles().where(TocEntry.issue_id == top.id))).unique().all()) if top else []
     return {
         "issues": [issue_card(i, c) for i in rows],
         "notices": [notice_dict(n) for n in notices],
@@ -277,7 +287,7 @@ def chat(body: ChatIn, db: Session = Depends(get_db)):
         raise HTTPException(422, "Câu hỏi quá ngắn")
     low = q.lower()
     if "gửi bài" in low or "thể lệ" in low or "bản thảo" in low:
-        return {"answer": "Xem thể lệ gửi bài, mẫu bản thảo và quy trình phản biện tại mục Tư liệu.", "link": "/docs", "articles": []}
+        return {"answer": "Bạn có thể gửi bản thảo trực tiếp bằng biểu mẫu Gửi bài; thể lệ, mẫu bản thảo và quy trình phản biện có ở mục Tư liệu.", "link": "/gui-bai", "articles": []}
     words = [w for w in re.split(r"\W+", q) if len(w) >= 3]
     conds = [like(TocEntry.title, q), like(TocEntry.author, q)]
     conds += [like(TocEntry.title, w) for w in words[:6]] + [like(TocEntry.author, w) for w in words[:6]]

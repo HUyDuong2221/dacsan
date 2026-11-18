@@ -5,7 +5,7 @@ Dành cho biên tập viên. Mọi thao tác thực hiện tại trang quản tr
 ## 1. Đăng nhập
 
 1. Mở `/admin`, nhập email và mật khẩu do quản trị viên cấp.
-2. Đăng nhập xong sẽ thấy các thẻ: **Số đặc san, Chuyên mục, Hoạt động, Thông báo, Tư liệu, Cấu hình site, Đăng ký email**.
+2. Đăng nhập xong sẽ thấy các thẻ: **Số đặc san, Bài gửi, Chuyên mục, Hoạt động, Thông báo, Tư liệu, Người dùng, Cấu hình site, Đăng ký email** (mỗi người chỉ thấy các thẻ đúng với vai trò của mình, xem mục 8).
 3. Hết phiên (khoảng 12 giờ) hoặc đăng nhập sai quá 8 lần sẽ bị yêu cầu thử lại sau. Dùng nút **Đăng xuất** khi xong việc.
 
 ## 2. Quy trình đăng một số mới (làm theo thứ tự)
@@ -124,3 +124,32 @@ Tệp được phép tải lên: jpg, jpeg, png, webp, pdf, doc, docx, xls, xlsx
 - [ ] Chọn 4–6 dòng nổi bật cho slide và điền đoạn trích
 - [ ] Đã mở thử trang bài, mục lục số và tìm kiếm
 - [ ] Cuối cùng mới tick **Công bố trên website** cho số
+
+## 8. Người dùng và phân quyền (dành cho quản trị viên)
+
+Thẻ **Người dùng** → **Thêm người dùng**: nhập email đăng nhập, họ tên, vai trò và mật khẩu (tối thiểu 8 ký tự), rồi gửi thông tin đăng nhập cho người đó. Người dùng tự đổi mật khẩu bằng nút **Đổi mật khẩu** ở đầu trang quản trị.
+
+| Vai trò | Được làm gì |
+|---|---|
+| **Quản trị viên** | Toàn quyền: gồm quản lý người dùng, cấu hình site, danh sách đăng ký email, xóa bài gửi |
+| **Biên tập viên** | Số đặc san (tạo, sửa, **công bố**, xóa), mục lục, chuyên mục, hoạt động, thông báo, tư liệu, tạo mục lục từ PDF, **xử lý bài gửi** |
+| **Cộng tác viên** | Chỉ **nhập/sửa mục lục và toàn văn của số chưa công bố**. Không công bố số, không tạo/xóa số, không xóa dòng mục lục, không xem bài gửi |
+
+Quy trình gợi ý: cộng tác viên nhập mục lục và toàn văn khi số còn ở trạng thái chưa công bố, biên tập viên kiểm tra rồi tick **Công bố trên website**. Sau khi số đã công bố, cộng tác viên không sửa được nữa.
+
+- Đổi vai trò hoặc **khóa tài khoản** (bỏ tick *Đang hoạt động*) có hiệu lực **ngay lập tức**, kể cả khi người đó đang đăng nhập.
+- Quên mật khẩu: quản trị viên mở **Sửa** người dùng và nhập mật khẩu mới (để trống ô mật khẩu = giữ nguyên).
+- Hệ thống không cho tự xóa/tự hạ quyền/tự khóa mình, và luôn giữ ít nhất một quản trị viên đang hoạt động.
+
+## 9. Bài gửi từ tác giả
+
+Người ngoài gửi bản thảo tại trang **/gui-bai** (nút "Gửi bài ngay" ở trang chủ), không cần tài khoản: họ điền họ tên, email, tiêu đề, tóm tắt, chọn chuyên mục đề xuất, tải bản thảo (Word, PDF hoặc .odt, tối đa 20MB) và tick cam kết bản quyền. Sau khi gửi, tác giả nhận một **mã tra cứu** 8 ký tự và dùng mã cùng email để xem tình trạng tại **/gui-bai/theo-doi**.
+
+Ban biên tập xử lý ở thẻ **Bài gửi** (quản trị viên và biên tập viên):
+1. Bấm **Xử lý** ở dòng bài gửi để xem thông tin tác giả, tóm tắt và **tải bản thảo**.
+2. Đổi **trạng thái**: Mới nhận → Đang xét duyệt → Cần chỉnh sửa → Đã nhận đăng / Không phù hợp.
+3. Viết **Phản hồi gửi tác giả** (tác giả thấy khi tra cứu) và **Ghi chú nội bộ** (chỉ ban biên tập thấy).
+4. Bài được nhận đăng: liên hệ tác giả qua email, rồi nhập vào mục lục của số tương ứng (Bước 3).
+
+Lưu ý: hệ thống **chưa tự gửi email** cho tác giả; hãy liên hệ qua email trong thông tin bài gửi hoặc nhắn tác giả vào trang tra cứu. Bản thảo được lưu riêng, không có đường dẫn công khai, chỉ người có quyền tải được. Xóa bài gửi (chỉ quản trị viên) sẽ xóa cả bản thảo.
+

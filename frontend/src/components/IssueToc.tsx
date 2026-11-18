@@ -2,6 +2,8 @@
 import { useState } from 'react';
 import ResourceManager, { ResourceDef } from './ResourceManager';
 import TocImport from './TocImport';
+import SectionsEditor from './SectionsEditor';
+import Portal from './Portal';
 
 const TOC_RES: ResourceDef = {
   key: 'toc-entries',
@@ -23,13 +25,15 @@ const TOC_RES: ResourceDef = {
   ],
 };
 
-export default function IssueToc({ issue, token, onAuthError }: { issue: any; token: string; onAuthError: () => void }) {
+export default function IssueToc({ issue, token, onAuthError, role }: { issue: any; token: string; onAuthError: () => void; role: string }) {
   const [open, setOpen] = useState(false);
   const [ver, setVer] = useState(0);
+  const canEdit = role === 'admin' || role === 'editor';
   return (
     <>
       <button className="btn ghost sm" onClick={() => setOpen(true)}>Mục lục</button>
       {open && (
+        <Portal>
         <div className="drawer-wrap" style={{ alignItems: 'center', justifyContent: 'center' }}>
           <div className="drawer-bg" onClick={() => setOpen(false)} />
           <div style={{ position: 'relative', background: 'var(--bg)', width: 'min(1200px, 96vw)', maxHeight: '94vh', display: 'flex', flexDirection: 'column', boxShadow: '0 0 40px rgba(23,37,47,.25)' }}>
@@ -39,19 +43,21 @@ export default function IssueToc({ issue, token, onAuthError }: { issue: any; to
                 <div className="serif" style={{ fontSize: 20, fontWeight: 700 }}>{issue.label} — {issue.theme}</div>
               </div>
               <div className="row">
-                <TocImport issue={issue} token={token} onAuthError={onAuthError} onDone={() => setVer((v) => v + 1)} />
+                {canEdit && <TocImport issue={issue} token={token} onAuthError={onAuthError} onDone={() => setVer((v) => v + 1)} />}
                 <button className="btn ghost sm" onClick={() => setOpen(false)}>✕ Đóng</button>
               </div>
             </div>
             <div style={{ padding: 22, overflow: 'auto' }}>
               <p className="muted" style={{ marginTop: 0 }}>
-                Mục lục hiện ra ngoài khi số đặc san được tick <b>Công bố trên website</b>. Dòng nào có <b>Toàn văn</b> thì người đọc đọc được trên web, không thì chỉ báo “có trong bản in”.
+                Mục lục hiện ra ngoài khi số đặc san được tick <b>Công bố trên website</b>.{!canEdit && <> Bạn là cộng tác viên: chỉ nhập/sửa được mục lục của số <b>chưa công bố</b>, không xóa được.</>} Dòng nào có <b>Toàn văn</b> thì người đọc đọc được trên web, không thì chỉ báo “có trong bản in”.
               </p>
-              <ResourceManager key={ver} res={TOC_RES} token={token} onAuthError={onAuthError}
+              {canEdit && <SectionsEditor version={ver} issue={issue} token={token} onAuthError={onAuthError} onChanged={() => setVer((v) => v + 1)} />}
+              <ResourceManager key={ver} res={canEdit ? TOC_RES : { ...TOC_RES, noDelete: true }} token={token} onAuthError={onAuthError}
                 query={`issue_id=${issue.id}`} defaults={{ issue_id: issue.id }} />
             </div>
           </div>
         </div>
+        </Portal>
       )}
     </>
   );

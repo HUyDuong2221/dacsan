@@ -26,8 +26,12 @@ Trình duyệt chỉ gọi cùng origin: Next chuyển tiếp `/api/*` và `/med
 
 ## API
 
-- `GET /api/v1/public/...`: `home`, `issues`, `issues/{slug}`, `articles/{slug}`, `search?q=&issue=`, `research`, `documents`, `notices`, `activities`, `fields`, `site`, `POST subscribe`, `POST chat`
-- `/api/v1/admin/...` (Bearer JWT): `POST auth/login`, CRUD `issues|toc-entries|fields|activities|notices|documents|settings` (`toc-entries` = mục lục của số; lọc bằng `?issue_id=`), `POST issues/{id}/toc/preview` và `toc/import` (tạo mục lục từ PDF), `GET/DELETE subscribers`, `POST upload`
+- `GET /api/v1/public/...`: `home`, `issues`, `issues/{slug}`, `articles/{slug}`, `search?q=&issue=`, `research`, `documents`, `notices`, `activities`, `fields`, `site`, `POST subscribe`, `POST chat`, `POST submissions` (gửi bài, multipart), `POST submissions/track` (tra cứu bằng email + mã)
+- `/api/v1/admin/...` (Bearer JWT): `POST auth/login`, CRUD `issues|toc-entries|fields|activities|notices|documents|settings` (`toc-entries` = mục lục của số; lọc bằng `?issue_id=`), `POST issues/{id}/toc/preview` và `toc/import` (tạo mục lục từ PDF), `GET/DELETE subscribers`, `POST upload`, CRUD `users` (chỉ admin), `POST auth/change-password`, `submissions` (danh sách, `PUT` trạng thái/ghi chú, `GET {id}/file`, `DELETE`)
+
+## Vai trò
+
+`admin` (toàn quyền, quản lý người dùng) · `editor` (nội dung, công bố, xử lý bài gửi) · `contributor` (chỉ nhập/sửa mục lục của số **chưa công bố**). Quyền được kiểm tra ở backend cho mọi API và đọc lại từ DB mỗi request. Tài khoản đầu tiên là `ADMIN_EMAIL`/`ADMIN_PASSWORD`; các tài khoản khác tạo trong trang quản trị. Bản thảo gửi về lưu ở volume `private` (`PRIVATE_DIR`), không nằm trong `/media`.
 
 ## Định dạng toàn văn bài
 
@@ -36,7 +40,7 @@ Trình duyệt chỉ gọi cùng origin: Next chuyển tiếp `/api/*` và `/med
 ## Test
 
 ```bash
-docker compose exec backend python -m pytest -q     # 11 test, chạy trên SQLite
+docker compose exec backend python -m pytest -q     # chạy trên SQLite
 cd frontend && npm install && npm run typecheck && npm run build
 ```
 

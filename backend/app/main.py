@@ -10,7 +10,7 @@ from sqlalchemy.exc import OperationalError
 from .config import settings
 from .db import SessionLocal, engine
 from .models import Base, User
-from .routers import admin, public
+from .routers import admin, public, submissions, users
 from .security import hash_password
 from .seed import seed
 
@@ -34,6 +34,9 @@ def init_db() -> None:
     Base.metadata.create_all(engine)
     with engine.begin() as conn:  # nâng cấp nhẹ cho DB đã có (chưa dùng Alembic)
         conn.execute(text("ALTER TABLE issues ADD COLUMN IF NOT EXISTS published_at DATE"))
+        conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS full_name VARCHAR(200) NOT NULL DEFAULT ''"))
+        conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT TRUE"))
+        conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT now()"))
     with SessionLocal() as db:
         email = settings.admin_email.strip().lower()
         if not db.scalars(select(User).where(User.email == email)).first():
@@ -46,6 +49,7 @@ def init_db() -> None:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     os.makedirs(settings.media_dir, exist_ok=True)
+    os.makedirs(settings.private_dir, exist_ok=True)
     init_db()
     yield
 
@@ -53,6 +57,9 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="Đặc san KH&PT Đà Nẵng API", version="1.0.0", lifespan=lifespan)
 app.include_router(public.router, prefix="/api/v1/public")
 app.include_router(admin.router, prefix="/api/v1/admin")
+app.include_router(users.router, prefix="/api/v1/admin")
+app.include_router(submissions.public_router, prefix="/api/v1/public")
+app.include_router(submissions.admin_router, prefix="/api/v1/admin")
 os.makedirs(settings.media_dir, exist_ok=True)
 app.mount("/media", StaticFiles(directory=settings.media_dir), name="media")
 

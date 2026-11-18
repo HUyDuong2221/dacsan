@@ -92,7 +92,10 @@ export default async function Home() {
           <div className="box tint">
             <h3>Gửi bài cho Đặc san</h3>
             <p>Bản thảo nhận liên tục. Xem thể lệ gửi bài, quy định xuất bản và đạo đức công bố khoa học trước khi gửi.</p>
-            <Link href="/docs" className="btn">Hướng dẫn gửi bài</Link>
+            <div className="row">
+              <Link href="/gui-bai" className="btn">Gửi bài ngay</Link>
+              <Link href="/docs" className="btn ghost">Thể lệ gửi bài</Link>
+            </div>
           </div>
           <div className="box">
             <h3>Nhận thông báo số mới</h3>

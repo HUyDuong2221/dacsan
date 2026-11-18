@@ -20,7 +20,10 @@ class User(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
     password_hash: Mapped[str] = mapped_column(String(255))
-    role: Mapped[str] = mapped_column(String(20), default="admin")
+    role: Mapped[str] = mapped_column(String(20), default="admin")  # admin | editor | contributor
+    full_name: Mapped[str] = mapped_column(String(200), default="")
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
 class Field(Base):
@@ -107,6 +110,35 @@ class Document(Stamped, Base):
     file_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
     sort_order: Mapped[int] = mapped_column(Integer, default=0)
     published: Mapped[bool] = mapped_column(Boolean, default=True)
+
+
+SUBMISSION_STATUSES = {
+    "new": "Mới nhận",
+    "reviewing": "Đang xét duyệt",
+    "revision": "Cần chỉnh sửa",
+    "accepted": "Đã nhận đăng",
+    "rejected": "Không phù hợp",
+}
+
+
+class Submission(Stamped, Base):
+    """Bài gửi cho Đặc san từ người ngoài (chưa phải mục lục)."""
+
+    __tablename__ = "submissions"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    code: Mapped[str] = mapped_column(String(16), unique=True, index=True)  # mã tra cứu của tác giả
+    name: Mapped[str] = mapped_column(String(200))
+    email: Mapped[str] = mapped_column(String(255), index=True)
+    organization: Mapped[str] = mapped_column(String(300), default="")
+    phone: Mapped[str] = mapped_column(String(40), default="")
+    field_name: Mapped[str] = mapped_column(String(200), default="")  # chuyên mục đề xuất
+    title: Mapped[str] = mapped_column(String(600))
+    abstract: Mapped[str] = mapped_column(Text)
+    file_path: Mapped[str] = mapped_column(String(100))  # tên tệp trong private_dir
+    file_name: Mapped[str] = mapped_column(String(300))  # tên tệp gốc
+    status: Mapped[str] = mapped_column(String(20), default="new")
+    note_public: Mapped[str | None] = mapped_column(Text, nullable=True)  # tác giả thấy khi tra cứu
+    note_internal: Mapped[str | None] = mapped_column(Text, nullable=True)  # chỉ ban biên tập
 
 
 class Subscriber(Base):

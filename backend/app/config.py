@@ -10,6 +10,8 @@ class Settings(BaseSettings):
     admin_email: str = "admin@example.com"
     admin_password: str = "admin12345"
     media_dir: str = "/data/media"
+    private_dir: str = "/data/private"  # bản thảo gửi về: KHÔNG công khai
+    max_submission_mb: int = 20
     max_upload_mb: int = 50
     seed_demo: bool = True
 
