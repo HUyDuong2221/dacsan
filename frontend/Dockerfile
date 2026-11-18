@@ -1,31 +1,22 @@
-FROM node:22-alpine AS deps
+FROM node:20-alpine AS deps
 WORKDIR /app
-COPY package.json package-lock.json ./
-# Install the exact dependency versions tested locally, including the PDF worker.
-# Surface lifecycle-script errors directly in the Docker build output.
-# Reuse downloaded packages across builds and retry transient registry failures.
-RUN --mount=type=cache,target=/root/.npm,sharing=locked \
-    npm ci --no-audit --no-fund --foreground-scripts --prefer-offline \
-      --fetch-retries=5 \
-      --fetch-retry-mintimeout=10000 \
-      --fetch-retry-maxtimeout=60000 \
-      --fetch-timeout=300000
-FROM node:22-alpine AS builder
+COPY package.json package-lock.json* ./
+RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
+
+FROM node:20-alpine AS build
 WORKDIR /app
+ARG API_INTERNAL_URL=http://backend:8000
+ENV API_INTERNAL_URL=$API_INTERNAL_URL NEXT_TELEMETRY_DISABLED=1
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-# Same-origin by default (works behind any reverse proxy / domain / IP). Override for split-origin setups.
-ARG NEXT_PUBLIC_API_BASE_URL=/api/v1
-ARG NEXT_PUBLIC_MEDIA_BASE_URL=/media
-ENV NEXT_PUBLIC_API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL
-ENV NEXT_PUBLIC_MEDIA_BASE_URL=$NEXT_PUBLIC_MEDIA_BASE_URL
-ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
-FROM node:22-alpine
+
+FROM node:20-alpine AS run
 WORKDIR /app
-ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
-COPY --from=builder /app/public ./public
+ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 PORT=3000 HOSTNAME=0.0.0.0
+ENV API_INTERNAL_URL=http://backend:8000
+COPY --from=build /app/.next/standalone ./
+COPY --from=build /app/.next/static ./.next/static
+COPY --from=build /app/public ./public
 EXPOSE 3000
 CMD ["node", "server.js"]

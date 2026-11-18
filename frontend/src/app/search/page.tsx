@@ -1,14 +1,33 @@
-import Link from 'next/link';
-import {Search as SearchIcon,ArrowRight} from 'lucide-react';
-import {serverApi,PageData,Article} from '@/lib/api';
-import {ArticleCard} from '@/components/Cards';
-export const dynamic='force-dynamic';
-export const metadata={title:'Tra cứu bài viết'};
-export default async function SearchPage({searchParams}:{searchParams:Promise<{q?:string;page?:string}>}){
- const sp=await searchParams;const q=(sp.q||'').slice(0,200);const page=Math.max(1,Number(sp.page)||1);let data:PageData<Article>={items:[],page:1,total:0,limit:20};
- if(q){try{data=await serverApi<PageData<Article>>(`/search?q=${encodeURIComponent(q)}&page=${page}`)}catch{}}
- const max=Math.ceil(data.total/20);
- return <div className="container-width py-16 max-w-5xl"><p className="eyebrow mb-3">TRA CỨU TRI THỨC</p><h1 className="section-title">Tìm kiếm bài viết</h1><p className="text-slate-500 mt-3 mb-8">Tìm theo tiêu đề, tác giả hoặc nội dung đã trích xuất từ các số đặc san.</p><form className="flex gap-2" action="/search" method="get"><div className="relative flex-1"><SearchIcon className="absolute top-3.5 left-4 text-slate-400" size={20}/><input className="field pl-12 py-3.5" name="q" defaultValue={q} placeholder="Ví dụ: chuyển đổi số, Đà Nẵng, Lê Tùng Lâm…"/></div><button className="btn-primary">Tìm kiếm</button></form>
- {q?<div className="mt-10"><p className="text-sm font-semibold text-slate-600 mb-3">Tìm thấy {data.total} kết quả cho “{q}”</p><div className="bg-white border p-6 sm:p-8">{data.items.length?data.items.map(a=><ArticleCard key={a.id} article={a}/>):<p className="text-slate-500">Không tìm thấy kết quả. Hãy thử từ khóa khác.</p>}</div>{max>1&&<div className="flex flex-wrap mt-5 gap-2">{Array.from({length:Math.min(max,10)},(_,i)=><Link key={i} className={`px-3 py-2 border ${page===i+1?'bg-brand text-white':'bg-white'}`} href={`/search?q=${encodeURIComponent(q)}&page=${i+1}`}>{i+1}</Link>)}</div>}</div>:<div className="grid sm:grid-cols-3 gap-4 mt-12">{['Khoa học và công nghệ','Phát triển Đà Nẵng','Lịch sử và văn hóa'].map(x=><Link href={`/search?q=${encodeURIComponent(x)}`} key={x} className="border bg-white p-6 hover:shadow"><h3 className="font-serif font-bold text-lg">{x}</h3><span className="text-brand text-sm mt-3 flex gap-1">Khám phá <ArrowRight size={15}/></span></Link>)}</div>}
- </div>
+import type { Metadata } from 'next';
+import { get } from '@/lib/api';
+import { ArticleCard, SearchBox } from '@/components/Parts';
+
+export const metadata: Metadata = { title: 'Tìm bài báo' };
+
+export default async function SearchPage({ searchParams }: { searchParams: { q?: string; issue?: string } }) {
+  const q = (searchParams.q || '').trim();
+  const issue = searchParams.issue || '';
+  let res: any = null;
+  if (q.length >= 2) {
+    res = await get(`/search?q=${encodeURIComponent(q)}${issue ? `&issue=${encodeURIComponent(issue)}` : ''}`);
+  }
+  return (
+    <div className="wrap page">
+      <div className="pagehead">
+        <div className="kicker">Tìm kiếm</div>
+        <h1>Tìm bài báo</h1>
+        <div style={{ maxWidth: 640, marginTop: 18 }}>
+          <SearchBox defaultValue={q} hidden={issue ? { issue } : undefined} placeholder="Tiêu đề, tác giả hoặc từ khóa (không cần gõ dấu)" />
+        </div>
+        {issue && <p className="muted">Giới hạn trong: {issue}</p>}
+      </div>
+      {res && (
+        <>
+          <p className="muted" style={{ marginBottom: 18 }}>{res.count} kết quả cho “{q}”</p>
+          <div className="cards">{res.results.map((a: any) => <ArticleCard key={a.slug} a={a} />)}</div>
+        </>
+      )}
+      {!res && <p className="muted">Nhập ít nhất 2 ký tự.</p>}
+    </div>
+  );
 }

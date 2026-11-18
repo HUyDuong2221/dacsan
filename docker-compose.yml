@@ -1,102 +1,52 @@
-name: dacsan-platform
+name: dacsan
+
 services:
-  postgres:
+  db:
     image: postgres:16-alpine
+    restart: unless-stopped
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-dacsan}
       POSTGRES_USER: ${POSTGRES_USER:-dacsan}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-local_dev_password_change_me}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dacsan}
+      POSTGRES_DB: ${POSTGRES_DB:-dacsan}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-dacsan} -d ${POSTGRES_DB:-dacsan}"]
       interval: 5s
       timeout: 3s
       retries: 20
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    ports:
-      - "127.0.0.1:5434:5432"
-
-  redis:
-    image: redis:7-alpine
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 3s
-      retries: 20
 
   backend:
-    build:
-      context: .
-      dockerfile: backend/Dockerfile
-    working_dir: /app
-    env_file: .env
+    build: ./backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
     environment:
-      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://dacsan:local_dev_password_change_me@postgres:5432/dacsan}
-      MEDIA_ROOT: /app/media
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-dacsan}:${POSTGRES_PASSWORD:-dacsan}@db:5432/${POSTGRES_DB:-dacsan}
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@example.com}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin12345}
+      SEED_DEMO: ${SEED_DEMO:-true}
+      MEDIA_DIR: /data/media
     volumes:
-      - mediadata:/app/media
+      - media:/data/media
     ports:
-      - "127.0.0.1:8000:8000"
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    command: ["sh", "-c", "alembic upgrade head && python -m app.seed && uvicorn app.main:app --host 0.0.0.0 --port 8000"]
-    healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health',timeout=3)"]
-      interval: 10s
-      timeout: 5s
-      retries: 12
-      start_period: 30s
-
-  worker:
-    build:
-      context: .
-      dockerfile: backend/Dockerfile
-    working_dir: /app
-    env_file: .env
-    environment:
-      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://dacsan:local_dev_password_change_me@postgres:5432/dacsan}
-      MEDIA_ROOT: /app/media
-    command: ["celery", "-A", "app.tasks.celery_app", "worker", "--loglevel=info", "--concurrency=1"]
-    volumes:
-      - mediadata:/app/media
-    depends_on:
-      backend:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+      - "127.0.0.1:${BACKEND_PORT:-8000}:8000"   # chỉ để xem Swagger tại /docs; bỏ dòng này khi production
 
   frontend:
     build:
       context: ./frontend
       args:
-        NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-/api/v1}
-        NEXT_PUBLIC_MEDIA_BASE_URL: ${NEXT_PUBLIC_MEDIA_BASE_URL:-/media}
-    environment:
-      SERVER_API_BASE_URL: http://backend:8000/api/v1
-      NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-/api/v1}
-      NEXT_PUBLIC_MEDIA_BASE_URL: ${NEXT_PUBLIC_MEDIA_BASE_URL:-/media}
-    ports:
-      - "127.0.0.1:3000:3000"
+        API_INTERNAL_URL: http://backend:8000
+    restart: unless-stopped
     depends_on:
-      backend:
-        condition: service_healthy
-
-  proxy:
-    image: nginx:1.27-alpine
-    # Single public entry point: the site, /api and /media all share one origin, so no hostname is baked
-    # into the frontend. Put a tunnel / TLS proxy in front of this port. Set PROXY_BIND=0.0.0.0 to expose
-    # it directly (plain HTTP) on a test server.
-    ports:
-      - "${PROXY_BIND:-127.0.0.1}:${PROXY_PORT:-8080}:80"
-    volumes:
-      - ./infra/nginx/site.conf:/etc/nginx/conf.d/default.conf:ro
-    depends_on:
-      - frontend
       - backend
+    environment:
+      API_INTERNAL_URL: http://backend:8000
+    ports:
+      - "${WEB_PORT:-3000}:3000"
 
 volumes:
   pgdata:
-  mediadata:
+  media:

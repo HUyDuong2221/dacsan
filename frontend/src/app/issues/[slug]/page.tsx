@@ -1,11 +1,79 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
-import {ArrowLeft,BookOpen,Download,ExternalLink,FileText} from 'lucide-react';
-import {serverApi,Issue,mediaUrl} from '@/lib/api';
-export const dynamic='force-dynamic';
-export default async function IssueDetail({params}:{params:Promise<{slug:string}>}){
- const {slug}=await params;let i:Issue;
- try{i=await serverApi<Issue>(`/issues/${encodeURIComponent(slug)}`)}catch{return <div className="container-width py-20">Không tìm thấy số đặc san. <Link href="/issues" className="text-brand">Về kho đặc san</Link></div>}
- return <><div className="bg-[#f1f3f8] py-14"><div className="container-width"><Link href="/issues" className="text-sm text-brand flex items-center gap-2 mb-7"><ArrowLeft size={16}/> Kho đặc san</Link><div className="grid md:grid-cols-[250px_1fr] gap-10 items-center"><div className="flex justify-center">{i.cover_key?<img src={mediaUrl(i.cover_key)} className="w-64 shadow-2xl" alt={`Bìa số ${i.number}`}/>:<BookOpen size={100}/>}</div><div><p className="eyebrow mb-3">SỐ {i.number} · THÁNG {i.month}/{i.year}</p><h1 className="section-title max-w-2xl">{i.theme||i.title}</h1><p className="leading-7 text-slate-600 mt-5 max-w-2xl">{i.description}</p><p className="mt-5 text-sm text-slate-500">{i.page_count} trang · {i.sections?.length||0} chuyên mục · {i.sections?.reduce((n,s)=>n+s.articles.length,0)||0} nội dung</p><div className="flex gap-3 flex-wrap mt-7"><Link href={`/read/${i.slug}`} className="btn-primary"><BookOpen size={18}/> Đọc PDF trực tuyến</Link>{i.pdf_key&&<a href={mediaUrl(i.pdf_key)} download target="_blank" rel="noopener noreferrer" className="btn-outline"><Download size={17}/> Tải PDF</a>}</div></div></div></div></div>
- <div className="container-width py-16 grid lg:grid-cols-[1fr_300px] gap-12"><article><p className="eyebrow mb-2">NỘI DUNG ẤN PHẨM</p><h2 className="section-title mb-8">Mục lục số {i.number}</h2><div className="space-y-11">{i.sections?.map((s,n)=><section id={s.slug} key={s.id}><div className="border-b-2 border-brand pb-3 flex items-center gap-3"><span className="text-coral font-serif font-bold text-xl">{String(n+1).padStart(2,'0')}</span><h3 className="font-serif text-xl font-bold uppercase">{s.name}</h3></div><div>{s.articles.map(a=><Link key={a.id} href={`/articles/${a.slug}`} className="group py-4 border-b flex gap-3 items-start justify-between"><div><p className="font-semibold group-hover:text-brand leading-snug">{a.title}</p><p className="text-sm text-slate-500 mt-1">{a.author_display} <span className="px-2">·</span> {a.content_type.replace('_',' ')}</p></div><span className="shrink-0 bg-slate-100 text-brand px-2 py-1 text-sm">tr. {a.print_page_start}</span></Link>)}</div></section>)}</div></article>
- <aside><div className="bg-white border p-6 sticky top-28"><h3 className="font-serif font-bold text-xl mb-4">Về số đặc san</h3><dl className="text-sm space-y-3"><div className="flex justify-between border-b pb-2"><dt className="text-slate-500">Số</dt><dd className="font-semibold">{i.number}</dd></div><div className="flex justify-between border-b pb-2"><dt className="text-slate-500">Phát hành</dt><dd className="font-semibold">{i.month}/{i.year}</dd></div><div className="flex justify-between border-b pb-2"><dt className="text-slate-500">Số trang</dt><dd>{i.page_count}</dd></div></dl><Link href={`/read/${i.slug}?page=4`} className="block text-brand font-semibold text-sm mt-6">Xem mục lục PDF <ExternalLink size={14} className="inline"/></Link></div><div className="bg-[#f4efe6] p-6 mt-6"><p className="eyebrow">LỜI THƯA</p><p className="text-sm whitespace-pre-line leading-7 line-clamp-[14] mt-4">{i.editorial}</p><Link href={`/read/${i.slug}?page=3`} className="text-brand font-semibold text-sm inline-block mt-4">Đọc lời thưa bản in</Link></div></aside></div></>
+import { notFound } from 'next/navigation';
+import { getOrNull } from '@/lib/api';
+import { Cover, SearchBox } from '@/components/Parts';
+
+type Props = { params: { slug: string }; searchParams: { field?: string } };
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const d = await getOrNull(`/issues/${params.slug}`);
+  return { title: d ? `Mục lục ${d.issue.label}` : 'Không tìm thấy' };
+}
+
+export default async function IssuePage({ params, searchParams }: Props) {
+  const d = await getOrNull(`/issues/${params.slug}`);
+  if (!d) notFound();
+  const { issue, groups, front } = d;
+  const active = searchParams.field || '';
+  const shown = groups.filter((g: any) => !active || g.field === active);
+  const total = active ? shown.reduce((n: number, g: any) => n + g.items.length, 0) : d.total;
+  const base = `/issues/${issue.slug}`;
+
+  return (
+    <div className="wrap page" style={{ paddingTop: 40 }}>
+      <div className="layout">
+        <aside className="side">
+          <Cover issue={issue} />
+          <div>
+            <div className="lbl">CHUYÊN MỤC</div>
+            <Link href={base} className={`f ${!active ? 'on' : ''}`}><span>Tất cả</span><span className="mono">{d.total}</span></Link>
+            {groups.map((g: any) => (
+              <Link key={g.field} href={`${base}?field=${encodeURIComponent(g.field)}`} className={`f ${active === g.field ? 'on' : ''}`}>
+                <span>{g.field}</span><span className="mono">{g.items.length}</span>
+              </Link>
+            ))}
+          </div>
+          {issue.pdf_url && <a href={issue.pdf_url} download className="btn ghost">Tải PDF cả số</a>}
+        </aside>
+
+        <div className="mainc">
+          <div className="kicker" style={{ marginBottom: 12 }}>Đặc san Khoa học &amp; Phát triển — {issue.label}</div>
+          <h1 className="serif" style={{ fontSize: 'clamp(28px,3.2vw,38px)', marginBottom: 12 }}>Mục lục {issue.label.toLowerCase()}: {issue.theme}</h1>
+          <p style={{ color: 'var(--ink2)', fontSize: 16.5, maxWidth: '68ch' }}>
+            Toàn văn đọc trực tiếp trên web. Mục lục giữ đúng thứ tự chuyên mục của bản in, kèm số trang để đối chiếu.
+          </p>
+          <div className="row" style={{ borderBottom: '1px solid var(--line)', paddingBottom: 22, marginBottom: 8 }}>
+            <div style={{ flex: 1, minWidth: 220 }}><SearchBox placeholder="Tìm trong số này" hidden={{ issue: issue.slug }} /></div>
+            <span className="muted">{total} bài · {active || 'toàn bộ chuyên mục'}</span>
+          </div>
+
+          {!active && front.length > 0 && (
+            <div style={{ borderBottom: '1px solid var(--line)', padding: '18px 0 20px' }}>
+              <div className="mono muted" style={{ fontSize: 10.5, letterSpacing: '.1em', marginBottom: 10 }}>TRANG ĐẦU SỐ</div>
+              {front.map((a: any) => (
+                <Link key={a.slug} href={`/articles/${a.slug}`} style={{ display: 'flex', gap: 14, padding: '6px 0', color: 'var(--ink2)' }}>
+                  <span style={{ flex: 1 }}>{a.title}</span><span className="mono muted">{a.page_label.replace('tr. ', '')}</span>
+                </Link>
+              ))}
+            </div>
+          )}
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 34, paddingTop: 14 }}>
+            {shown.map((g: any) => (
+              <section key={g.field}>
+                <div className="group-h"><h2>{g.field.toUpperCase()}</h2><i /><span className="mono muted" style={{ fontSize: 11 }}>{g.items.length} bài</span></div>
+                {g.items.map((a: any) => (
+                  <Link key={a.slug} href={`/articles/${a.slug}`} className="toc-item">
+                    <div><h3>{a.title}</h3><div className="muted">{a.author}</div></div>
+                    <span className="mono muted" style={{ textAlign: 'right', fontSize: 12 }}>{a.page_label.replace('tr. ', '')}</span>
+                  </Link>
+                ))}
+              </section>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }

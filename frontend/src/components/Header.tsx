@@ -1,0 +1,33 @@
+'use client';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { useState } from 'react';
+
+const NAV = [
+  { href: '/', label: 'Trang chủ', match: (p: string) => p === '/' },
+  { href: '/issues', label: 'Đặc san', match: (p: string) => p.startsWith('/issues') || p.startsWith('/articles') },
+  { href: '/research', label: 'Nghiên cứu – Trao đổi', match: (p: string) => p.startsWith('/research') },
+  { href: '/docs', label: 'Tư liệu', match: (p: string) => p.startsWith('/docs') },
+];
+
+export default function Header() {
+  const path = usePathname() || '/';
+  const [open, setOpen] = useState(false);
+  return (
+    <header className="site-header">
+      <div className="wrap">
+        <Link href="/" className="logo-box" aria-label="Đặc san Khoa học & Phát triển thành phố Đà Nẵng">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo.jpg" alt="Đặc san Khoa học & Phát triển thành phố Đà Nẵng" />
+        </Link>
+        <button className="menu-btn" onClick={() => setOpen(!open)} aria-expanded={open}>☰ Menu</button>
+        <nav className={`nav ${open ? 'open' : ''}`} onClick={() => setOpen(false)}>
+          {NAV.map((n) => (
+            <Link key={n.href} href={n.href} className={n.match(path) ? 'on' : ''}>{n.label}</Link>
+          ))}
+          <Link href="/search" className="btn ghost sm">Tìm bài báo</Link>
+        </nav>
+      </div>
+    </header>
+  );
+}

@@ -1,43 +1,54 @@
-from pathlib import Path
-from fastapi import Depends, FastAPI, HTTPException
-from fastapi.responses import FileResponse
-from sqlalchemy import select
-from sqlalchemy.orm import Session
-from fastapi.middleware.cors import CORSMiddleware
-from app.core import get_db, settings
-from app.models import Document, Issue, User
-from app.api import public, admin
-from app import content
-from app.auth import router as auth_router, get_optional_user
+import os
+import time
+from contextlib import asynccontextmanager
 
-app = FastAPI(title='Đặc san Khoa học & Phát triển API', version='0.1.0',description='REST API cho đặc san điện tử và CMS')
-app.add_middleware(CORSMiddleware,allow_origins=[s.strip() for s in settings().cors_origins.split(',')], allow_credentials=True, allow_methods=['GET','POST','PATCH','PUT','DELETE','OPTIONS'],allow_headers=['Content-Type','Authorization','X-CSRF-Token'])
-root=Path(settings().media_root)
-root.mkdir(parents=True,exist_ok=True)
+from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
+from sqlalchemy import select, text
+from sqlalchemy.exc import OperationalError
 
-
-@app.get('/media/{key:path}', tags=['System'])
-def media(key: str, db: Session = Depends(get_db), user: User | None = Depends(get_optional_user)):
-    """Serve covers/PDFs of published issues and files of published documents; editors may fetch drafts. Raw imports are never public."""
-    base = Path(settings().media_root).resolve()
-    target = (base / key).resolve()
-    if base not in target.parents or not target.is_file():
-        raise HTTPException(404, 'Không tìm thấy tệp.')
-    rel = target.relative_to(base).as_posix()
-    is_editor = user is not None and user.role in {'admin', 'editor'}
-    if not is_editor:
-        public_issue = db.scalar(select(Issue.id).where(Issue.status == 'published', (Issue.cover_key == rel) | (Issue.pdf_key == rel)))
-        public_doc = db.scalar(select(Document.id).where(Document.status == 'published', Document.file_key == rel)) if not public_issue else None
-        if not public_issue and not public_doc:
-            raise HTTPException(404, 'Không tìm thấy tệp.')
-    return FileResponse(target, headers={'Cache-Control': 'public, max-age=3600' if not is_editor else 'private, no-store', 'X-Content-Type-Options': 'nosniff'})
-
-app.include_router(auth_router,prefix='/api/v1')
-app.include_router(public,prefix='/api/v1')
-app.include_router(admin,prefix='/api/v1')
-app.include_router(content.public,prefix='/api/v1')
-app.include_router(content.admin,prefix='/api/v1')
+from .config import settings
+from .db import SessionLocal, engine
+from .models import Base, User
+from .routers import admin, public
+from .security import hash_password
+from .seed import seed
 
 
-@app.get('/health',tags=['System'])
-def health(): return {'status':'ok'}
+def init_db() -> None:
+    for attempt in range(30):  # chờ Postgres sẵn sàng
+        try:
+            with engine.begin() as conn:
+                conn.execute(text("CREATE EXTENSION IF NOT EXISTS unaccent"))
+            break
+        except OperationalError:
+            if attempt == 29:
+                raise
+            time.sleep(2)
+    Base.metadata.create_all(engine)
+    with SessionLocal() as db:
+        email = settings.admin_email.strip().lower()
+        if not db.scalars(select(User).where(User.email == email)).first():
+            db.add(User(email=email, password_hash=hash_password(settings.admin_password), role="admin"))
+            db.commit()
+        if settings.seed_demo:
+            seed(db)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    os.makedirs(settings.media_dir, exist_ok=True)
+    init_db()
+    yield
+
+
+app = FastAPI(title="Đặc san KH&PT Đà Nẵng API", version="1.0.0", lifespan=lifespan)
+app.include_router(public.router, prefix="/api/v1/public")
+app.include_router(admin.router, prefix="/api/v1/admin")
+os.makedirs(settings.media_dir, exist_ok=True)
+app.mount("/media", StaticFiles(directory=settings.media_dir), name="media")
+
+
+@app.get("/api/health")
+def health():
+    return {"status": "ok"}

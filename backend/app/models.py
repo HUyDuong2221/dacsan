@@ -1,154 +1,123 @@
-from __future__ import annotations
-from datetime import date, datetime, timezone
-from uuid import uuid4
-from sqlalchemy import String, Integer, ForeignKey, DateTime, Date, Text, Boolean, UniqueConstraint, Index
-from sqlalchemy.orm import Mapped, mapped_column, relationship
-from app.core import Base
+from datetime import date, datetime
+
+from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Integer, String, Text, func
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
-def uuid_str():
-    return str(uuid4())
+class Base(DeclarativeBase):
+    pass
 
 
-def utc_now():
-    return datetime.now(timezone.utc)
+class Stamped:
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
 
 
 class User(Base):
-    __tablename__ = 'users'
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
+    __tablename__ = "users"
+    id: Mapped[int] = mapped_column(primary_key=True)
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
-    password_hash: Mapped[str] = mapped_column(String(512))
-    role: Mapped[str] = mapped_column(String(30), default='editor')
-    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+    password_hash: Mapped[str] = mapped_column(String(255))
+    role: Mapped[str] = mapped_column(String(20), default="admin")
 
 
-class Issue(Base):
-    __tablename__ = 'issues'
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
-    number: Mapped[int] = mapped_column(Integer, index=True)
-    month: Mapped[int] = mapped_column(Integer)
-    year: Mapped[int] = mapped_column(Integer, index=True)
-    slug: Mapped[str] = mapped_column(String(255), unique=True, index=True)
-    title: Mapped[str] = mapped_column(String(500))
-    theme: Mapped[str] = mapped_column(String(600), default='')
-    description: Mapped[str] = mapped_column(Text, default='')
-    editorial: Mapped[str] = mapped_column(Text, default='')
-    cover_key: Mapped[str | None] = mapped_column(String(500), nullable=True)
-    pdf_key: Mapped[str | None] = mapped_column(String(500), nullable=True)
-    pdf_sha256: Mapped[str | None] = mapped_column(String(64), nullable=True, unique=True)
-    page_count: Mapped[int] = mapped_column(Integer, default=0)
-    status: Mapped[str] = mapped_column(String(30), default='draft')
-    imprint: Mapped[str] = mapped_column(Text, default='')
-    published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
-    sections: Mapped[list[Section]] = relationship(back_populates='issue', cascade='all,delete-orphan', order_by='Section.sort_order')
-    articles: Mapped[list[Article]] = relationship(back_populates='issue', cascade='all,delete-orphan', order_by='Article.sort_order')
-    __table_args__ = (UniqueConstraint('number', 'year', name='uq_issue_number_year'),)
+class Field(Base):
+    """Chuyên mục."""
 
-
-class Section(Base):
-    __tablename__ = 'sections'
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
-    issue_id: Mapped[str] = mapped_column(ForeignKey('issues.id', ondelete='CASCADE'), index=True)
-    name: Mapped[str] = mapped_column(String(300))
-    slug: Mapped[str] = mapped_column(String(350))
+    __tablename__ = "fields"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(200), unique=True)
     sort_order: Mapped[int] = mapped_column(Integer, default=0)
-    issue: Mapped[Issue] = relationship(back_populates='sections')
-    articles: Mapped[list[Article]] = relationship(back_populates='section')
-    __table_args__ = (UniqueConstraint('issue_id', 'slug', name='uq_issue_section_slug'),)
 
 
-class Article(Base):
-    __tablename__ = 'articles'
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
-    issue_id: Mapped[str] = mapped_column(ForeignKey('issues.id', ondelete='CASCADE'), index=True)
-    section_id: Mapped[str | None] = mapped_column(ForeignKey('sections.id', ondelete='SET NULL'), nullable=True)
-    title: Mapped[str] = mapped_column(String(1000))
-    slug: Mapped[str] = mapped_column(String(1200), unique=True, index=True)
-    author_display: Mapped[str] = mapped_column(String(400), default='')
-    content_type: Mapped[str] = mapped_column(String(35), default='article')
-    summary: Mapped[str] = mapped_column(Text, default='')
-    body_html: Mapped[str] = mapped_column(Text, default='')
-    raw_extracted_text: Mapped[str] = mapped_column(Text, default='')
-    full_text_verified: Mapped[bool] = mapped_column(Boolean, default=False)
-    print_page_start: Mapped[int] = mapped_column(Integer, default=1)
-    print_page_end: Mapped[int] = mapped_column(Integer, default=1)
-    pdf_page_start: Mapped[int] = mapped_column(Integer, default=1)
-    pdf_page_end: Mapped[int] = mapped_column(Integer, default=1)
-    sort_order: Mapped[int] = mapped_column(Integer, default=0)
-    status: Mapped[str] = mapped_column(String(30), default='draft')
-    issue: Mapped[Issue] = relationship(back_populates='articles')
-    section: Mapped[Section | None] = relationship(back_populates='articles')
-    __table_args__ = (Index('ix_articles_issue_sort', 'issue_id', 'sort_order'),)
+class Issue(Stamped, Base):
+    """Số phát hành."""
+
+    __tablename__ = "issues"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    slug: Mapped[str] = mapped_column(String(120), unique=True, index=True)
+    number: Mapped[int] = mapped_column(Integer, unique=True)
+    label: Mapped[str] = mapped_column(String(80))  # "Số 17 (6-2026)"
+    year: Mapped[int] = mapped_column(Integer, default=2026)
+    theme: Mapped[str] = mapped_column(String(400))
+    summary: Mapped[str | None] = mapped_column(Text, nullable=True)
+    cover_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    pdf_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    page_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    printed_articles: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    published: Mapped[bool] = mapped_column(Boolean, default=False)
+
+    articles: Mapped[list["Article"]] = relationship(
+        back_populates="issue", cascade="all, delete-orphan", passive_deletes=True
+    )
 
 
-class ImportJob(Base):
-    __tablename__ = 'import_jobs'
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
-    issue_id: Mapped[str | None] = mapped_column(ForeignKey('issues.id', ondelete='SET NULL'), nullable=True)
-    filename: Mapped[str] = mapped_column(String(400))
-    storage_key: Mapped[str] = mapped_column(String(500))
-    status: Mapped[str] = mapped_column(String(40), default='uploaded')
-    progress: Mapped[int] = mapped_column(Integer, default=0)
-    message: Mapped[str] = mapped_column(Text, default='')
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
-
-
-class Document(Base):
-    __tablename__ = 'documents'
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
-    title: Mapped[str] = mapped_column(String(500))
-    doc_type: Mapped[str] = mapped_column(String(60), default='QUY ĐỊNH', index=True)
-    description: Mapped[str] = mapped_column(Text, default='')
-    file_key: Mapped[str | None] = mapped_column(String(500), nullable=True)
-    file_name: Mapped[str] = mapped_column(String(300), default='')
-    external_url: Mapped[str] = mapped_column(String(1000), default='')
-    status: Mapped[str] = mapped_column(String(30), default='draft', index=True)
-    sort_order: Mapped[int] = mapped_column(Integer, default=0)
-    published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
-
-
-class Notice(Base):
-    __tablename__ = 'notices'
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
+class Article(Stamped, Base):
+    __tablename__ = "articles"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    slug: Mapped[str] = mapped_column(String(300), unique=True, index=True)
+    issue_id: Mapped[int] = mapped_column(ForeignKey("issues.id", ondelete="CASCADE"), index=True)
+    field_id: Mapped[int | None] = mapped_column(ForeignKey("fields.id", ondelete="SET NULL"), nullable=True)
     title: Mapped[str] = mapped_column(String(600))
-    slug: Mapped[str] = mapped_column(String(700), unique=True, index=True)
-    tag: Mapped[str] = mapped_column(String(60), default='THÔNG BÁO')
-    summary: Mapped[str] = mapped_column(Text, default='')
-    body_html: Mapped[str] = mapped_column(Text, default='')
-    notice_date: Mapped[date] = mapped_column(Date, default=lambda: utc_now().date(), index=True)
-    is_pinned: Mapped[bool] = mapped_column(Boolean, default=False)
-    status: Mapped[str] = mapped_column(String(30), default='draft', index=True)
-    published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
+    author: Mapped[str] = mapped_column(String(300), default="")
+    page_label: Mapped[str] = mapped_column(String(40), default="")
+    lead: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Nội dung dạng markdown-lite: "## Đề mục", đoạn cách nhau dòng trống, "![chú thích](url)"
+    body: Mapped[str | None] = mapped_column(Text, nullable=True)
+    sort_order: Mapped[int] = mapped_column(Integer, default=0)
+    is_front: Mapped[bool] = mapped_column(Boolean, default=False)  # trang đầu số
+    is_research: Mapped[bool] = mapped_column(Boolean, default=False)  # Nghiên cứu – Trao đổi
+    featured: Mapped[bool] = mapped_column(Boolean, default=False)  # hero slide
+    hero_excerpt: Mapped[str | None] = mapped_column(Text, nullable=True)
+    status: Mapped[str] = mapped_column(String(20), default="draft")  # draft | published
+
+    issue: Mapped[Issue] = relationship(back_populates="articles", lazy="joined")
+    field: Mapped[Field | None] = relationship(lazy="joined")
 
 
-class Activity(Base):
-    __tablename__ = 'activities'
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
+class Activity(Stamped, Base):
+    __tablename__ = "activities"
+    id: Mapped[int] = mapped_column(primary_key=True)
     title: Mapped[str] = mapped_column(String(600))
-    slug: Mapped[str] = mapped_column(String(700), unique=True, index=True)
-    kind: Mapped[str] = mapped_column(String(100), default='Hoạt động')
-    activity_date: Mapped[date] = mapped_column(Date, default=lambda: utc_now().date(), index=True)
-    location: Mapped[str] = mapped_column(String(300), default='')
-    summary: Mapped[str] = mapped_column(Text, default='')
-    body_html: Mapped[str] = mapped_column(Text, default='')
-    external_url: Mapped[str] = mapped_column(String(1000), default='')
-    status: Mapped[str] = mapped_column(String(30), default='draft', index=True)
-    published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
+    kind: Mapped[str] = mapped_column(String(200), default="")
+    event_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    published: Mapped[bool] = mapped_column(Boolean, default=True)
 
 
-class AuditLog(Base):
-    __tablename__ = 'audit_logs'
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
-    actor_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
-    action: Mapped[str] = mapped_column(String(100))
-    target_id: Mapped[str] = mapped_column(String(36))
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+class Notice(Stamped, Base):
+    __tablename__ = "notices"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    tag: Mapped[str] = mapped_column(String(60), default="THÔNG BÁO")
+    title: Mapped[str] = mapped_column(String(600))
+    content: Mapped[str | None] = mapped_column(Text, nullable=True)
+    notice_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    published: Mapped[bool] = mapped_column(Boolean, default=True)
+
+
+class Document(Stamped, Base):
+    __tablename__ = "documents"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    title: Mapped[str] = mapped_column(String(600))
+    doc_type: Mapped[str] = mapped_column(String(60), default="")
+    file_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    sort_order: Mapped[int] = mapped_column(Integer, default=0)
+    published: Mapped[bool] = mapped_column(Boolean, default=True)
+
+
+class Subscriber(Base):
+    __tablename__ = "subscribers"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class Setting(Base):
+    """Cấu hình site dạng key/value (footer, lãnh đạo, giấy phép...)."""
+
+    __tablename__ = "settings"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    key: Mapped[str] = mapped_column(String(80), unique=True)
+    value: Mapped[str] = mapped_column(Text, default="")
