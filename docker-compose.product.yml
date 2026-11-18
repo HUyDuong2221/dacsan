@@ -134,11 +134,13 @@ services:
     image: caddy:2-alpine
     restart: unless-stopped
     ports:
-      - "80:80"
-      - "443:443"
-      - "443:443/udp"
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+      - "${HTTPS_PORT:-443}:443/udp"
     environment:
       DOMAIN: ${DOMAIN:?DOMAIN is required}
+      # Defaults to the domain (automatic HTTPS). Use http://your.domain to serve plain HTTP behind another proxy/tunnel.
+      SITE_ADDRESS: ${SITE_ADDRESS:-${DOMAIN}}
       ACME_EMAIL: ${ACME_EMAIL:?ACME_EMAIL is required}
     volumes:
       - ./infra/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
