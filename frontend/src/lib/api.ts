@@ -9,10 +9,11 @@ export type DocumentList = {items:DocItem[];types:string[]};
 export type Notice = {id:string;slug:string;title:string;tag:string;summary:string;notice_date:string;is_pinned:boolean;body_html?:string;status?:string};
 export type Activity = {id:string;slug:string;title:string;kind:string;activity_date:string;location:string;summary:string;external_url:string;body_html?:string;status?:string};
 export type ActivityList = PageData<Activity> & {kinds:string[]};
-export const MEDIA = process.env.NEXT_PUBLIC_MEDIA_BASE_URL || 'http://localhost:8000/media';
+// Browser-facing URLs default to same-origin paths so they work on any domain/IP behind a reverse proxy.
+export const MEDIA = process.env.NEXT_PUBLIC_MEDIA_BASE_URL || '/media';
 export const mediaUrl = (key:string|null|undefined) => key ? `${MEDIA}/${key}` : '';
 const SERVER = process.env.SERVER_API_BASE_URL || 'http://localhost:8000/api/v1';
-const CLIENT = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api/v1';
+const CLIENT = process.env.NEXT_PUBLIC_API_BASE_URL || '/api/v1';
 export async function serverApi<T>(path:string):Promise<T>{
   const r = await fetch(`${SERVER}${path}`, {cache:'no-store'});
   if (!r.ok) throw new Error(`API ${r.status}: ${path}`);

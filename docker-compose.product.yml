@@ -15,8 +15,10 @@ x-logging: &logging
     max-file: "5"
 
 x-backend-env: &backend-env
-  ENVIRONMENT: production
-  COOKIE_SECURE: "true"
+  # APP_ENV=production enforces strong secrets and COOKIE_SECURE=true. A test server reachable only over
+  # plain HTTP must use APP_ENV=staging and COOKIE_SECURE=false, otherwise browsers drop the login cookie.
+  ENVIRONMENT: ${APP_ENV:-production}
+  COOKIE_SECURE: ${COOKIE_SECURE:-true}
   SECRET_KEY: ${SECRET_KEY:?SECRET_KEY is required}
   ADMIN_EMAIL: ${ADMIN_EMAIL:?ADMIN_EMAIL is required}
   ADMIN_PASSWORD: ${ADMIN_PASSWORD:?ADMIN_PASSWORD is required}

@@ -14,8 +14,9 @@ FROM node:22-alpine AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-ARG NEXT_PUBLIC_API_BASE_URL=http://localhost:8000/api/v1
-ARG NEXT_PUBLIC_MEDIA_BASE_URL=http://localhost:8000/media
+# Same-origin by default (works behind any reverse proxy / domain / IP). Override for split-origin setups.
+ARG NEXT_PUBLIC_API_BASE_URL=/api/v1
+ARG NEXT_PUBLIC_MEDIA_BASE_URL=/media
 ENV NEXT_PUBLIC_API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL
 ENV NEXT_PUBLIC_MEDIA_BASE_URL=$NEXT_PUBLIC_MEDIA_BASE_URL
 ENV NEXT_TELEMETRY_DISABLED=1
