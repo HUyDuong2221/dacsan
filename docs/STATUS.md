@@ -17,7 +17,8 @@
 - [ ] UI review PDF + text side-by-side trong cùng một trang (MVP mở PDF trong tab riêng)
 - [ ] Drag/drop TOC reorder
 - [x] Tư liệu (tài liệu) và Thông báo: model, migration 0002, API, trang public `/tai-lieu` `/thong-bao`, admin
-- [ ] Media Library, CRUD hoạt động, Nghiên cứu – Trao đổi, newsletter
+- [x] Hoạt động: model, migration 0003, API, trang `/hoat-dong`, admin; trang chủ hiển thị hoạt động và thông báo mới nhất
+- [ ] Media Library, Nghiên cứu – Trao đổi, newsletter
 - [ ] Tác giả quan hệ many-to-many
 - [ ] Refresh token rotation, brute-force protection, rate limiting
 - [ ] Full SEO, accessibility audit, automated E2E browser tests

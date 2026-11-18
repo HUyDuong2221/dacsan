@@ -110,3 +110,31 @@ def test_notice_lifecycle_and_sanitizing(env):
     assert c.patch(f'{API}/admin/notices/{n["id"]}', json={'title': None}).status_code == 422
     assert c.delete(f'{API}/admin/notices/{n["id"]}').status_code == 200
     assert c.get(f'{API}/notices/{n["slug"]}').status_code == 404
+
+
+def test_activity_lifecycle(env):
+    c = env
+    login(c, 'editor')
+    a = c.post(f'{API}/admin/activities', json={'title': 'Hội thảo đô thị biển', 'kind': 'Hội thảo', 'activity_date': '2026-09-05',
+               'summary': 'Hội thảo khoa học', 'body_html': '<p>ok</p><script>x</script>', 'external_url': 'https://lhh.danang.gov.vn/x'}).json()
+    assert '<script>' not in a['body_html']
+    assert c.post(f'{API}/admin/activities', json={'title': 'Bad', 'external_url': 'javascript:1'}).status_code == 422
+    assert c.get(f'{API}/activities').json()['total'] == 0
+    assert c.post(f'{API}/admin/activities/{a["id"]}/publish').status_code == 403
+    login(c, 'admin')
+    empty = c.post(f'{API}/admin/activities', json={'title': 'Rỗng'}).json()
+    assert c.post(f'{API}/admin/activities/{empty["id"]}/publish').status_code == 422
+    newer = c.post(f'{API}/admin/activities', json={'title': 'Tập huấn', 'kind': 'Đào tạo', 'activity_date': '2026-09-10', 'summary': 's'}).json()
+    for x in (a, newer):
+        assert c.post(f'{API}/admin/activities/{x["id"]}/publish').status_code == 200
+    c.cookies.clear()
+    c.headers.pop('X-CSRF-Token', None)
+    listing = c.get(f'{API}/activities').json()
+    assert [x['title'] for x in listing['items']] == ['Tập huấn', 'Hội thảo đô thị biển']
+    assert listing['kinds'] == ['Hội thảo', 'Đào tạo']
+    assert [x['title'] for x in c.get(f'{API}/activities', params={'kind': 'Hội thảo'}).json()['items']] == ['Hội thảo đô thị biển']
+    assert c.get(f'{API}/activities/{a["slug"]}').json()['body_html'] == '<p>ok</p>x'
+    login(c, 'admin')
+    assert c.patch(f'{API}/admin/activities/{a["id"]}', json={'kind': None}).status_code == 422
+    assert c.delete(f'{API}/admin/activities/{a["id"]}').status_code == 200
+    assert c.get(f'{API}/activities/{a["slug"]}').status_code == 404

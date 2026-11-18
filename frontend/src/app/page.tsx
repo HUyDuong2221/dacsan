@@ -1,4 +1,4 @@
-﻿import {serverApi, HomeData, Issue} from '@/lib/api';
+﻿import {serverApi, HomeData, Issue, Activity, Notice, PageData} from '@/lib/api';
 import HomePage from '@/components/HomePage';
 export const dynamic = 'force-dynamic';
 export default async function Home() {
@@ -16,5 +16,9 @@ export default async function Home() {
       }
     }
   } catch { unavailable = true; }
-  return <HomePage data={data} unavailable={unavailable}/>;
+  const [activities, notices] = await Promise.all([
+    serverApi<PageData<Activity>>('/activities?limit=4').then(r => r.items).catch(() => [] as Activity[]),
+    serverApi<PageData<Notice>>('/notices?limit=4').then(r => r.items).catch(() => [] as Notice[]),
+  ]);
+  return <HomePage data={data} unavailable={unavailable} activities={activities} notices={notices}/>;
 }

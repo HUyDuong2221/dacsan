@@ -1,4 +1,4 @@
-"""Documents (tư liệu) and notices (thông báo của tòa soạn): public + editorial API."""
+"""Documents (tư liệu), notices (thông báo) and activities (hoạt động): public + editorial API."""
 from __future__ import annotations
 from datetime import date
 from pathlib import Path
@@ -12,7 +12,7 @@ from app.api import SAFE_ATTRS, SAFE_TAGS
 from app.auth import require_admin, require_editor
 from app.core import get_db, settings
 from app.importer import slugify
-from app.models import AuditLog, Document, Notice, User, utc_now
+from app.models import Activity, AuditLog, Document, Notice, User, utc_now
 
 public = APIRouter(tags=['Public'])
 admin = APIRouter(prefix='/admin', tags=['Editorial CMS'])
@@ -295,5 +295,128 @@ def delete_notice(notice_id: str, db: Session = Depends(get_db), user: User = De
     n = _get_notice(db, notice_id)
     db.add(AuditLog(actor_id=user.id, action='delete_notice', target_id=n.id))
     db.delete(n)
+    db.commit()
+    return {'ok': True}
+
+
+# ---------- activities ----------
+def activity_json(a: Activity, with_body=False, for_admin=False):
+    out = dict(id=a.id, slug=a.slug, title=a.title, kind=a.kind, activity_date=a.activity_date.isoformat(),
+               location=a.location, summary=a.summary, external_url=a.external_url)
+    if with_body or for_admin:
+        out['body_html'] = a.body_html
+    if for_admin:
+        out['status'] = a.status
+    return out
+
+
+class ActivityCreate(BaseModel):
+    title: str = Field(min_length=2, max_length=600)
+    kind: str = Field(default='Hoạt động', min_length=1, max_length=100)
+    activity_date: date | None = None
+    location: str = Field(default='', max_length=300)
+    summary: str = ''
+    body_html: str = ''
+    external_url: str = Field(default='', max_length=1000)
+
+
+class ActivityPatch(BaseModel):
+    title: str | None = Field(default=None, min_length=2, max_length=600)
+    kind: str | None = Field(default=None, min_length=1, max_length=100)
+    activity_date: date | None = None
+    location: str | None = Field(default=None, max_length=300)
+    summary: str | None = None
+    body_html: str | None = None
+    external_url: str | None = Field(default=None, max_length=1000)
+
+
+def _get_activity(db: Session, activity_id: str) -> Activity:
+    a = db.get(Activity, activity_id)
+    if not a:
+        raise HTTPException(404, 'Không tìm thấy hoạt động.')
+    return a
+
+
+@public.get('/activities')
+def list_activities(page: int = Query(1, ge=1), limit: int = Query(12, ge=1, le=50), kind: str | None = Query(None, max_length=100),
+                    db: Session = Depends(get_db)):
+    stmt = select(Activity).where(Activity.status == 'published')
+    if kind:
+        stmt = stmt.where(Activity.kind == kind)
+    total = db.scalar(select(func.count()).select_from(stmt.subquery())) or 0
+    items = db.scalars(stmt.order_by(Activity.activity_date.desc(), Activity.created_at.desc()).offset((page - 1) * limit).limit(limit)).all()
+    kinds = db.scalars(select(Activity.kind).where(Activity.status == 'published').distinct().order_by(Activity.kind)).all()
+    return {'items': [activity_json(a) for a in items], 'total': total, 'page': page, 'limit': limit, 'kinds': kinds}
+
+
+@public.get('/activities/{slug}')
+def get_activity(slug: str, db: Session = Depends(get_db)):
+    a = db.scalar(select(Activity).where(Activity.slug == slug, Activity.status == 'published'))
+    if not a:
+        raise HTTPException(404, 'Không tìm thấy hoạt động.')
+    return activity_json(a, with_body=True)
+
+
+@admin.get('/activities')
+def admin_activities(db: Session = Depends(get_db), user: User = Depends(require_editor)):
+    rows = db.scalars(select(Activity).order_by(Activity.activity_date.desc(), Activity.created_at.desc())).all()
+    return [activity_json(a, for_admin=True) for a in rows]
+
+
+@admin.post('/activities', status_code=201)
+def create_activity(body: ActivityCreate, db: Session = Depends(get_db), user: User = Depends(require_editor)):
+    data = body.model_dump()
+    data['body_html'] = clean_html(data['body_html'])
+    data['external_url'] = check_url(data['external_url'])
+    data['activity_date'] = data['activity_date'] or utc_now().date()
+    a = Activity(**data, slug=f'{slugify(body.title)[:120]}-{uuid4().hex[:8]}', status='draft')
+    db.add(a)
+    db.flush()
+    db.add(AuditLog(actor_id=user.id, action='create_activity', target_id=a.id))
+    db.commit()
+    return activity_json(a, for_admin=True)
+
+
+@admin.patch('/activities/{activity_id}')
+def patch_activity(activity_id: str, body: ActivityPatch, db: Session = Depends(get_db), user: User = Depends(require_editor)):
+    a = _get_activity(db, activity_id)
+    for k, v in body.model_dump(exclude_unset=True).items():
+        if v is None:
+            if k in {'title', 'kind', 'activity_date'}:
+                raise HTTPException(422, f'Trường "{k}" không được để trống.')
+            v = ''
+        setattr(a, k, clean_html(v) if k == 'body_html' else check_url(v) if k == 'external_url' else v)
+    if a.status == 'published' and not a.summary.strip() and not a.body_html.strip() and not a.external_url:
+        raise HTTPException(422, 'Hoạt động đã xuất bản cần có tóm tắt, nội dung hoặc liên kết.')
+    db.add(AuditLog(actor_id=user.id, action='update_activity', target_id=a.id))
+    db.commit()
+    return activity_json(a, for_admin=True)
+
+
+@admin.post('/activities/{activity_id}/publish')
+def publish_activity(activity_id: str, db: Session = Depends(get_db), user: User = Depends(require_admin)):
+    a = _get_activity(db, activity_id)
+    if not a.summary.strip() and not a.body_html.strip() and not a.external_url:
+        raise HTTPException(422, 'Hoạt động cần có tóm tắt, nội dung hoặc liên kết trước khi xuất bản.')
+    _set_publication(a, True)
+    db.add(AuditLog(actor_id=user.id, action='publish_activity', target_id=a.id))
+    db.commit()
+    return {'ok': True, 'slug': a.slug}
+
+
+@admin.post('/activities/{activity_id}/unpublish')
+def unpublish_activity(activity_id: str, db: Session = Depends(get_db), user: User = Depends(require_admin)):
+    a = _get_activity(db, activity_id)
+    _set_publication(a, False)
+    db.add(AuditLog(actor_id=user.id, action='unpublish_activity', target_id=a.id))
+    db.commit()
+    return {'ok': True}
+
+
+@admin.delete('/activities/{activity_id}')
+def delete_activity(activity_id: str, db: Session = Depends(get_db), user: User = Depends(require_admin)):
+    a = _get_activity(db, activity_id)
+    db.add(AuditLog(actor_id=user.id, action='delete_activity', target_id=a.id))
+    db.delete(a)
     db.commit()
     return {'ok': True}

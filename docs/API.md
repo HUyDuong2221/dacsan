@@ -46,6 +46,11 @@ Admin (editor tạo/sửa; chỉ admin xuất bản, thu hồi, xóa):
 - `GET|POST /admin/documents`, `PATCH|DELETE /admin/documents/{id}`, `POST /admin/documents/{id}/file` (PDF/Word/Excel, tối đa 20 MB), `POST /admin/documents/{id}/publish|unpublish`
 - `GET|POST /admin/notices`, `PATCH|DELETE /admin/notices/{id}`, `POST /admin/notices/{id}/publish|unpublish`
 
+### Hoạt động
+
+Public: `GET /activities?page=&limit=&kind=` (kèm danh sách `kinds`), `GET /activities/{slug}`.
+Admin: `GET|POST /admin/activities`, `PATCH|DELETE /admin/activities/{id}`, `POST /admin/activities/{id}/publish|unpublish` (xuất bản/thu hồi/xóa: admin).
+
 Quy tắc PATCH: trường bắt buộc gửi `null` trả 422; trường văn bản tùy chọn gửi `null` được xóa thành rỗng.
 
 FastAPI `openapi.json` là nguồn chính xác cho request schema và response.

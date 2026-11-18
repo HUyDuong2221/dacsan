@@ -128,6 +128,23 @@ class Notice(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
 
 
+class Activity(Base):
+    __tablename__ = 'activities'
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
+    title: Mapped[str] = mapped_column(String(600))
+    slug: Mapped[str] = mapped_column(String(700), unique=True, index=True)
+    kind: Mapped[str] = mapped_column(String(100), default='Hoạt động')
+    activity_date: Mapped[date] = mapped_column(Date, default=lambda: utc_now().date(), index=True)
+    location: Mapped[str] = mapped_column(String(300), default='')
+    summary: Mapped[str] = mapped_column(Text, default='')
+    body_html: Mapped[str] = mapped_column(Text, default='')
+    external_url: Mapped[str] = mapped_column(String(1000), default='')
+    status: Mapped[str] = mapped_column(String(30), default='draft', index=True)
+    published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
+
+
 class AuditLog(Base):
     __tablename__ = 'audit_logs'
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)

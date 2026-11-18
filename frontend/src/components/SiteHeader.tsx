@@ -6,7 +6,7 @@ import {Menu, X} from 'lucide-react';
 export default function SiteHeader() {
  const [open,setOpen] = useState(false);
  const pathname = usePathname();
- const nav = [['/','Trang chủ'],['/issues','Đặc san'],['/#trong-so-nay','Nghiên cứu – Trao đổi'],['/tai-lieu','Tư liệu'],['/thong-bao','Thông báo']];
+ const nav = [['/','Trang chủ'],['/issues','Đặc san'],['/#trong-so-nay','Nghiên cứu – Trao đổi'],['/tai-lieu','Tư liệu'],['/thong-bao','Thông báo'],['/hoat-dong','Hoạt động']];
  return <header className={`masthead ${pathname === '/' ? 'masthead-home' : ''}`}>
   <div className="masthead-strip"><div className="home-container"><span>LIÊN HIỆP CÁC HỘI KHOA HỌC VÀ KỸ THUẬT ĐÀ NẴNG</span><span>ĐẶC SAN ĐIỆN TỬ</span></div></div>
   <div className="home-container masthead-main"><Link className="masthead-logo" href="/" onClick={() => setOpen(false)}><img src="/images/dacsan-logo.jpg" alt="Đặc san Khoa học & Phát triển thành phố Đà Nẵng" width={354} height={118}/></Link>

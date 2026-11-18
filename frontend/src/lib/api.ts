@@ -7,6 +7,8 @@ export type ImportJob = {id:string;filename:string;status:string;progress:number
 export type DocItem = {id:string;title:string;doc_type:string;description:string;file_key:string|null;file_name:string;external_url:string;updated_at:string|null;status?:string;sort_order?:number};
 export type DocumentList = {items:DocItem[];types:string[]};
 export type Notice = {id:string;slug:string;title:string;tag:string;summary:string;notice_date:string;is_pinned:boolean;body_html?:string;status?:string};
+export type Activity = {id:string;slug:string;title:string;kind:string;activity_date:string;location:string;summary:string;external_url:string;body_html?:string;status?:string};
+export type ActivityList = PageData<Activity> & {kinds:string[]};
 export const MEDIA = process.env.NEXT_PUBLIC_MEDIA_BASE_URL || 'http://localhost:8000/media';
 export const mediaUrl = (key:string|null|undefined) => key ? `${MEDIA}/${key}` : '';
 const SERVER = process.env.SERVER_API_BASE_URL || 'http://localhost:8000/api/v1';

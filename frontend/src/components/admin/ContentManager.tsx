@@ -2,14 +2,17 @@
 import {useCallback, useEffect, useState} from 'react';
 import {Eye, EyeOff, Pencil, Plus, Trash2, Upload} from 'lucide-react';
 import {DocItem, Notice, clientApi, mediaUrl} from '@/lib/api';
+import ActivitiesManager from './ActivitiesManager';
 import {Badge, Field, Perform, Submit} from './AdminUI';
 
 const DOC_TYPES = ['QUY ĐỊNH', 'HƯỚNG DẪN', 'QUY TẮC', 'QUY TRÌNH', 'BIỂU MẪU'];
 const NOTICE_TAGS = ['THÔNG BÁO', 'THƯ MỜI', 'HỘI THI', 'GIẢI THƯỞNG', 'TẬP HUẤN'];
-type Props = {kind: 'documents' | 'notices'; role: string; busy: boolean; perform: Perform};
+type Props = {kind: 'documents' | 'notices' | 'activities'; role: string; busy: boolean; perform: Perform};
 
 export default function ContentManager({kind, role, busy, perform}: Props) {
-  return kind === 'documents' ? <Documents role={role} busy={busy} perform={perform}/> : <Notices role={role} busy={busy} perform={perform}/>;
+  if (kind === 'documents') return <Documents role={role} busy={busy} perform={perform}/>;
+  if (kind === 'activities') return <ActivitiesManager role={role} busy={busy} perform={perform}/>;
+  return <Notices role={role} busy={busy} perform={perform}/>;
 }
 
 type Inner = Omit<Props, 'kind'>;
