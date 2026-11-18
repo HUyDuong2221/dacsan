@@ -35,5 +35,17 @@ Cookie: `dacsan_access` (HttpOnly), `dacsan_csrf` (script-readable). Request c�
 - `GET /admin/import-jobs`
 - `GET /admin/import-jobs/{id}`
 - `POST /admin/issues/{id}/publish` (role admin)
+- `POST /admin/issues/{id}/unpublish` (role admin)
+
+### Tư liệu và Thông báo
+
+Public: `GET /documents[?doc_type=]`, `GET /notices?page=&limit=`, `GET /notices/{slug}`.
+Tệp tài liệu đã xuất bản tải qua `GET /media/{file_key}`.
+
+Admin (editor tạo/sửa; chỉ admin xuất bản, thu hồi, xóa):
+- `GET|POST /admin/documents`, `PATCH|DELETE /admin/documents/{id}`, `POST /admin/documents/{id}/file` (PDF/Word/Excel, tối đa 20 MB), `POST /admin/documents/{id}/publish|unpublish`
+- `GET|POST /admin/notices`, `PATCH|DELETE /admin/notices/{id}`, `POST /admin/notices/{id}/publish|unpublish`
+
+Quy tắc PATCH: trường bắt buộc gửi `null` trả 422; trường văn bản tùy chọn gửi `null` được xóa thành rỗng.
 
 FastAPI `openapi.json` là nguồn chính xác cho request schema và response.

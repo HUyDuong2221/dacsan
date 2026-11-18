@@ -1,7 +1,7 @@
 from __future__ import annotations
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from uuid import uuid4
-from sqlalchemy import String, Integer, ForeignKey, DateTime, Text, Boolean, UniqueConstraint, Index
+from sqlalchemy import String, Integer, ForeignKey, DateTime, Date, Text, Boolean, UniqueConstraint, Index
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.core import Base
 
@@ -94,6 +94,38 @@ class ImportJob(Base):
     progress: Mapped[int] = mapped_column(Integer, default=0)
     message: Mapped[str] = mapped_column(Text, default='')
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+
+
+class Document(Base):
+    __tablename__ = 'documents'
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
+    title: Mapped[str] = mapped_column(String(500))
+    doc_type: Mapped[str] = mapped_column(String(60), default='QUY ĐỊNH', index=True)
+    description: Mapped[str] = mapped_column(Text, default='')
+    file_key: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    file_name: Mapped[str] = mapped_column(String(300), default='')
+    external_url: Mapped[str] = mapped_column(String(1000), default='')
+    status: Mapped[str] = mapped_column(String(30), default='draft', index=True)
+    sort_order: Mapped[int] = mapped_column(Integer, default=0)
+    published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
+
+
+class Notice(Base):
+    __tablename__ = 'notices'
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
+    title: Mapped[str] = mapped_column(String(600))
+    slug: Mapped[str] = mapped_column(String(700), unique=True, index=True)
+    tag: Mapped[str] = mapped_column(String(60), default='THÔNG BÁO')
+    summary: Mapped[str] = mapped_column(Text, default='')
+    body_html: Mapped[str] = mapped_column(Text, default='')
+    notice_date: Mapped[date] = mapped_column(Date, default=lambda: utc_now().date(), index=True)
+    is_pinned: Mapped[bool] = mapped_column(Boolean, default=False)
+    status: Mapped[str] = mapped_column(String(30), default='draft', index=True)
+    published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
 
 
 class AuditLog(Base):
