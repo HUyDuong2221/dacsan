@@ -1,0 +1,86 @@
+.adm-shell{display:grid;grid-template-columns:240px minmax(0,1fr);gap:32px;align-items:start}
+.adm-side{position:sticky;top:16px;background:#fff;border:1px solid #e4e0d9;border-radius:8px;padding:18px 12px;display:flex;flex-direction:column;gap:18px}
+.adm-user{padding:0 10px 14px;border-bottom:1px solid #e4e0d9}
+.adm-user b{display:block;font-size:15px;color:#132b49}
+.adm-user span{font-size:12px;color:#5f6b78}
+.adm-grp h4{margin:0 10px 6px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#7a6a45;font-weight:700}
+.adm-item{display:flex;align-items:center;gap:10px;width:100%;min-height:44px;padding:0 10px;border:0;border-left:3px solid transparent;border-radius:4px;background:transparent;color:#2a3b52;font:inherit;font-size:15px;text-align:left;cursor:pointer}
+.adm-item:hover{background:#f2eee7}
+.adm-item.on{background:#eaf0f7;border-left-color:#b52532;color:#132b49;font-weight:700}
+.adm-item:focus-visible{outline:3px solid #e0a549;outline-offset:2px}
+.adm-item svg{flex:none;width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8}
+.adm-acts{display:flex;flex-direction:column;gap:6px;padding-top:14px;border-top:1px solid #e4e0d9}
+.adm-main{min-width:0}
+.adm-head{margin-bottom:18px}
+.adm-head h1{font-size:30px;margin:0 0 4px}
+@media(max-width:860px){
+.adm-shell{grid-template-columns:1fr;gap:16px}
+.adm-side{position:static;padding:10px}
+.adm-user,.adm-acts{display:none}
+.adm-nav{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}
+.adm-grp{display:flex;gap:6px;flex:none}
+.adm-grp h4{display:none}
+.adm-item{width:auto;white-space:nowrap;border-left:0;border-bottom:3px solid transparent;border-radius:4px}
+.adm-item.on{border-bottom-color:#b52532}
+}
+/* ---- Khung nhập liệu ---- */
+.adm-main .row{gap:10px}
+.adm-main .input{min-height:44px;border:1px solid #b8bfc7;border-radius:4px;box-shadow:none;background:#fff;font-size:16px}
+.adm-main textarea.input{line-height:1.6}
+.adm-main .input:focus{outline:3px solid #e0a549;outline-offset:1px;border-color:#132b49;box-shadow:none}
+.adm-main .btn{min-height:44px;display:inline-flex;align-items:center;justify-content:center;background:#132b49;border-radius:4px;box-shadow:none;font-weight:700;font-size:15px;padding:0 20px}
+.adm-main .btn:hover{background:#0d2036;transform:none;box-shadow:none}
+.adm-main .btn.ghost{background:#fff;color:#132b49;border:1px solid #b8bfc7}
+.adm-main .btn.ghost:hover{background:#f2eee7;border-color:#132b49}
+.adm-main .btn.danger{background:#fff;color:#b52532;border:1px solid #e3b6b2}
+.adm-main .btn.danger:hover{background:#fbeeee}
+.adm-main .btn.sm{min-height:40px;padding:0 14px;font-size:14px}
+.adm-main .muted{font-size:14px;color:#5f6b78}
+.adm-main .form{background:#fff;border:1px solid #e4e0d9;border-top:3px solid #b52532;border-radius:6px;box-shadow:none;padding:26px;gap:18px 20px;grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+.adm-main .form h3{margin:0;padding-bottom:12px;border-bottom:1px solid #e4e0d9;color:#132b49;font-size:22px}
+.adm-main .form label{font-size:14px;font-weight:700;color:#182a42;gap:7px}
+.adm-main .form label small{font-weight:400;font-size:13px;line-height:1.5}
+.adm-main .form input[type=checkbox]{accent-color:#132b49;margin:2px 0}
+.adm-main .form input[type=file]{font-size:14px;font-weight:400}
+.adm-main .form>.full.row{padding-top:14px;border-top:1px solid #e4e0d9;position:sticky;bottom:0;background:#fff}
+.adm-main .err{background:#fbeeee;border-left:3px solid #b52532;padding:10px 14px;border-radius:3px}
+.adm-main .ok{background:#eaf5ef;border-left:3px solid #0e7a4b;padding:10px 14px;border-radius:3px}
+.adm-main table.t{width:100%;border-collapse:collapse;background:#fff;border:1px solid #e4e0d9;font-size:15px}
+.adm-main table.t th{background:#132b49;color:#fff;text-align:left;font-size:12px;letter-spacing:.08em;text-transform:uppercase;padding:12px 14px;white-space:nowrap}
+.adm-main table.t td{padding:12px 14px;border-top:1px solid #ece8e1;vertical-align:middle}
+.adm-main table.t tbody tr:nth-child(even){background:#faf8f4}
+.adm-main table.t tbody tr:hover{background:#eef3f9}
+.adm-main table.t .mono{color:#7a858f;font-size:13px}
+@media(max-width:860px){
+.adm-acts{display:flex!important;flex-direction:row}
+.adm-side{gap:10px}
+.adm-main .form{padding:18px}
+}
+/* ẩn menu và chân trang của site trong khu quản trị */
+body:has(.adm-root) .shell>.topbar,body:has(.adm-root) .site-header,body:has(.adm-root) .shell>.footer,body:has(.adm-root) header,body:has(.adm-root) footer{display:none}
+/* thanh menu quản lý: nền navy, chữ sáng */
+.adm-side{background:#132b49;border-color:#132b49;box-shadow:0 10px 28px rgba(19,43,73,.25)}
+.adm-user{border-bottom-color:rgba(255,255,255,.18)}
+.adm-user b{color:#fff}
+.adm-user span{color:#d9bd86}
+.adm-grp h4{color:#d9bd86}
+.adm-item{color:#e6edf5}
+.adm-item:hover{background:rgba(255,255,255,.1)}
+.adm-item.on{background:#fff;border-left-color:#e0a549;color:#132b49}
+.adm-acts{border-top-color:rgba(255,255,255,.18)}
+.adm-acts .btn.ghost{background:transparent!important;color:#fff!important;border:1px solid rgba(255,255,255,.4)!important}
+.adm-acts .btn.ghost:hover{background:rgba(255,255,255,.12)!important}
+@media(max-width:860px){.adm-item.on{border-bottom-color:#e0a549}}
+.adm-logo{display:flex;flex-direction:column;line-height:1.15;padding:4px 10px 16px;border-bottom:1px solid rgba(255,255,255,.18);color:#fff;text-decoration:none;min-height:44px}
+.adm-logo small{font-size:10px;letter-spacing:.2em;font-weight:800;color:#d9bd86}
+.adm-logo b{font:700 20px "Times New Roman",Times,serif;letter-spacing:-.01em}
+.adm-logo i{font-style:normal;font-size:9px;letter-spacing:.2em;color:#c9d4dd}
+.adm-logo:hover b{text-decoration:underline}
+.adm-logo:focus-visible{outline:3px solid #e0a549;outline-offset:2px}
+.adm-acts .adm-user{padding:0 10px 10px;border:0}
+.adm-side{justify-content:flex-start}
+.adm-nav{flex:1}
+@media(max-width:860px){
+.adm-logo{padding:2px 6px 10px}
+.adm-acts .adm-user{display:none}
+}

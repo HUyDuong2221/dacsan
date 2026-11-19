@@ -6,7 +6,7 @@ export type FieldDef = {
   label: string;
   type?: 'text' | 'textarea' | 'number' | 'bool' | 'date' | 'select' | 'file' | 'password';
   options?: { value: string; label: string }[];
-  optionsFrom?: { resource: string; labelKey: string };
+  optionsFrom?: { resource: string; labelKey: string; valueKey?: string };
   list?: boolean;
   full?: boolean;
   required?: boolean;
@@ -55,7 +55,7 @@ export default function ResourceManager({ res, token, onAuthError, rowExtra, que
     res.fields.filter((f) => f.optionsFrom).forEach(async (f) => {
       try {
         const data = await adm(`/${f.optionsFrom!.resource}`, token);
-        setOpts((o) => ({ ...o, [f.key]: data.map((d: any) => ({ value: String(d.id), label: d[f.optionsFrom!.labelKey] })) }));
+        setOpts((o) => ({ ...o, [f.key]: data.map((d: any) => ({ value: String(d[f.optionsFrom!.valueKey || 'id']), label: d[f.optionsFrom!.labelKey] })) }));
       } catch (e) { fail(e); }
     });
   }, [res.key]); // eslint-disable-line react-hooks/exhaustive-deps

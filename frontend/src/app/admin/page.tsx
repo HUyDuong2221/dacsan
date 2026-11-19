@@ -3,6 +3,24 @@ import { useEffect, useState } from 'react';
 import ResourceManager, { ResourceDef, adm } from '@/components/ResourceManager';
 import IssueToc from '@/components/IssueToc';
 import SubmissionsManager from '@/components/SubmissionsManager';
+import './admin.css';
+
+const GROUPS: { title: string; keys: string[] }[] = [
+  { title: 'Nội dung', keys: ['issues', 'submissions', 'fields'] },
+  { title: 'Truyền thông', keys: ['activities', 'notices', 'documents'] },
+  { title: 'Hệ thống', keys: ['users', 'settings', 'subscribers'] },
+];
+const ICONS: Record<string, string> = {
+  issues: 'M4 5h6a2 2 0 0 1 2 2v12a2 2 0 0 0-2-2H4zM20 5h-6a2 2 0 0 0-2 2v12a2 2 0 0 1 2-2h6z',
+  submissions: 'M3 7l9 6 9-6M5 5h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z',
+  fields: 'M4 6h16M4 12h16M4 18h10',
+  activities: 'M8 3v4M16 3v4M4 9h16M5 5h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z',
+  notices: 'M4 10v4h3l6 4V6L7 10zM17 9a4 4 0 0 1 0 6',
+  documents: 'M7 3h7l4 4v14H7zM14 3v4h4',
+  users: 'M3 19c0-3 2.7-5 6-5s6 2 6 5M12 8a3 3 0 1 1-6 0 3 3 0 0 1 6 0zM16 14c2.5 0 5 1.5 5 4',
+  settings: 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19 12l2-1-2-4-2 1-2-1-1-2h-4l-1 2-2 1-2-1-2 4 2 1v2l-2 1 2 4 2-1 2 1 1 2h4l1-2 2-1 2 1 2-4-2-1z',
+  subscribers: 'M4 6h16v12H4zM4 7l8 6 8-6',
+};
 
 const ROLE_LABELS: Record<string, string> = { admin: 'Quản trị viên', editor: 'Biên tập viên', contributor: 'Cộng tác viên' };
 const STAFF = ['admin', 'editor', 'contributor'];
@@ -20,12 +38,10 @@ const RESOURCES: ResourceDef[] = [
     fields: [
       { key: 'number', label: 'Số đặc san', type: 'number', required: true, list: true, hint: 'Số thứ tự, ví dụ 18. Nhãn hiển thị (VD: Số 18 (8-2026)) tự tạo từ Số đặc san và Ngày đăng.' },
       { key: 'published_at', label: 'Ngày đăng', type: 'date', required: true, list: true },
-      { key: 'theme', label: 'Chủ đề', required: true, list: true, full: true },
-      { key: 'summary', label: 'Giới thiệu', type: 'textarea' },
+      { key: 'theme', label: 'Chủ đề (chuyên mục)', required: true, list: true, full: true, optionsFrom: { resource: 'fields', labelKey: 'name', valueKey: 'name' } },
+      { key: 'summary', label: 'Giới thiệu', type: 'textarea', def: 'Toàn văn đọc trực tiếp trên web, không cần tải PDF. Mục lục giữ đúng thứ tự chuyên mục của bản in, kèm số trang để đối chiếu.' },
       { key: 'cover_url', label: 'Ảnh bìa', type: 'file' },
       { key: 'pdf_url', label: 'File PDF', type: 'file' },
-      { key: 'page_count', label: 'Số trang', type: 'number' },
-      { key: 'printed_articles', label: 'Số bài (cho số cũ chưa nhập mục lục)', type: 'number' },
       { key: 'published', label: 'Công bố trên website', type: 'bool', list: true, hint: 'Chưa tick thì số và mục lục của số chưa hiện ra ngoài.' },
     ],
   },
@@ -94,7 +110,7 @@ export default function Admin() {
   if (!ready) return null;
   if (!token)
     return (
-      <div className="wrap page" style={{ maxWidth: 440 }}>
+      <div className="wrap page adm-root" style={{ maxWidth: 440 }}>
         <div className="kicker">Quản trị</div>
         <h1 className="serif" style={{ fontSize: 32, margin: '10px 0 22px' }}>Đăng nhập</h1>
         <form onSubmit={login} className="form" style={{ gridTemplateColumns: '1fr' }}>
@@ -115,21 +131,39 @@ export default function Admin() {
   const res: ResourceDef = cur.key === 'issues' && role === 'contributor' ? { ...cur, readonly: true, noDelete: true } : cur;
 
   return (
-    <div className="wrap page">
-      <div className="row" style={{ justifyContent: 'space-between', marginBottom: 22 }}>
-        <div>
-          <h1 className="serif" style={{ fontSize: 32 }}>Quản trị nội dung</h1>
-          <div className="muted">{me.full_name || me.email} · <b>{ROLE_LABELS[role] || role}</b></div>
-        </div>
-        <div className="row">
-          <button className="btn ghost" onClick={() => setPwOpen(!pwOpen)}>Đổi mật khẩu</button>
-          <button className="btn ghost" onClick={logout}>Đăng xuất</button>
-        </div>
-      </div>
-      {pwOpen && <ChangePassword token={token} onDone={() => setPwOpen(false)} onAuthError={logout} />}
-      <div className="tabs">
-        {tabs.map((r) => <button key={r.key} className={cur.key === r.key ? 'on' : ''} onClick={() => setTab(r.key)}>{r.title}</button>)}
-      </div>
+    <div className="wrap page adm-root">
+      <div className="adm-shell">
+        <aside className="adm-side">
+          <a href="/" className="adm-logo" aria-label="Về trang chủ">
+            <small>ĐẶC SAN</small>
+            <b>Khoa học &amp; Phát triển</b>
+            <i>THÀNH PHỐ ĐÀ NẴNG</i>
+          </a>
+          <nav className="adm-nav" aria-label="Menu quản trị">
+            {GROUPS.map((g) => {
+              const items = tabs.filter((r) => g.keys.includes(r.key));
+              if (!items.length) return null;
+              return (
+                <div className="adm-grp" key={g.title}>
+                  <h4>{g.title}</h4>
+                  {items.map((r) => (
+                    <button key={r.key} className={'adm-item' + (cur.key === r.key ? ' on' : '')} aria-current={cur.key === r.key ? 'page' : undefined} onClick={() => setTab(r.key)}>
+                      <svg viewBox="0 0 24 24" aria-hidden="true"><path d={ICONS[r.key]} /></svg>{r.title}
+                    </button>
+                  ))}
+                </div>
+              );
+            })}
+          </nav>
+          <div className="adm-acts">
+            <div className="adm-user"><b>{me.full_name || me.email}</b><span>{ROLE_LABELS[role] || role}</span></div>
+            <button className="btn ghost" onClick={() => setPwOpen(!pwOpen)}>Đổi mật khẩu</button>
+            <button className="btn ghost" onClick={logout}>Đăng xuất</button>
+          </div>
+        </aside>
+        <div className="adm-main">
+          <div className="adm-head"><h1 className="serif">{cur.title}</h1></div>
+          {pwOpen && <ChangePassword token={token} onDone={() => setPwOpen(false)} onAuthError={logout} />}
       {cur.key === 'users' && (
         <p className="muted" style={{ marginTop: 0, lineHeight: 1.7 }}>
           <b>Quản trị viên</b>: toàn quyền, gồm quản lý người dùng, cấu hình site, danh sách đăng ký email. ·{' '}
@@ -145,6 +179,8 @@ export default function Admin() {
           rowExtra={cur.key === 'issues' ? (row) => <IssueToc issue={row} token={token} role={role} onAuthError={logout} /> : undefined}
         />
       )}
+        </div>
+      </div>
     </div>
   );
 }

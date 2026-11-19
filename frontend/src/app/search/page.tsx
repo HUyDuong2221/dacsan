@@ -4,12 +4,13 @@ import { ArticleCard, SearchBox } from '@/components/Parts';
 
 export const metadata: Metadata = { title: 'Tìm bài báo' };
 
-export default async function SearchPage({ searchParams }: { searchParams: { q?: string; issue?: string } }) {
+export default async function SearchPage({ searchParams }: { searchParams: { q?: string; issue?: string; field?: string } }) {
   const q = (searchParams.q || '').trim();
   const issue = searchParams.issue || '';
+  const field = searchParams.field || '';
   let res: any = null;
   if (q.length >= 2) {
-    res = await get(`/search?q=${encodeURIComponent(q)}${issue ? `&issue=${encodeURIComponent(issue)}` : ''}`);
+    res = await get(`/search?q=${encodeURIComponent(q)}${issue ? `&issue=${encodeURIComponent(issue)}` : ''}${field ? `&field=${encodeURIComponent(field)}` : ''}`);
   }
   return (
     <div className="wrap page">
@@ -17,9 +18,9 @@ export default async function SearchPage({ searchParams }: { searchParams: { q?:
         <div className="kicker">Tìm kiếm</div>
         <h1>Tìm bài báo</h1>
         <div style={{ maxWidth: 640, marginTop: 18 }}>
-          <SearchBox defaultValue={q} hidden={issue ? { issue } : undefined} placeholder="Tiêu đề, tác giả hoặc từ khóa (không cần gõ dấu)" />
+          <SearchBox defaultValue={q} hidden={{ ...(issue ? { issue } : {}), ...(field ? { field } : {}) }} placeholder="Tiêu đề, tác giả hoặc từ khóa (không cần gõ dấu)" />
         </div>
-        {issue && <p className="muted">Giới hạn trong: {issue}</p>}
+        {(issue || field) && <p className="muted">Giới hạn trong: {[issue, field].filter(Boolean).join(' · ')}</p>}
       </div>
       {res && (
         <>

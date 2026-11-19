@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import { fmtDate } from '@/lib/api';
 
 export function Cover({ issue, text, shim }: { issue: any; text?: string; shim?: boolean }) {
   const label = text ?? `bìa số ${String(issue.number).padStart(2, '0')}`;
@@ -34,22 +33,6 @@ export function IssueCard({ i, dark }: { i: any; dark?: boolean }) {
         </div>
       )}
     </Link>
-  );
-}
-
-export function Activities({ items }: { items: any[] }) {
-  return (
-    <div>
-      {items.map((a) => (
-        <a key={a.id} className="act" href={a.url || '#'} target="_blank" rel="noopener noreferrer">
-          <span className="d">{fmtDate(a.date)}</span>
-          <span>
-            <span className="ti">{a.title}</span>
-            <span className="ki">{a.kind}</span>
-          </span>
-        </a>
-      ))}
-    </div>
   );
 }
 
