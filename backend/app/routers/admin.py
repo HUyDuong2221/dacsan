@@ -111,12 +111,23 @@ def coerce(model, data: dict, partial: bool) -> dict:
     return out
 
 
+def media_path(url: str | None) -> str | None:
+    """Đường dẫn file trong MEDIA_DIR từ URL "/media/..." (chấp nhận cả URL đầy đủ http(s)://<host>/media/...)."""
+    from urllib.parse import unquote, urlparse
+
+    p = unquote(urlparse((url or "").strip()).path)
+    if not p.startswith("/media/"):
+        return None
+    parts = [s for s in p[len("/media/"):].split("/") if s]
+    if not parts or any(s in (".", "..") for s in parts):
+        return None
+    return os.path.join(settings.media_dir, *parts)
+
+
 def pdf_page_count(url: str | None) -> int | None:
     """Số trang của file PDF đã tải lên (/media/...); None nếu không đọc được."""
-    if not url or not url.startswith("/media/"):
-        return None
-    path = os.path.join(settings.media_dir, *url[len("/media/"):].split("/"))
-    if not os.path.isfile(path):
+    path = media_path(url)
+    if not path or not os.path.isfile(path):
         return None
     try:
         import fitz  # PyMuPDF
@@ -381,12 +392,14 @@ def _issue_pdf_path(db: Session, issue_id: int) -> tuple[Issue, str]:
     issue = db.get(Issue, issue_id)
     if not issue:
         raise HTTPException(404, "Không tìm thấy số đặc san")
-    url = issue.pdf_url or ""
-    if not url.startswith("/media/"):
-        raise HTTPException(422, "Số này chưa có file PDF tải lên từ trang quản trị")
-    path = os.path.join(settings.media_dir, os.path.basename(url))
+    url = (issue.pdf_url or "").strip()
+    if not url:
+        raise HTTPException(422, "Số này chưa có file PDF. Mở \"Sửa\" số đặc san, tải file PDF lên ở ô File PDF rồi bấm Lưu.")
+    path = media_path(url)
+    if not path:
+        raise HTTPException(422, f"File PDF đang là liên kết ngoài ({url[:80]}). Hãy tải file PDF lên từ trang quản trị để tạo mục lục.")
     if not os.path.isfile(path):
-        raise HTTPException(422, "Không tìm thấy file PDF trên máy chủ, hãy tải lại")
+        raise HTTPException(422, "Không tìm thấy file PDF trên máy chủ (có thể file nằm ở máy khác). Hãy tải lại file PDF rồi Lưu.")
     return issue, path
 
 
