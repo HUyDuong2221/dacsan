@@ -1,8 +1,9 @@
 'use client';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { fmtDate } from '@/lib/api';
 import { Cover, SearchBox } from './Parts';
+import PdfViewer from './PdfViewer';
 
 // Trang mục lục một số: lọc theo chuyên mục ngay trên trình duyệt (không tải lại trang, không nhảy lên đầu).
 export default function IssueBrowser({ d, initialField }: { d: any; initialField: string }) {
@@ -11,6 +12,17 @@ export default function IssueBrowser({ d, initialField }: { d: any; initialField
   const shown = groups.filter((g: any) => !active || g.field === active);
   const total = active ? shown.reduce((n: number, g: any) => n + g.items.length, 0) : d.total;
   const base = `/issues/${issue.slug}`;
+  // Xem PDF ngay trong trang mục lục (khung nhúng), không chuyển trang.
+  const [pdf, setPdf] = useState(false);
+  const pdfBox = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (pdf) pdfBox.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [pdf]);
+  const pdfBtn = issue.pdf_url && (
+    <button type="button" className={pdf ? 'btn ghost' : 'btn'} onClick={() => setPdf(!pdf)} aria-expanded={pdf}>
+      {pdf ? 'Đóng bản PDF' : 'Đọc bản PDF của số'}
+    </button>
+  );
 
   function pick(field: string) {
     setActive(field);
@@ -35,7 +47,7 @@ export default function IssueBrowser({ d, initialField }: { d: any; initialField
             {groups.map((g: any) => item(g.field, g.field, g.items.length))}
           </div>
         </div>
-        {issue.pdf_url && <Link href={`${base}/pdf`} className="btn ghost">Đọc PDF cả số</Link>}
+        {issue.pdf_url && <button type="button" className="btn ghost" onClick={() => setPdf(true)}>Đọc PDF cả số</button>}
       </aside>
 
       <div className="mainc">
@@ -44,7 +56,25 @@ export default function IssueBrowser({ d, initialField }: { d: any; initialField
         <p style={{ color: 'var(--ink2)', fontSize: 16.5, maxWidth: '68ch' }}>
           Toàn văn đọc trực tiếp trên web. Mục lục giữ đúng thứ tự chuyên mục của bản in, kèm số trang để đối chiếu.
         </p>
-        {issue.published_at && <p className="muted" style={{ margin: '0 0 16px' }}>Ngày đăng: {fmtDate(issue.published_at)}</p>}
+        <div className="row" style={{ gap: 16, margin: '0 0 18px', alignItems: 'center' }}>
+          {pdfBtn}
+          {issue.published_at && <span className="muted">Ngày đăng: {fmtDate(issue.published_at)}{issue.page_count ? ` · ${issue.page_count} trang` : ''}</span>}
+        </div>
+
+        {pdf && issue.pdf_url && (
+          <div ref={pdfBox} style={{ marginBottom: 24, scrollMarginTop: 60 }}>
+            <div className="row" style={{ justifyContent: 'space-between', marginBottom: 10 }}>
+              <span className="serif" style={{ fontSize: 18, fontWeight: 600 }}>Bản PDF {issue.label.toLowerCase()}</span>
+              <div className="row" style={{ gap: 8 }}>
+                <a href={issue.pdf_url} target="_blank" rel="noopener noreferrer" className="btn ghost sm">Mở tab mới</a>
+                <a href={issue.pdf_url} download className="btn ghost sm">Tải về</a>
+                <button type="button" className="btn ghost sm" onClick={() => setPdf(false)}>Đóng</button>
+              </div>
+            </div>
+            <PdfViewer src={issue.pdf_url} title={`PDF ${issue.label}`} height="calc(100vh - 140px)" />
+            <p className="muted" style={{ marginTop: 8, fontSize: 14 }}>Nếu trình duyệt không hiển thị được PDF (một số điện thoại), hãy bấm “Mở tab mới” hoặc “Tải về”.</p>
+          </div>
+        )}
         <div className="row" style={{ borderBottom: '1px solid var(--line)', paddingBottom: 22, marginBottom: 8 }}>
           <div style={{ flex: 1, minWidth: 220 }}><SearchBox placeholder="Tìm trong số này" hidden={{ issue: issue.slug }} /></div>
           <span className="muted" aria-live="polite">{total} bài · {active || 'toàn bộ chuyên mục'}</span>

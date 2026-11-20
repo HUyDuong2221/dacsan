@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getOrNull } from '@/lib/api';
+import PdfViewer from '@/components/PdfViewer';
 
 type Props = { params: { slug: string }; searchParams: { page?: string } };
 
@@ -28,11 +29,7 @@ export default async function IssuePdf({ params, searchParams }: Props) {
           <a href={issue.pdf_url} download className="btn ghost sm">Tải về</a>
         </div>
       </div>
-      <iframe
-        src={src}
-        title={`PDF ${issue.label}`}
-        style={{ width: '100%', height: 'calc(100vh - 150px)', minHeight: 480, border: '1px solid var(--line2)', background: '#fff' }}
-      />
+      <PdfViewer src={issue.pdf_url} page={page > 0 ? page : 0} title={`PDF ${issue.label}`} />
       <p className="muted" style={{ marginTop: 10 }}>
         Nếu trình duyệt không hiển thị được PDF (một số điện thoại), hãy bấm “Mở tab mới” hoặc “Tải về”.
       </p>

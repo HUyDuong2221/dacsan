@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import Portal from './Portal';
+import PdfViewer from './PdfViewer';
 
 type Block = { t: 'h'; text: string; id: string } | { t: 'p'; text: string } | { t: 'img'; alt: string; src: string };
 
@@ -34,6 +35,8 @@ export default function ArticleReader({ a }: { a: any }) {
   const blocks = parse(a.body || '');
   const pageNo = parseInt(String(a.page_label).replace(/\D/g, ''), 10);
   const pdfHref = `/issues/${a.issue.slug}/pdf${pageNo > 0 ? `?page=${pageNo}` : ''}`;
+  // file PDF mở đúng trang in của bài (#page=N được trình xem PDF của trình duyệt hỗ trợ)
+  const pdfSrc = a.pdf_url ? `${a.pdf_url}${pageNo > 0 ? `#page=${pageNo}` : ''}` : '';
   let hi = 0;
 
   async function copy(text: string, msg: string) {
@@ -161,6 +164,21 @@ export default function ArticleReader({ a }: { a: any }) {
                 )}
               </div>
             </>
+          ) : a.pdf_url ? (
+            // Chưa có toàn văn: hiển thị luôn trang in trong file PDF của số, không cần bấm thêm.
+            <div className="pdf-inline">
+              <div className="row" style={{ justifyContent: 'space-between', marginBottom: 10 }}>
+                <span className="mono muted" style={{ fontSize: 12, letterSpacing: '.06em' }}>BẢN IN · {a.page_label.toUpperCase()}</span>
+                <div className="row" style={{ gap: 8 }}>
+                  <a href={pdfSrc} target="_blank" rel="noopener noreferrer" className="btn ghost sm">Mở tab mới</a>
+                  <a href={a.pdf_url} download className="btn ghost sm">Tải PDF</a>
+                </div>
+              </div>
+              <PdfViewer src={a.pdf_url} page={pageNo > 0 ? pageNo : 0} title={`Bản in: ${a.title}`} height="calc(100vh - 160px)" />
+              <p className="muted" style={{ marginTop: 8, fontSize: 14 }}>
+                Bài này chưa có toàn văn trên web, đây là trang in trong {a.issue.label.toLowerCase()}. Nếu điện thoại không hiển thị được PDF, hãy bấm “Mở tab mới” hoặc “Tải PDF”.
+              </p>
+            </div>
           ) : (
             <div className="leadbox" style={{ padding: 32 }}>
               <div className="kicker" style={{ marginBottom: 12 }}>Chưa có toàn văn trên web</div>
@@ -168,7 +186,6 @@ export default function ArticleReader({ a }: { a: any }) {
                 Bài này hiện chỉ có trong bản in {a.issue.label.toLowerCase()}. Bản số hóa toàn văn đang được biên tập và sẽ cập nhật tại đây.
               </p>
               <div className="row">
-                {a.pdf_url && <Link className="btn" href={pdfHref}>Xem trang in ({a.page_label})</Link>}
                 <button className="btn ghost" onClick={() => setDrawer(true)}>Mở mục lục số</button>
               </div>
             </div>
