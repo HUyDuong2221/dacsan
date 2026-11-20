@@ -386,10 +386,6 @@ export default function HomeV7(p: HomeProps) {
           </div>
         </div>
       </footer>
-
-      <button className="v7-top" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} aria-label="Về đầu trang">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 19V6" /><path d="M6 12l6-6 6 6" /></svg>
-      </button>
     </div>
   );
 }

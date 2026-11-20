@@ -193,8 +193,6 @@ body:has(.v7){background:#FBFAF7}
 .v7-foot-brand .t small{display:block;font-style:normal;font-size:12px;font-weight:600;letter-spacing:.14em;margin-top:6px;color:#AFC2EA}
 .v7-foot h4{margin:0 0 10px;font-size:11.5px;font-weight:700;letter-spacing:.16em;color:#fff}
 .v7-foot-bot{display:flex;flex-wrap:wrap;gap:14px;justify-content:space-between;padding-top:20px;font-size:12.5px;color:#9FB2DD}
-.v7-top{position:fixed;right:22px;bottom:86px;z-index:60;width:50px;height:50px;border-radius:50%;border:0;background:#03368D;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 12px 26px rgba(3,54,141,.3)}
-.v7-top:hover{background:#02266A}
 @media(prefers-reduced-motion:reduce){.v7-track,.v7-text,.v7-book,.v7-bcover,.v7-binner{transition:none}}
 @media(max-width:1100px){.v7-lead{padding:0 0 32px;flex-basis:100%}.v7-side{border-left:0;border-top:1px solid #DCDFE6;padding:28px 0 0}}
 @media(max-width:860px){.v7-links{display:none}.v7-mini{display:block}.v7-menu-btn{display:flex}.v7-util-r{display:none}.v7-mast-meta .hs{display:none}}
