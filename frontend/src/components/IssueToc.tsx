@@ -47,7 +47,7 @@ export default function IssueToc({ issue, token, onAuthError, role }: { issue: a
                 <button className="btn ghost sm" onClick={() => setOpen(false)}>✕ Đóng</button>
               </div>
             </div>
-            <div style={{ padding: 22, overflow: 'auto' }}>
+            <div className="adm-main" style={{ padding: 22, overflow: 'auto' }}>
               <p className="muted" style={{ marginTop: 0 }}>
                 Mục lục hiện ra ngoài khi số đặc san được tick <b>Công bố trên website</b>.{!canEdit && <> Bạn là cộng tác viên: chỉ nhập/sửa được mục lục của số <b>chưa công bố</b>, không xóa được.</>} Dòng nào có <b>Toàn văn</b> thì người đọc đọc được trên web, không thì chỉ báo “có trong bản in”.
               </p>

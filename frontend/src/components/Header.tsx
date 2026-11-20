@@ -5,21 +5,29 @@ import { useState } from 'react';
 
 const NAV = [
   { href: '/', label: 'Trang chủ', match: (p: string) => p === '/' },
-  { href: '/issues', label: 'Đặc san', match: (p: string) => p.startsWith('/issues') || p.startsWith('/articles') },
+  { href: '/issues', label: 'Số đã phát hành', match: (p: string) => p.startsWith('/issues') || p.startsWith('/articles') },
   { href: '/research', label: 'Nghiên cứu – Trao đổi', match: (p: string) => p.startsWith('/research') },
   { href: '/docs', label: 'Tư liệu', match: (p: string) => p.startsWith('/docs') },
+  { href: '/search', label: 'Tìm bài báo', match: (p: string) => p.startsWith('/search') },
 ];
 
-export default function Header() {
+export default function Header({ logoUrl }: { logoUrl?: string }) {
   const path = usePathname() || '/';
   const [open, setOpen] = useState(false);
   return (
     <header className="site-header">
       <div className="wrap">
-        <Link href="/" className="logo-box" aria-label="Đặc san Khoa học & Phát triển thành phố Đà Nẵng">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo.jpg" alt="Đặc san Khoa học & Phát triển thành phố Đà Nẵng" />
-        </Link>
+        {logoUrl ? (
+          <Link href="/" className="logo-custom" aria-label="Đặc san Khoa học & Phát triển thành phố Đà Nẵng">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={logoUrl} alt="Đặc san Khoa học & Phát triển thành phố Đà Nẵng" />
+          </Link>
+        ) : (
+          <Link href="/" className="logo-box" aria-label="Đặc san Khoa học & Phát triển thành phố Đà Nẵng">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo.jpg" alt="Đặc san Khoa học & Phát triển thành phố Đà Nẵng" />
+          </Link>
+        )}
         <button className="menu-btn" onClick={() => setOpen(!open)} aria-expanded={open}>
           <span className="bars"><span /><span /><span /></span>
           Menu
@@ -31,7 +39,6 @@ export default function Header() {
               <i />
             </div>
           ))}
-          <Link href="/search" className="search">Tìm bài báo</Link>
         </nav>
       </div>
     </header>

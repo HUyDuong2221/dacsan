@@ -48,10 +48,18 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <div className="topbar">
             <div className="wrap">
               <span>{(site.org_name || 'LIÊN HIỆP CÁC HỘI KHOA HỌC KỸ THUẬT ĐÀ NẴNG').toUpperCase()}</span>
-              <span className="r"><span>ISSN {site.issn || '—'}</span><span>VI / EN</span></span>
+              <span className="r">
+                <span>ISSN {site.issn || '—'}</span>
+                <span className="sep" aria-hidden="true">|</span>
+                <span>VI / EN</span>
+                <form action="/search" className="topsearch">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="M20 20l-4-4" /></svg>
+                  <input type="search" name="q" minLength={2} aria-label="Tìm kiếm trên trang" placeholder="Tìm kiếm..." />
+                </form>
+              </span>
             </div>
           </div>
-          <Header />
+          <Header logoUrl={site.logo_url} />
           <main>{children}</main>
           <Footer site={site} />
         </div>

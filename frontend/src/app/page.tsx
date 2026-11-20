@@ -64,9 +64,16 @@ export default async function HomeV3() {
       <header className="d-header">
         <div className="d-wrap">
           <Link href="/" className="d-logo" aria-label="Đặc san Khoa học & Phát triển thành phố Đà Nẵng">
-            <span className="d-small">ĐẶC SAN</span>
-            <span className="d-big">Khoa học &amp; Phát triển</span>
-            <span className="d-city">THÀNH PHỐ ĐÀ NẴNG</span>
+            {site.logo_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={site.logo_url} alt="Đặc san Khoa học & Phát triển thành phố Đà Nẵng" className="d-logo-img" />
+            ) : (
+              <>
+                <span className="d-small">ĐẶC SAN</span>
+                <span className="d-big">Khoa học &amp; Phát triển</span>
+                <span className="d-city">THÀNH PHỐ ĐÀ NẴNG</span>
+              </>
+            )}
           </Link>
           <nav className="d-nav" aria-label="Điều hướng chính">
             <Link href="/" className="d-on" aria-current="page">Trang chủ</Link>
@@ -75,12 +82,16 @@ export default async function HomeV3() {
             <Link href="/docs">Tư liệu</Link>
             <Link href="/search">Tìm bài báo</Link>
           </nav>
-          <Link href="/gui-bai" className="d-btn">Gửi bài</Link>
         </div>
       </header>
 
       <section className="d-hero">
-        <HeroBg />
+        {site.hero_bg ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img className="d-hero-img" src={site.hero_bg} alt="" />
+        ) : (
+          <HeroBg />
+        )}
         <div className="d-wrap">
           <div className="d-hero-grid">
             {latest && (

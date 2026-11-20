@@ -48,7 +48,7 @@ export default function TocImport({ issue, token, onAuthError, onDone }: { issue
         <Portal>
         <div className="drawer-wrap" style={{ alignItems: 'center', justifyContent: 'center' }}>
           <div className="drawer-bg" onClick={() => !busy && setOpen(false)} />
-          <div className="modal-card" style={{ position: 'relative', background: 'var(--bg)', width: 'min(1100px, 96vw)', maxHeight: '92vh', display: 'flex', flexDirection: 'column', boxShadow: '0 0 40px rgba(23,37,47,.25)' }}>
+          <div className="modal-card adm-main" style={{ position: 'relative', background: 'var(--bg)', width: 'min(1100px, 96vw)', maxHeight: '92vh', display: 'flex', flexDirection: 'column', boxShadow: '0 0 40px rgba(23,37,47,.25)' }}>
             <div className="row" style={{ justifyContent: 'space-between', padding: '18px 22px', borderBottom: '1px solid var(--line)' }}>
               <div>
                 <div className="kicker">Tạo mục lục từ PDF</div>
@@ -66,7 +66,7 @@ export default function TocImport({ issue, token, onAuthError, onDone }: { issue
                     Nguồn: {source === 'outline' ? 'bookmark của PDF' : 'trang mục lục dạng chữ'}. Đây chỉ là đề xuất tự động, hãy kiểm tra và sửa trước khi tạo.
                     Chuyên mục chưa có sẽ được tạo mới. Mục lục chỉ hiện ra ngoài khi số đặc san được công bố.
                   </p>
-                  <div style={{ overflowX: 'auto' }}>
+                  <div className="tbl">
                     <table className="t">
                       <thead><tr><th /><th>Chuyên mục</th><th>Tác giả</th><th>Tiêu đề</th><th>Trang</th></tr></thead>
                       <tbody>

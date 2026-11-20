@@ -3,21 +3,27 @@ import { useEffect, useState } from 'react';
 import ResourceManager, { ResourceDef, adm } from '@/components/ResourceManager';
 import IssueToc from '@/components/IssueToc';
 import SubmissionsManager from '@/components/SubmissionsManager';
+import ImageSetting from '@/components/ImageSetting';
 import './admin.css';
 
 const GROUPS: { title: string; keys: string[] }[] = [
   { title: 'Nội dung', keys: ['issues', 'submissions', 'fields'] },
-  { title: 'Truyền thông', keys: ['activities', 'notices', 'documents'] },
-  { title: 'Hệ thống', keys: ['users', 'settings', 'subscribers'] },
+  { title: 'Truyền thông', keys: ['activities', 'activity-types', 'notices', 'documents'] },
+  { title: 'Hệ thống', keys: ['appearance', 'users', 'settings', 'subscribers'] },
 ];
+// Menu thả xuống: mục cha -> các mục con
+const SUBMENUS: Record<string, string[]> = { appearance: ['logo', 'herobg'] };
+const SUB_KEYS = Object.values(SUBMENUS).flat();
 const ICONS: Record<string, string> = {
   issues: 'M4 5h6a2 2 0 0 1 2 2v12a2 2 0 0 0-2-2H4zM20 5h-6a2 2 0 0 0-2 2v12a2 2 0 0 1 2-2h6z',
   submissions: 'M3 7l9 6 9-6M5 5h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z',
   fields: 'M4 6h16M4 12h16M4 18h10',
   activities: 'M8 3v4M16 3v4M4 9h16M5 5h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z',
+  'activity-types': 'M4 7h16M4 12h16M4 17h16M2 7h.01M2 12h.01M2 17h.01',
   notices: 'M4 10v4h3l6 4V6L7 10zM17 9a4 4 0 0 1 0 6',
   documents: 'M7 3h7l4 4v14H7zM14 3v4h4',
   users: 'M3 19c0-3 2.7-5 6-5s6 2 6 5M12 8a3 3 0 1 1-6 0 3 3 0 0 1 6 0zM16 14c2.5 0 5 1.5 5 4',
+  appearance: 'M4 5h16v11H4zM4 16l5-5 4 4 3-3 4 4M9 21h6',
   settings: 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19 12l2-1-2-4-2 1-2-1-1-2h-4l-1 2-2 1-2-1-2 4 2 1v2l-2 1 2 4 2-1 2 1 1 2h4l1-2 2-1 2 1 2-4-2-1z',
   subscribers: 'M4 6h16v12H4zM4 7l8 6 8-6',
 };
@@ -28,8 +34,8 @@ const EDIT = ['admin', 'editor'];
 const ADMIN = ['admin'];
 // Vai trò được thấy từng thẻ (máy chủ vẫn kiểm tra quyền ở mọi API)
 const TAB_ROLES: Record<string, string[]> = {
-  issues: STAFF, submissions: EDIT, fields: EDIT, activities: EDIT, notices: EDIT, documents: EDIT,
-  users: ADMIN, settings: ADMIN, subscribers: ADMIN,
+  issues: STAFF, submissions: EDIT, fields: EDIT, activities: EDIT, 'activity-types': EDIT, notices: EDIT, documents: EDIT,
+  users: ADMIN, appearance: ADMIN, logo: ADMIN, herobg: ADMIN, settings: ADMIN, subscribers: ADMIN,
 };
 
 const RESOURCES: ResourceDef[] = [
@@ -49,14 +55,22 @@ const RESOURCES: ResourceDef[] = [
   { key: 'fields', title: 'Chuyên mục', fields: [
     { key: 'name', label: 'Tên', required: true, list: true }, { key: 'sort_order', label: 'Thứ tự', type: 'number', list: true }] },
   { key: 'activities', title: 'Hoạt động', fields: [
-    { key: 'title', label: 'Tiêu đề', required: true, list: true, full: true }, { key: 'kind', label: 'Loại', list: true },
-    { key: 'event_date', label: 'Ngày', type: 'date', list: true }, { key: 'url', label: 'Liên kết' }, { key: 'published', label: 'Hiển thị', type: 'bool', list: true }] },
+    { key: 'title', label: 'Tiêu đề', required: true, list: true, full: true }, { key: 'kind', label: 'Loại hoạt động', list: true, optionsFrom: { resource: 'activity-types', labelKey: 'name', valueKey: 'name' }, hint: 'Quản lý danh sách ở mục “Loại hoạt động”.' },
+    { key: 'event_date', label: 'Ngày', type: 'date', list: true }, { key: 'url', label: 'Liên kết' },
+    { key: 'content', label: 'Nội dung', type: 'richtext', hint: 'Dùng nút “Nhập từ Word” để đưa nội dung file .docx vào ô này.' },
+    { key: 'attachment_url', label: 'Tệp đính kèm (Word, PDF, Excel)', type: 'file', hint: 'Tải .doc, .docx, .pdf, .xls, .xlsx để người đọc tải về.' },
+    { key: 'published', label: 'Hiển thị', type: 'bool', list: true }] },
+  { key: 'activity-types', title: 'Loại hoạt động', addLabel: 'Thêm loại hoạt động', editLabel: 'Sửa loại hoạt động', fields: [
+    { key: 'name', label: 'Tên loại', required: true, list: true }, { key: 'sort_order', label: 'Thứ tự', type: 'number', list: true }] },
   { key: 'notices', title: 'Thông báo', fields: [
     { key: 'tag', label: 'Nhãn', list: true }, { key: 'title', label: 'Tiêu đề', required: true, list: true, full: true },
     { key: 'notice_date', label: 'Ngày', type: 'date', list: true }, { key: 'content', label: 'Nội dung', type: 'textarea' }, { key: 'published', label: 'Hiển thị', type: 'bool', list: true }] },
   { key: 'documents', title: 'Tư liệu', fields: [
     { key: 'title', label: 'Tiêu đề', required: true, list: true, full: true }, { key: 'doc_type', label: 'Loại', list: true },
     { key: 'file_url', label: 'Tệp', type: 'file' }, { key: 'sort_order', label: 'Thứ tự', type: 'number', list: true }, { key: 'published', label: 'Hiển thị', type: 'bool', list: true }] },
+  { key: 'appearance', title: 'Giao diện', fields: [] },
+  { key: 'logo', title: 'Logo', fields: [] },
+  { key: 'herobg', title: 'Ảnh nền trang chủ', fields: [] },
   { key: 'users', title: 'Người dùng', addLabel: 'Thêm người dùng', editLabel: 'Sửa người dùng', fields: [
     { key: 'email', label: 'Email đăng nhập', required: true, list: true },
     { key: 'full_name', label: 'Họ tên', list: true },
@@ -75,6 +89,7 @@ export default function Admin() {
   const [token, setToken] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
   const [tab, setTab] = useState('issues');
+  const [menuOpen, setMenuOpen] = useState<Record<string, boolean>>({});
   const [email, setEmail] = useState('');
   const [pw, setPw] = useState('');
   const [err, setErr] = useState('');
@@ -141,16 +156,38 @@ export default function Admin() {
           </a>
           <nav className="adm-nav" aria-label="Menu quản trị">
             {GROUPS.map((g) => {
-              const items = tabs.filter((r) => g.keys.includes(r.key));
+              const items = tabs.filter((r) => g.keys.includes(r.key) && !SUB_KEYS.includes(r.key));
               if (!items.length) return null;
               return (
                 <div className="adm-grp" key={g.title}>
                   <h4>{g.title}</h4>
-                  {items.map((r) => (
-                    <button key={r.key} className={'adm-item' + (cur.key === r.key ? ' on' : '')} aria-current={cur.key === r.key ? 'page' : undefined} onClick={() => setTab(r.key)}>
-                      <svg viewBox="0 0 24 24" aria-hidden="true"><path d={ICONS[r.key]} /></svg>{r.title}
-                    </button>
-                  ))}
+                  {items.map((r) => {
+                    const subs = (SUBMENUS[r.key] || []).map((k) => tabs.find((t) => t.key === k)).filter(Boolean) as ResourceDef[];
+                    if (!subs.length)
+                      return (
+                        <button key={r.key} className={'adm-item' + (cur.key === r.key ? ' on' : '')} aria-current={cur.key === r.key ? 'page' : undefined} onClick={() => setTab(r.key)}>
+                          <svg viewBox="0 0 24 24" aria-hidden="true"><path d={ICONS[r.key]} /></svg>{r.title}
+                        </button>
+                      );
+                    const active = subs.some((x) => x.key === cur.key);
+                    const open = menuOpen[r.key] ?? active;
+                    return (
+                      <div key={r.key} className="adm-drop">
+                        <button className={'adm-item adm-parent' + (active ? ' on' : '')} aria-expanded={open}
+                          onClick={() => { setMenuOpen({ ...menuOpen, [r.key]: !open }); if (!active && !open) setTab(subs[0].key); }}>
+                          <svg viewBox="0 0 24 24" aria-hidden="true"><path d={ICONS[r.key]} /></svg>{r.title}
+                          <svg className="adm-caret" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
+                        </button>
+                        {open && (
+                          <div className="adm-sub">
+                            {subs.map((x) => (
+                              <button key={x.key} className={'adm-subitem' + (cur.key === x.key ? ' on' : '')} aria-current={cur.key === x.key ? 'page' : undefined} onClick={() => setTab(x.key)}>{x.title}</button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               );
             })}
@@ -171,7 +208,17 @@ export default function Admin() {
           <b>Cộng tác viên</b>: chỉ nhập/sửa mục lục và toàn văn của số <b>chưa công bố</b>; không công bố, không xóa, không xem bài gửi.
         </p>
       )}
-      {cur.key === 'submissions' ? (
+      {cur.key === 'logo' ? (
+        <ImageSetting token={token} onAuthError={logout} settingKey="logo_url" kind="logo"
+          label="Logo đặc san"
+          hint="Nên dùng ảnh PNG/WebP nền trong suốt, dạng ngang (ví dụ 600×160px). Logo hiện ở đầu trang chủ và các trang. Để trống để dùng logo chữ mặc định."
+          doneText="Đã lưu. Logo mới sẽ hiện trên website." resetLabel="Dùng logo mặc định" />
+      ) : cur.key === 'herobg' ? (
+        <ImageSetting token={token} onAuthError={logout} settingKey="hero_bg" kind="hero"
+          label="Ảnh nền khu vực đầu trang chủ"
+          hint="Nên dùng ảnh ngang, tỉ lệ khoảng 16:5 (ví dụ 2000×620px), dung lượng nhẹ. Để trống để dùng nền minh họa mặc định."
+          doneText="Đã lưu. Trang chủ sẽ dùng nền này." resetLabel="Dùng nền mặc định" />
+      ) : cur.key === 'submissions' ? (
         <SubmissionsManager token={token} role={role} onAuthError={logout} />
       ) : (
         <ResourceManager

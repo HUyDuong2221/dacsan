@@ -82,6 +82,15 @@ class TocEntry(Stamped, Base):
     field: Mapped[Field | None] = relationship(lazy="joined")
 
 
+class ActivityType(Base):
+    """Loại hoạt động (chọn được trong mục Hoạt động; Activity.kind lưu tên loại)."""
+
+    __tablename__ = "activity_types"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(200), unique=True)
+    sort_order: Mapped[int] = mapped_column(Integer, default=0)
+
+
 class Activity(Stamped, Base):
     __tablename__ = "activities"
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -89,6 +98,8 @@ class Activity(Stamped, Base):
     kind: Mapped[str] = mapped_column(String(200), default="")
     event_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    content: Mapped[str | None] = mapped_column(Text, nullable=True)  # HTML từ CKEditor 5
+    attachment_url: Mapped[str | None] = mapped_column(String(500), nullable=True)  # tệp đính kèm (Word, PDF...)
     published: Mapped[bool] = mapped_column(Boolean, default=True)
 
 

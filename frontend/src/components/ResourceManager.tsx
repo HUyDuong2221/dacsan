@@ -1,10 +1,13 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
+
+const RichText = dynamic(() => import('./RichText'), { ssr: false, loading: () => <div className="rte-load">Đang tải trình soạn thảo…</div> });
 
 export type FieldDef = {
   key: string;
   label: string;
-  type?: 'text' | 'textarea' | 'number' | 'bool' | 'date' | 'select' | 'file' | 'password';
+  type?: 'text' | 'textarea' | 'number' | 'bool' | 'date' | 'select' | 'file' | 'password' | 'richtext';
   options?: { value: string; label: string }[];
   optionsFrom?: { resource: string; labelKey: string; valueKey?: string };
   list?: boolean;
@@ -62,7 +65,7 @@ export default function ResourceManager({ res, token, onAuthError, rowExtra, que
 
   const listFields = res.fields.filter((f) => f.list);
   const show = (f: FieldDef, v: any) => {
-    if (f.type === 'bool') return v ? '✓' : '';
+    if (f.type === 'bool') return v ? 'Có' : '';
     if (f.optionsFrom) return opts[f.key]?.find((o) => o.value === String(v))?.label ?? v;
     if (f.options) return f.options.find((o) => o.value === String(v))?.label ?? v;
     return v == null ? '' : String(v).slice(0, 90);
@@ -103,13 +106,17 @@ export default function ResourceManager({ res, token, onAuthError, rowExtra, que
 
   return (
     <div>
-      <div className="row" style={{ marginBottom: 16 }}>
-        <input className="input" style={{ maxWidth: 320 }} placeholder="Lọc nhanh…" value={filter} onChange={(e) => setFilter(e.target.value)} />
+      <div className="tbar">
+        <div className="tbar-search">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+          <input className="input" type="search" aria-label="Lọc nhanh" placeholder="Lọc nhanh…" value={filter} onChange={(e) => setFilter(e.target.value)} />
+          {filter && <button type="button" className="tbar-clear" aria-label="Xóa bộ lọc" onClick={() => setFilter('')}>×</button>}
+        </div>
         {!res.readonly && <button className="btn" onClick={() => setEdit(blank())}>+ {res.addLabel || 'Thêm mới'}</button>}
-        <span className="muted">{shown.length}/{rows.length} mục</span>
+        <span className="tbar-count" aria-live="polite">{shown.length}/{rows.length} mục</span>
       </div>
-      {err && <div className="err">{err}</div>}
-      {msg && <div className="ok">{msg}</div>}
+      {err && <div className="err" role="alert">{err}</div>}
+      {msg && <div className="ok" role="status">{msg}</div>}
 
       {edit && (
         <form className="form" onSubmit={save}>
@@ -117,9 +124,11 @@ export default function ResourceManager({ res, token, onAuthError, rowExtra, que
             {edit.id ? res.editLabel || 'Sửa' : res.addLabel || 'Thêm mới'}
           </h3>
           {res.fields.map((f) => (
-            <label key={f.key} className={f.full || f.type === 'textarea' ? 'full' : ''}>
+            <FieldWrap key={f.key} rich={f.type === 'richtext'} className={f.full || f.type === 'textarea' || f.type === 'richtext' ? 'full' : ''}>
               <span>{f.label}{f.required && ' *'}</span>
-              {f.type === 'textarea' ? (
+              {f.type === 'richtext' ? (
+                <RichText key={edit.id ?? 'new'} token={token} value={edit[f.key] ?? ''} onChange={(html) => setEdit((x: any) => ({ ...x, [f.key]: html }))} />
+              ) : f.type === 'textarea' ? (
                 <textarea className="input" rows={f.key === 'body' ? 18 : 4} value={edit[f.key] ?? ''} onChange={(e) => setEdit({ ...edit, [f.key]: e.target.value })} />
               ) : f.type === 'bool' ? (
                 <input type="checkbox" checked={!!edit[f.key]} onChange={(e) => setEdit({ ...edit, [f.key]: e.target.checked })} style={{ width: 20, height: 20 }} />
@@ -139,7 +148,7 @@ export default function ResourceManager({ res, token, onAuthError, rowExtra, que
                   value={edit[f.key] ?? ''} onChange={(e) => setEdit({ ...edit, [f.key]: e.target.value })} />
               )}
               {f.hint && <small className="muted">{f.hint}</small>}
-            </label>
+            </FieldWrap>
           ))}
           <div className="full row">
             <button className="btn">Lưu</button>
@@ -148,24 +157,37 @@ export default function ResourceManager({ res, token, onAuthError, rowExtra, que
         </form>
       )}
 
-      <div style={{ overflowX: 'auto' }}>
+      <div className="tbl">
         <table className="t">
           <thead><tr><th>ID</th>{listFields.map((f) => <th key={f.key}>{f.label}</th>)}<th /></tr></thead>
           <tbody>
             {shown.map((r) => (
               <tr key={r.id}>
                 <td className="mono">{r.id}</td>
-                {listFields.map((f) => <td key={f.key}>{show(f, r[f.key])}</td>)}
-                <td style={{ whiteSpace: 'nowrap' }}>
-                  {rowExtra && <>{rowExtra(r)}{' '}</>}
-                  {!res.readonly && <button className="btn ghost sm" onClick={() => setEdit({ ...r })}>Sửa</button>}{' '}
-                  {!res.noDelete && <button className="btn danger sm" onClick={() => remove(r)}>Xóa</button>}
+                {listFields.map((f) => <td key={f.key}>{f.type === 'bool' ? (r[f.key] ? <span className="pill">Có</span> : '') : show(f, r[f.key])}</td>)}
+                <td>
+                  <div className="t-act">
+                    {rowExtra && rowExtra(r)}
+                    {!res.readonly && <button className="btn ghost sm" onClick={() => setEdit({ ...r })}>Sửa</button>}
+                    {!res.noDelete && <button className="btn danger sm" onClick={() => remove(r)}>Xóa</button>}
+                  </div>
                 </td>
               </tr>
             ))}
+            {shown.length === 0 && (
+              <tr><td colSpan={listFields.length + 2} className="t-empty">
+                <b>{rows.length ? 'Không có mục khớp bộ lọc' : 'Chưa có mục nào'}</b>
+                {rows.length ? 'Thử từ khóa khác hoặc xóa bộ lọc.' : res.readonly ? '' : `Bấm “${res.addLabel || 'Thêm mới'}” để tạo mục đầu tiên.`}
+              </td></tr>
+            )}
           </tbody>
         </table>
       </div>
     </div>
   );
+}
+
+// Ô trình soạn thảo dùng <div>: nút trong <label> sẽ bị bấm nhầm khi click vào nhãn.
+function FieldWrap({ rich, className, children }: { rich: boolean; className: string; children: React.ReactNode }) {
+  return rich ? <div className={`fld ${className}`}>{children}</div> : <label className={className}>{children}</label>;
 }

@@ -84,7 +84,7 @@ export default function ChatWidget() {
           </svg>
         </button>
         <button className="up" title="Về đầu trang" onClick={() => window.scrollTo({ top: 0 })}>
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1f4bb8" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0B4F9C" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
             <path d="M12 19V6" /><path d="M6 12l6-6 6 6" />
           </svg>
         </button>

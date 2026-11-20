@@ -9,7 +9,7 @@ from sqlalchemy.exc import OperationalError
 
 from .config import settings
 from .db import SessionLocal, engine
-from .models import Base, User
+from .models import Activity, ActivityType, Base, User
 from .routers import admin, public, submissions, users
 from .security import hash_password
 from .seed import seed
@@ -34,6 +34,8 @@ def init_db() -> None:
     Base.metadata.create_all(engine)
     with engine.begin() as conn:  # nâng cấp nhẹ cho DB đã có (chưa dùng Alembic)
         conn.execute(text("ALTER TABLE issues ADD COLUMN IF NOT EXISTS published_at DATE"))
+        conn.execute(text("ALTER TABLE activities ADD COLUMN IF NOT EXISTS content TEXT"))
+        conn.execute(text("ALTER TABLE activities ADD COLUMN IF NOT EXISTS attachment_url VARCHAR(500)"))
         conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS full_name VARCHAR(200) NOT NULL DEFAULT ''"))
         conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT TRUE"))
         conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT now()"))
@@ -44,6 +46,13 @@ def init_db() -> None:
             db.commit()
         if settings.seed_demo:
             seed(db)
+        # đưa các "loại" đang dùng ở hoạt động vào danh sách chọn (để ô chọn không bị trống với dữ liệu cũ)
+        have = set(db.scalars(select(ActivityType.name)))
+        for k in dict.fromkeys(db.scalars(select(Activity.kind).order_by(Activity.id))):
+            if k and k not in have:
+                db.add(ActivityType(name=k, sort_order=len(have)))
+                have.add(k)
+        db.commit()
 
 
 @asynccontextmanager

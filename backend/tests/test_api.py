@@ -461,3 +461,14 @@ def test_submission_rate_limit(client):
     codes = [client.post(f"{P}/submissions", data=_form(title=f"Bài số {i} chống spam"), files={"file": DOCX}).status_code for i in range(6)]
     assert codes == [201] * 5 + [429]
     reset_fails()
+
+
+def test_activity_types_and_content(client, auth):
+    t = client.post(f"{A}/activity-types", headers=auth, json={"name": "Loại thử", "sort_order": 1})
+    assert t.status_code == 201
+    assert client.post(f"{A}/activity-types", headers=auth, json={"name": "Loại thử"}).status_code == 409
+    a = client.post(f"{A}/activities", headers=auth, json={"title": "HĐ thử", "kind": "Loại thử", "content": "<p>Nội <b>dung</b></p>", "attachment_url": "/media/abc.docx"}).json()
+    assert a["attachment_url"] == "/media/abc.docx" and a["content"] == "<p>Nội <b>dung</b></p>" and a["kind"] == "Loại thử"
+    assert any(x["content"] == a["content"] for x in client.get(f"{P}/activities").json())
+    client.delete(f"{A}/activities/{a['id']}", headers=auth)
+    assert client.delete(f"{A}/activity-types/{t.json()['id']}", headers=auth).status_code == 204

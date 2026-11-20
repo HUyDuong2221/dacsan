@@ -5,7 +5,7 @@ import Portal from './Portal';
 
 const STATUS: Record<string, { label: string; color: string }> = {
   new: { label: 'Mới nhận', color: '#5a6b76' },
-  reviewing: { label: 'Đang xét duyệt', color: '#1f4bb8' },
+  reviewing: { label: 'Đang xét duyệt', color: '#0B4F9C' },
   revision: { label: 'Cần chỉnh sửa', color: '#b26a00' },
   accepted: { label: 'Đã nhận đăng', color: '#0e7a4b' },
   rejected: { label: 'Không phù hợp', color: '#c8372d' },
@@ -59,7 +59,7 @@ export default function SubmissionsManager({ token, role, onAuthError }: { token
       </div>
       {err && <div className="err">{err}</div>}
       {msg && <div className="ok">{msg}</div>}
-      <div style={{ overflowX: 'auto' }}>
+      <div className="tbl">
         <table className="t">
           <thead><tr><th>Ngày gửi</th><th>Mã</th><th>Tác giả</th><th>Tiêu đề</th><th>Chuyên mục đề xuất</th><th>Trạng thái</th><th /></tr></thead>
           <tbody>
@@ -83,7 +83,7 @@ export default function SubmissionsManager({ token, role, onAuthError }: { token
         <Portal>
           <div className="drawer-wrap" style={{ alignItems: 'center', justifyContent: 'center' }}>
             <div className="drawer-bg" onClick={() => setSel(null)} />
-            <div className="modal-card" style={{ position: 'relative', background: 'var(--bg)', width: 'min(820px, 96vw)', maxHeight: '94vh', overflow: 'auto', padding: 24, boxShadow: '0 0 40px rgba(23,37,47,.25)' }}>
+            <div className="modal-card adm-main" style={{ position: 'relative', background: 'var(--bg)', width: 'min(820px, 96vw)', maxHeight: '94vh', overflow: 'auto', padding: 24, boxShadow: '0 0 40px rgba(23,37,47,.25)' }}>
               <div className="row" style={{ justifyContent: 'space-between' }}>
                 <div className="kicker">Bài gửi · mã {sel.code}</div>
                 <button className="btn ghost sm" onClick={() => setSel(null)}>✕ Đóng</button>

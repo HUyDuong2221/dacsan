@@ -59,7 +59,7 @@ def published_articles():
 
 
 def activity_dict(a: Activity) -> dict:
-    return {"id": a.id, "title": a.title, "kind": a.kind, "date": a.event_date.isoformat() if a.event_date else None, "url": a.url}
+    return {"id": a.id, "title": a.title, "kind": a.kind, "date": a.event_date.isoformat() if a.event_date else None, "url": a.url, "content": a.content, "attachment_url": a.attachment_url}
 
 
 def notice_dict(n: Notice) -> dict:
