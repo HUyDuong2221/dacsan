@@ -1,0 +1,64 @@
+# Cấu hình chạy trên server dev (build sẵn image, không mount code, không hot reload).
+# Dùng:   cp .env.server.example .env   (rồi sửa mật khẩu/secret)
+#         docker compose -f docker-compose.server.yml up -d --build
+# Cập nhật code mới: git pull && docker compose -f docker-compose.server.yml up -d --build
+# File docker-compose.yml còn lại chỉ dùng cho máy lập trình (mount code + hot reload).
+name: dacsan
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-dacsan}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Cần đặt POSTGRES_PASSWORD trong .env}
+      POSTGRES_DB: ${POSTGRES_DB:-dacsan}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-dacsan} -d ${POSTGRES_DB:-dacsan}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    # không mở cổng ra ngoài: chỉ backend truy cập qua mạng nội bộ của compose
+
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-dacsan}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-dacsan}
+      JWT_SECRET: ${JWT_SECRET:?Cần đặt JWT_SECRET trong .env}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:?Cần đặt ADMIN_EMAIL trong .env}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?Cần đặt ADMIN_PASSWORD trong .env}
+      SEED_DEMO: ${SEED_DEMO:-false}
+      MEDIA_DIR: /data/media
+      PRIVATE_DIR: /data/private
+    volumes:
+      - media:/data/media
+      - private:/data/private   # bản thảo gửi về, không công khai
+    # Swagger (/docs) chỉ mở trên localhost của server; xem từ máy mình bằng: ssh -L 8000:127.0.0.1:8000 <server>
+    ports:
+      - "127.0.0.1:${BACKEND_PORT:-8000}:8000"
+
+  frontend:
+    build:
+      context: ./frontend
+      target: run   # image production: `next build` + node server.js
+      args:
+        API_INTERNAL_URL: http://backend:8000
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      API_INTERNAL_URL: http://backend:8000
+      NEXT_TELEMETRY_DISABLED: "1"
+    ports:
+      - "${WEB_PORT:-3000}:3000"
+
+volumes:
+  pgdata:
+  media:
+  private:
