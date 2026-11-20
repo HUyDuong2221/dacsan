@@ -27,25 +27,37 @@ services:
       JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
       ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@example.com}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin12345}
-      SEED_DEMO: ${SEED_DEMO:-true}
+      SEED_DEMO: ${SEED_DEMO:-false}
       MEDIA_DIR: /data/media
       PRIVATE_DIR: /data/private
+    # Chế độ dev: mount code và tự reload khi sửa file, không cần build lại.
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
     volumes:
       - media:/data/media
       - private:/data/private   # bản thảo gửi về, không công khai
+      - ./backend/app:/srv/app
+      - ./backend/tests:/srv/tests
     ports:
       - "127.0.0.1:${BACKEND_PORT:-8000}:8000"   # chỉ để xem Swagger tại /docs; bỏ dòng này khi production
 
   frontend:
     build:
       context: ./frontend
+      target: deps   # dev: chỉ cần node_modules; code mount từ máy vào, chạy `next dev` (hot reload)
       args:
         API_INTERNAL_URL: http://backend:8000
     restart: unless-stopped
     depends_on:
       - backend
+    command: ["npm", "run", "dev", "--", "-H", "0.0.0.0"]
     environment:
       API_INTERNAL_URL: http://backend:8000
+      NEXT_TELEMETRY_DISABLED: "1"
+      WATCHPACK_POLLING: "true"   # bắt thay đổi file qua volume (Docker Desktop/Windows)
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules   # giữ node_modules của image, không bị thư mục máy đè
+      - /app/.next
     ports:
       - "${WEB_PORT:-3000}:3000"
 

@@ -5,13 +5,12 @@ import './v7.css';
 
 export type Slide = { key: string; cat: string; title: string; excerpt: string; meta: string; href: string; img?: string | null };
 export type TocItem = { slug: string; title: string; page: string };
-export type TopicPost = { slug: string; issue: string; title: string; author: string };
-export type Topic = { name: string; count: number; posts: TopicPost[] };
+export type TopicIssue = { slug: string; label: string; cover: string | null; date: string; articles: number; pages: number | null };
+export type Topic = { name: string; count: number; issues: TopicIssue[] };
 export type Act = { id: number; day: string; month: string; kind: string; title: string; url: string };
 export type IssueItem = { slug: string; label: string; theme: string; cover: string | null; year: string; number: number };
 
 export type HomeProps = {
-  dateStr: string;
   site: Record<string, string>;
   issueCount: number;
   latest: null | { slug: string; label: string; theme: string; cover: string | null; pdf: string | null; articleCount: number; pageCount: number | null };
@@ -24,19 +23,10 @@ export type HomeProps = {
   issues: IssueItem[];
 };
 
-const NAV = [
-  { href: '/', label: 'Trang chủ' },
-  { href: '/issues', label: 'Số đã phát hành' },
-  { href: '/research', label: 'Nghiên cứu – Trao đổi' },
-  { href: '/docs', label: 'Tư liệu' },
-  { href: '/search', label: 'Tìm bài báo' },
-];
-
 const pad = (n: number) => (n < 10 ? '0' : '') + n;
 
 export default function HomeV7(p: HomeProps) {
-  const { site, latest, slides } = p;
-  const [menu, setMenu] = useState(false);
+  const { latest, slides } = p;
   const [hero, setHero] = useState(0);
   const [paused, setPaused] = useState(false);
   const [cover, setCover] = useState(false);
@@ -79,69 +69,9 @@ export default function HomeV7(p: HomeProps) {
   }
 
   const tp = p.topics[topic] || p.topics[0];
-  const logo = site.logo_url || '/logo.jpg';
-  const alt = 'Đặc san Khoa học & Phát triển thành phố Đà Nẵng';
 
   return (
     <div className="v7">
-      <div className="v7-util">
-        <div className="v7-w">
-          <span className="nw">{p.dateStr}</span>
-          <span className="v7-util-r">
-            {site.issn && <span className="nw">ISSN {site.issn}</span>}
-            <a href="https://lhh.danang.gov.vn" target="_blank" rel="noopener noreferrer" className="nw">lhh.danang.gov.vn ↗</a>
-          </span>
-        </div>
-      </div>
-
-      <header className="v7-mast">
-        <div className="v7-w">
-          <Link href="/" className="v7-logo" aria-label={alt}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={logo} alt={alt} />
-          </Link>
-          <div className="v7-mast-meta">
-            {latest && <span className="nw">{latest.label}</span>}
-            <i className="hs">◆</i>
-            <span className="hs nw">{(site.org_name || 'Liên hiệp các Hội KH&KT TP. Đà Nẵng')}</span>
-            <i className="hs">◆</i>
-            <span className="hs nw">Phát hành hai tháng một kỳ</span>
-          </div>
-        </div>
-      </header>
-
-      <nav className="v7-nav" aria-label="Điều hướng chính">
-        <div className="v7-w">
-          <Link href="/" className="v7-mini" aria-label="Trang chủ">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={logo} alt="" />
-          </Link>
-          <button className="v7-ibtn v7-menu-btn" onClick={() => setMenu(!menu)} aria-label="Mở menu" aria-expanded={menu}>
-            <span className="v7-bars"><span /><span /><span /></span>
-          </button>
-          <div className="v7-links">
-            {NAV.map((m, i) => <Link key={m.href} href={m.href} className={i === 0 ? 'on' : ''}>{m.label}</Link>)}
-          </div>
-          <div className="v7-nav-r">
-            <Link href="/search" className="v7-ibtn" aria-label="Tìm kiếm">
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#03368D" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5" /><path d="M16 16l4.5 4.5" /></svg>
-            </Link>
-            <Link href="/gui-bai" className="v7-cta">Gửi bài</Link>
-          </div>
-        </div>
-        {menu && (
-          <div className="v7-drawer">
-            <div className="v7-w">
-              {NAV.map((m, i) => (
-                <Link key={m.href} href={m.href} className={i === 0 ? 'on' : ''} onClick={() => setMenu(false)}>
-                  {m.label}<span style={{ color: '#03368D' }} aria-hidden="true">→</span>
-                </Link>
-              ))}
-            </div>
-          </div>
-        )}
-      </nav>
-
       <main>
         <section className="v7-w v7-front">
           <div className="v7-front-row">
@@ -258,7 +188,7 @@ export default function HomeV7(p: HomeProps) {
           <section className="v7-w v7-topics">
             <div className="v7-sec-h">
               <h2 className="v7-h2">Chuyên mục</h2>
-              <p>Chọn một chuyên mục để xem các bài trong số mới nhất.</p>
+              <p>Chọn một chuyên mục để xem các số đặc san thuộc chuyên mục đó.</p>
             </div>
             <div className="v7-tabs" role="tablist" aria-label="Chuyên mục">
               {p.topics.map((t, i) => (
@@ -271,18 +201,28 @@ export default function HomeV7(p: HomeProps) {
               <div className="v7-tintro">
                 <i aria-hidden="true" />
                 <h3>{tp.name}</h3>
-                <p>{tp.count} bài trong số mới nhất{latest ? ` (${latest.label})` : ''}.</p>
-                {latest && <Link href={`/issues/${latest.slug}`}>Xem mục lục <span aria-hidden="true">→</span></Link>}
+                <p>{tp.count > 0 ? `${tp.count} số đặc san thuộc chuyên mục này.` : 'Chưa có số đặc san nào thuộc chuyên mục này.'}</p>
+                <Link href="/issues">Xem tất cả các số <span aria-hidden="true">→</span></Link>
               </div>
-              <div className="v7-tposts">
-                {tp.posts.map((a) => (
-                  <Link key={a.slug} href={`/articles/${a.slug}`} className="v7-tcard">
-                    <small>{a.issue}</small>
-                    <strong>{a.title}</strong>
-                    <div><span>{a.author}</span><b aria-hidden="true">→</b></div>
-                  </Link>
-                ))}
-              </div>
+              {tp.issues.length > 0 ? (
+                <div className="v7-tposts">
+                  {tp.issues.map((s) => (
+                    <Link key={s.slug} href={`/issues/${s.slug}`} className="v7-tcard v7-tissue">
+                      <span className="v7-tcover">
+                        {s.cover ? <img src={s.cover} alt={`Bìa ${s.label}`} loading="lazy" /> : <em>{s.label}</em>}
+                      </span>
+                      <strong>{s.label}</strong>
+                      {s.date && <small>Phát hành {s.date}</small>}
+                      <div>
+                        <span>{s.articles} bài{s.pages ? ` · ${s.pages} trang` : ''}</span>
+                        <b aria-hidden="true">→</b>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                <div className="v7-tposts v7-tempty"><span>0</span> số đặc san</div>
+              )}
             </div>
           </section>
         )}
@@ -361,31 +301,6 @@ export default function HomeV7(p: HomeProps) {
           </div>
         </section>
       </main>
-
-      <footer className="v7-foot">
-        <div className="v7-w">
-          <div className="v7-foot-row">
-            <div className="v7-foot-brand">
-              <div className="t">Đặc san Khoa học &amp; Phát triển<small>THÀNH PHỐ ĐÀ NẴNG</small></div>
-              {site.org_name && <p style={{ margin: 0, color: '#AFC2EA' }}>Cơ quan chủ quản: {site.org_name}</p>}
-            </div>
-            {site.contact && (
-              <div>
-                <h4>LIÊN HỆ</h4>
-                {site.contact.split('\n').map((l, i) => <div key={i}>{l}</div>)}
-              </div>
-            )}
-            <div>
-              <h4>GIẤY PHÉP</h4>
-              {site.license && <div>{site.license}</div>}
-              {site.issn && <div>ISSN {site.issn}</div>}
-            </div>
-          </div>
-          <div className="v7-foot-bot">
-            <span>© {new Date().getFullYear()} Đặc san Khoa học &amp; Phát triển thành phố Đà Nẵng</span>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }

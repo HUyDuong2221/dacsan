@@ -4,15 +4,6 @@ import HomeV7, { type HomeProps } from './_home/HomeV7';
 
 export const metadata: Metadata = { title: 'Trang chủ' };
 
-const FONTS =
-  'https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,400;0,500;0,600;0,700;0,800;1,700;1,800&family=Source+Serif+4:wght@400;600&display=swap';
-
-const WEEKDAYS = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
-
-function viDate(d: Date) {
-  return `${WEEKDAYS[d.getDay()]}, ${d.getDate()} tháng ${d.getMonth() + 1}, ${d.getFullYear()}`;
-}
-
 export default async function Home() {
   const [d, site, all] = await Promise.all([
     get('/home'),
@@ -22,29 +13,31 @@ export default async function Home() {
   const latest = d.latest_issue;
   const articles: any[] = d.articles || [];
 
-  const slides: HomeProps['slides'] = (d.hero || []).map((h: any, i: number) => ({
+  const slides: HomeProps['slides'] = (d.hero || []).map((h: any) => ({
     key: h.key,
-    cat: i === 0 && latest && h.key === `issue-${latest.slug}` ? 'SỐ MỚI NHẤT' : 'TIÊU ĐIỂM',
+    cat: latest && h.key === `issue-${latest.slug}` ? 'SỐ MỚI NHẤT' : 'TIÊU ĐIỂM',
     title: h.title,
     excerpt: h.excerpt || '',
     meta: h.kicker || '',
     href: h.href,
-    img: i === 0 && latest && h.key === `issue-${latest.slug}` ? latest.cover_url : null,
+    img: h.img || null,
   }));
 
   const toc = articles.slice(0, 5).map((a) => ({ slug: a.slug, title: a.title, page: a.page_label || '' }));
 
-  const fields: string[] = d.fields || [];
-  const topics = fields
-    .map((f) => {
-      const items = articles.filter((a) => a.field === f);
-      return {
-        name: f,
-        count: items.length,
-        posts: items.slice(0, 3).map((a) => ({ slug: a.slug, issue: a.issue?.label || '', title: a.title, author: a.author || '' })),
-      };
-    })
-    .filter((t) => t.count > 0);
+  // Chuyên mục lấy từ data; mỗi chuyên mục liệt kê các số đặc san thuộc chuyên mục đó.
+  const topics: HomeProps['topics'] = (d.topics || []).map((t: any) => ({
+    name: t.name,
+    count: t.count,
+    issues: (t.issues || []).map((i: any) => ({
+      slug: i.slug,
+      label: i.label,
+      cover: i.cover_url || null,
+      date: i.published_at ? i.published_at.slice(0, 10).split('-').reverse().join('/') : '',
+      articles: i.article_count || 0,
+      pages: i.page_count || null,
+    })),
+  }));
 
   const acts = (d.activities || []).map((a: any) => {
     const [, m, day] = (a.date || '').slice(0, 10).split('-');
@@ -59,17 +52,15 @@ export default async function Home() {
     number: i.number,
     year: i.published_at ? i.published_at.slice(0, 4) : 'Khác',
   }));
-  const totalArticles = (all.issues || []).reduce((s: number, i: any) => s + (i.article_count || 0), 0);
 
   const stats = [
     { v: String(d.stats?.issue_count ?? issues.length), l: 'số đặc san\nđã phát hành' },
-    { v: String(totalArticles), l: 'bài viết\ntrong mục lục' },
-    ...(latest?.page_count ? [{ v: String(latest.page_count), l: 'trang trong\nsố mới nhất' }] : []),
+    { v: String(d.stats?.article_count ?? 0), l: `bài viết theo\n${topics.length} chuyên mục` },
+    { v: latest?.page_count ? String(latest.page_count) : '—', l: 'trang trong\nsố mới nhất' },
     { v: '2', l: 'tháng\nmột kỳ' },
   ];
 
   const props: HomeProps = {
-    dateStr: viDate(new Date()),
     site,
     issueCount: d.stats?.issue_count ?? issues.length,
     latest: latest
@@ -84,11 +75,5 @@ export default async function Home() {
     issues,
   };
 
-  return (
-    <>
-      {/* eslint-disable-next-line @next/next/no-page-custom-font */}
-      <link rel="stylesheet" href={FONTS} />
-      <HomeV7 {...props} />
-    </>
-  );
+  return <HomeV7 {...props} />;
 }

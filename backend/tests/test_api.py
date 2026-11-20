@@ -64,7 +64,7 @@ def test_home(client):
     assert len(d["issues"]) == 8 and d["issues"][0]["number"] == 16  # không gồm số mới nhất
     assert d["hero"][0]["href"] == "/issues/so-17-6-2026" and d["hero"][0]["excerpt"]
     assert d["hero"][1]["kicker"] == "Phạm Ngọc Linh · tr. 13"
-    assert d["stats"] == {"issue_count": 13, "year_from": 2024, "year_to": 2026}
+    assert d["stats"] == {"issue_count": 13, "article_count": 23, "year_from": 2024, "year_to": 2026}
 
 
 def test_issue_detail_groups(client):
@@ -159,6 +159,18 @@ def test_issue_label_derived_from_number_and_date(client, auth):
     assert client.put(f"{A}/issues/{i['id']}", headers=auth, json={"published": True}).json()["label"] == "Số 18 (9-2026)"
     assert client.get(f"{P}/issues").json()["issues"][0]["published_at"] == "2026-09-02"
     assert client.post(f"{A}/issues", headers=auth, json={"theme": "thiếu số"}).status_code == 422
+    client.delete(f"{A}/issues/{i['id']}", headers=auth)
+
+
+def test_featured_issues_replace_hero(client, auth):
+    i = client.post(f"{A}/issues", headers=auth, json={
+        "number": 77, "published_at": "2027-01-10", "theme": "Số tiêu điểm", "published": True, "featured": True}).json()
+    hero = client.get(f"{P}/home").json()["hero"]
+    assert [h["href"] for h in hero] == [f"/issues/{i['slug']}"] and hero[0]["title"] == "Số tiêu điểm"
+    client.put(f"{A}/issues/{i['id']}", headers=auth, json={"title": "Tên số riêng"})
+    assert client.get(f"{P}/home").json()["hero"][0]["title"] == "Tên số riêng"
+    client.put(f"{A}/issues/{i['id']}", headers=auth, json={"featured": False})
+    assert len(client.get(f"{P}/home").json()["hero"]) == 6  # không còn số tiêu điểm -> cách hiển thị cũ
     client.delete(f"{A}/issues/{i['id']}", headers=auth)
 
 

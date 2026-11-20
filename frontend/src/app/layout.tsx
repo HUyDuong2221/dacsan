@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
-import Header from '@/components/Header';
+import SiteNav from '@/components/SiteNav';
 import Footer from '@/components/Footer';
 import ChatWidget from '@/components/ChatWidget';
 import { get } from '@/lib/api';
@@ -10,15 +10,24 @@ export const metadata: Metadata = {
   description: 'Đặc san Khoa học & Phát triển của Liên hiệp các Hội Khoa học và Kỹ thuật thành phố Đà Nẵng – đọc toàn văn trực tuyến.',
 };
 
-export const viewport: Viewport = { width: 'device-width', initialScale: 1, themeColor: '#1f4bb8' };
+export const viewport: Viewport = { width: 'device-width', initialScale: 1, themeColor: '#03368D' };
 
 export const dynamic = 'force-dynamic';
 
+const WEEKDAYS = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
+
+// Ngày theo giờ Việt Nam (máy chủ có thể chạy UTC).
+function viDate() {
+  const d = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Ho_Chi_Minh' }));
+  return `${WEEKDAYS[d.getDay()]}, ${d.getDate()} tháng ${d.getMonth() + 1}, ${d.getFullYear()}`;
+}
+
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  let site: Record<string, string> = {};
-  try {
-    site = await get('/site');
-  } catch {}
+  const [site, all] = await Promise.all([
+    get('/site').catch(() => ({} as Record<string, string>)),
+    get('/issues').catch(() => ({ issues: [] as any[] })),
+  ]);
+  const latestLabel: string | undefined = all.issues?.[0]?.label;
   return (
     <html lang="vi">
       <head>
@@ -26,7 +35,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         <link
           rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono&family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:ital,wght@0,400;0,600;0,700;1,400&display=swap&subset=vietnamese"
+          href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,400;0,500;0,600;0,700;0,800;1,700;1,800&family=IBM+Plex+Mono&family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:ital,wght@0,400;0,600;0,700;1,400&display=swap&subset=vietnamese"
         />
       </head>
       <body>
@@ -45,21 +54,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             </svg>
             <div className="blob" />
           </div>
-          <div className="topbar">
-            <div className="wrap">
-              <span>{(site.org_name || 'LIÊN HIỆP CÁC HỘI KHOA HỌC KỸ THUẬT ĐÀ NẴNG').toUpperCase()}</span>
-              <span className="r">
-                <span>ISSN {site.issn || '—'}</span>
-                <span className="sep" aria-hidden="true">|</span>
-                <span>VI / EN</span>
-                <form action="/search" className="topsearch">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="M20 20l-4-4" /></svg>
-                  <input type="search" name="q" minLength={2} aria-label="Tìm kiếm trên trang" placeholder="Tìm kiếm..." />
-                </form>
-              </span>
-            </div>
-          </div>
-          <Header logoUrl={site.logo_url} />
+          <SiteNav site={site} dateStr={viDate()} latestLabel={latestLabel} />
           <main>{children}</main>
           <Footer site={site} />
         </div>

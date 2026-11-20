@@ -40,15 +40,18 @@ const TAB_ROLES: Record<string, string[]> = {
 
 const RESOURCES: ResourceDef[] = [
   {
-    key: 'issues', title: 'Số đặc san', addLabel: 'Thêm số đặc san mới', editLabel: 'Sửa số đặc san',
+    key: 'issues', title: 'Số đặc san', addLabel: 'Thêm số đặc san mới', editLabel: 'Sửa số đặc san', hideId: true,
     fields: [
-      { key: 'number', label: 'Số đặc san', type: 'number', required: true, list: true, hint: 'Số thứ tự, ví dụ 18. Nhãn hiển thị (VD: Số 18 (8-2026)) tự tạo từ Số đặc san và Ngày đăng.' },
-      { key: 'published_at', label: 'Ngày đăng', type: 'date', required: true, list: true },
-      { key: 'theme', label: 'Chủ đề (chuyên mục)', required: true, list: true, full: true, optionsFrom: { resource: 'fields', labelKey: 'name', valueKey: 'name' } },
+      { key: 'number', label: 'Số đặc san', listLabel: 'Số', type: 'number', required: true, list: true, hint: 'Số thứ tự, ví dụ 18. Nhãn hiển thị (VD: Số 18 (8-2026)) tự tạo từ Số đặc san và Ngày đăng.' },
+      { key: 'published_at', label: 'Ngày đăng', type: 'date', required: true },
+      { key: 'title', label: 'Tên số đặc san', list: true, full: true, hint: 'Hiển thị làm tiêu đề ở khối Tiêu điểm trang chủ. Để trống thì dùng Chủ đề.' },
+      { key: 'theme', label: 'Chủ đề (chuyên mục)', listLabel: 'Chuyên mục', required: true, list: true, full: true, optionsFrom: { resource: 'fields', labelKey: 'name', valueKey: 'name' } },
       { key: 'summary', label: 'Giới thiệu', type: 'textarea', def: 'Toàn văn đọc trực tiếp trên web, không cần tải PDF. Mục lục giữ đúng thứ tự chuyên mục của bản in, kèm số trang để đối chiếu.' },
       { key: 'cover_url', label: 'Ảnh bìa', type: 'file' },
       { key: 'pdf_url', label: 'File PDF', type: 'file' },
-      { key: 'published', label: 'Công bố trên website', type: 'bool', list: true, hint: 'Chưa tick thì số và mục lục của số chưa hiện ra ngoài.' },
+      { key: 'page_count', label: 'Số trang', type: 'number', hint: 'Để trống thì tự đếm từ file PDF khi lưu.' },
+      { key: 'published', label: 'Công bố trên website', listLabel: 'Công bố', type: 'bool', list: true, hint: 'Chưa tick thì số và mục lục của số chưa hiện ra ngoài.' },
+      { key: 'featured', label: 'Tiêu điểm', type: 'bool', list: true, hint: 'Tick để đưa số này lên khối Tiêu điểm ở trang chủ (hiện 10 số tiêu điểm mới nhất).' },
     ],
   },
   { key: 'submissions', title: 'Bài gửi', fields: [] },

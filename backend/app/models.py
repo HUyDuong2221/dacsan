@@ -45,6 +45,7 @@ class Issue(Stamped, Base):
     label: Mapped[str] = mapped_column(String(80))  # "Số 17 (6-2026)"
     year: Mapped[int] = mapped_column(Integer, default=2026)
     published_at: Mapped[date | None] = mapped_column(Date, nullable=True)  # Ngày đăng
+    title: Mapped[str | None] = mapped_column(String(400), nullable=True)  # Tên số đặc san (hiện ở khối Tiêu điểm)
     theme: Mapped[str] = mapped_column(String(400))
     summary: Mapped[str | None] = mapped_column(Text, nullable=True)
     cover_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
@@ -52,6 +53,7 @@ class Issue(Stamped, Base):
     page_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
     printed_articles: Mapped[int | None] = mapped_column(Integer, nullable=True)
     published: Mapped[bool] = mapped_column(Boolean, default=False)
+    featured: Mapped[bool] = mapped_column(Boolean, default=False)  # tiêu điểm trên trang chủ
 
     entries: Mapped[list["TocEntry"]] = relationship(
         back_populates="issue", cascade="all, delete-orphan", passive_deletes=True

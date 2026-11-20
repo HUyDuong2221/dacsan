@@ -1,5 +1,5 @@
 'use client';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 
 const RichText = dynamic(() => import('./RichText'), { ssr: false, loading: () => <div className="rte-load">Đang tải trình soạn thảo…</div> });
@@ -11,12 +11,13 @@ export type FieldDef = {
   options?: { value: string; label: string }[];
   optionsFrom?: { resource: string; labelKey: string; valueKey?: string };
   list?: boolean;
+  listLabel?: string; // tiêu đề cột ngắn gọn trong bảng (mặc định = label)
   full?: boolean;
   required?: boolean;
   hint?: string;
   def?: any; // giá trị mặc định khi thêm mới
 };
-export type ResourceDef = { key: string; title: string; fields: FieldDef[]; readonly?: boolean; noDelete?: boolean; addLabel?: string; editLabel?: string };
+export type ResourceDef = { key: string; title: string; fields: FieldDef[]; readonly?: boolean; noDelete?: boolean; addLabel?: string; editLabel?: string; hideId?: boolean };
 
 export async function adm(path: string, token: string, init: RequestInit = {}) {
   const isForm = init.body instanceof FormData;
@@ -42,6 +43,16 @@ export default function ResourceManager({ res, token, onAuthError, rowExtra, que
   const [filter, setFilter] = useState('');
   const [err, setErr] = useState('');
   const [msg, setMsg] = useState('');
+  const formRef = useRef<HTMLFormElement>(null);
+  const editKey = edit ? edit.id ?? 'new' : null;
+
+  // Form sửa nằm trên đầu bảng: khi bấm "Sửa" ở dòng phía dưới thì cuộn lên form và focus ô đầu tiên.
+  useEffect(() => {
+    const f = formRef.current;
+    if (!editKey || !f) return;
+    f.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    f.querySelector<HTMLElement>('input:not([type=checkbox]):not([type=file]), select, textarea')?.focus({ preventScroll: true });
+  }, [editKey]);
 
   const fail = useCallback((e: any) => {
     if (e.status === 401) onAuthError();
@@ -85,6 +96,18 @@ export default function ResourceManager({ res, token, onAuthError, rowExtra, que
     } catch (e) { fail(e); }
   }
 
+  // Bật/tắt ô check (Công bố, Tiêu điểm...) ngay trên danh sách, không cần mở form sửa.
+  async function toggle(row: any, key: string, value: boolean) {
+    setErr(''); setMsg('');
+    setRows((rs) => rs.map((x) => (x.id === row.id ? { ...x, [key]: value } : x)));
+    try {
+      await adm(`/${res.key}/${row.id}`, token, { method: 'PUT', body: JSON.stringify({ [key]: value }) });
+    } catch (e) {
+      setRows((rs) => rs.map((x) => (x.id === row.id ? { ...x, [key]: !value } : x)));
+      fail(e);
+    }
+  }
+
   async function remove(row: any) {
     if (!confirm('Xóa mục này? Không thể hoàn tác.')) return;
     try { await adm(`/${res.key}/${row.id}`, token, { method: 'DELETE' }); setMsg('Đã xóa'); load(); } catch (e) { fail(e); }
@@ -119,7 +142,7 @@ export default function ResourceManager({ res, token, onAuthError, rowExtra, que
       {msg && <div className="ok" role="status">{msg}</div>}
 
       {edit && (
-        <form className="form" onSubmit={save}>
+        <form className="form" onSubmit={save} ref={formRef} style={{ scrollMarginTop: 80 }}>
           <h3 className="full serif" style={{ fontSize: 20 }}>
             {edit.id ? res.editLabel || 'Sửa' : res.addLabel || 'Thêm mới'}
           </h3>
@@ -159,13 +182,22 @@ export default function ResourceManager({ res, token, onAuthError, rowExtra, que
 
       <div className="tbl">
         <table className="t">
-          <thead><tr><th>ID</th>{listFields.map((f) => <th key={f.key}>{f.label}</th>)}<th /></tr></thead>
+          <thead><tr>{!res.hideId && <th>ID</th>}{listFields.map((f) => <th key={f.key} className={f.type === 'bool' ? 't-chk' : ''}>{f.listLabel || f.label}</th>)}<th className="t-actcell" /></tr></thead>
           <tbody>
             {shown.map((r) => (
               <tr key={r.id}>
-                <td className="mono">{r.id}</td>
-                {listFields.map((f) => <td key={f.key}>{f.type === 'bool' ? (r[f.key] ? <span className="pill">Có</span> : '') : show(f, r[f.key])}</td>)}
-                <td>
+                {!res.hideId && <td className="mono">{r.id}</td>}
+                {listFields.map((f) => (
+                  <td key={f.key} className={f.type === 'bool' ? 't-chk' : ''}>
+                    {f.type === 'bool' ? (
+                      res.readonly ? (r[f.key] ? <span className="pill">Có</span> : '') : (
+                        <input type="checkbox" checked={!!r[f.key]} aria-label={`${f.listLabel || f.label}: ${r[listFields[0]?.key] ?? r.id}`}
+                          onChange={(e) => toggle(r, f.key, e.target.checked)} />
+                      )
+                    ) : show(f, r[f.key])}
+                  </td>
+                ))}
+                <td className="t-actcell">
                   <div className="t-act">
                     {rowExtra && rowExtra(r)}
                     {!res.readonly && <button className="btn ghost sm" onClick={() => setEdit({ ...r })}>Sửa</button>}
@@ -175,7 +207,7 @@ export default function ResourceManager({ res, token, onAuthError, rowExtra, que
               </tr>
             ))}
             {shown.length === 0 && (
-              <tr><td colSpan={listFields.length + 2} className="t-empty">
+              <tr><td colSpan={listFields.length + (res.hideId ? 1 : 2)} className="t-empty">
                 <b>{rows.length ? 'Không có mục khớp bộ lọc' : 'Chưa có mục nào'}</b>
                 {rows.length ? 'Thử từ khóa khác hoặc xóa bộ lọc.' : res.readonly ? '' : `Bấm “${res.addLabel || 'Thêm mới'}” để tạo mục đầu tiên.`}
               </td></tr>

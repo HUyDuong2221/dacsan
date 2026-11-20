@@ -37,6 +37,7 @@ def issue_card(i: Issue, counts: dict[int, int]) -> dict:
         "slug": i.slug,
         "number": i.number,
         "label": i.label,
+        "title": i.title,
         "published_at": i.published_at.isoformat() if i.published_at else None,
         "theme": i.theme,
         "summary": i.summary,
@@ -105,17 +106,34 @@ def home(db: Session = Depends(get_db)):
     latest = latest_issue(db)
     site_ = {s.key: s.value for s in db.scalars(select(Setting))}
     slides = []
-    if latest:
+    # Tiêu điểm: 10 số đặc san mới nhất được đánh dấu "Tiêu điểm" trong trang quản trị.
+    spot = db.scalars(
+        select(Issue).where(Issue.published.is_(True), Issue.featured.is_(True))
+        .order_by(Issue.published_at.desc().nullslast(), Issue.number.desc()).limit(10)
+    ).all()
+    for i in spot:
         slides.append({
-            "key": f"issue-{latest.slug}",
-            "kicker": f"Đặc san {latest.label.lower()}",
-            "title": latest.theme,
-            "excerpt": site_.get("hero_intro", ""),
-            "href": f"/issues/{latest.slug}",
+            "key": f"issue-{i.slug}",
+            "kicker": f"Đặc san {i.label.lower()}",
+            "title": i.title or i.theme,
+            "excerpt": i.summary or "",
+            "href": f"/issues/{i.slug}",
+            "img": i.cover_url,
         })
-    featured = db.scalars(
-        ordered(published_articles().where(TocEntry.featured.is_(True), TocEntry.is_front.is_(False))).limit(5)
-    ).unique().all()
+    featured = []
+    if not spot:  # chưa chọn số tiêu điểm nào: giữ cách hiển thị cũ (số mới nhất + bài nổi bật)
+        if latest:
+            slides.append({
+                "key": f"issue-{latest.slug}",
+                "kicker": f"Đặc san {latest.label.lower()}",
+                "title": latest.title or latest.theme,
+                "excerpt": site_.get("hero_intro", ""),
+                "href": f"/issues/{latest.slug}",
+                "img": latest.cover_url,
+            })
+        featured = db.scalars(
+            ordered(published_articles().where(TocEntry.featured.is_(True), TocEntry.is_front.is_(False))).limit(5)
+        ).unique().all()
     for a in featured:
         slides.append({
             "key": a.slug,
@@ -135,6 +153,17 @@ def home(db: Session = Depends(get_db)):
     n_issues, y0, y1 = db.execute(
         select(func.count(), func.min(Issue.year), func.max(Issue.year)).where(Issue.published.is_(True))
     ).one()
+    n_articles = db.scalar(
+        select(func.count()).select_from(TocEntry).join(Issue)
+        .where(Issue.published.is_(True), TocEntry.is_front.is_(False))
+    ) or 0
+    # Chuyên mục: mỗi số đặc san thuộc một chuyên mục qua "Chủ đề (chuyên mục)" (Issue.theme = Field.name).
+    # Liệt kê mọi chuyên mục, kể cả chuyên mục chưa có số nào (count = 0).
+    published = db.scalars(select(Issue).where(Issue.published.is_(True)).order_by(Issue.number.desc())).all()
+    topics = []
+    for f in db.scalars(select(Field).order_by(Field.sort_order, Field.id)):
+        mine = [i for i in published if (i.theme or "").strip() == f.name.strip()]
+        topics.append({"name": f.name, "count": len(mine), "issues": [issue_card(i, c) for i in mine]})
     return {
         "latest_issue": issue_card(latest, c) if latest else None,
         "hero": slides,
@@ -142,7 +171,8 @@ def home(db: Session = Depends(get_db)):
         "fields": sections_of(in_issue),
         "issues": [issue_card(i, c) for i in recent],
         "activities": [activity_dict(a) for a in acts],
-        "stats": {"issue_count": n_issues, "year_from": y0, "year_to": y1},
+        "topics": topics,
+        "stats": {"issue_count": n_issues, "article_count": n_articles, "year_from": y0, "year_to": y1},
     }
 
 

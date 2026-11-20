@@ -2,12 +2,16 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { fmtDate, get } from '@/lib/api';
 import { Cover, IssueCard, SearchBox } from '@/components/Parts';
+import IssueTabs from '@/components/IssueTabs';
 
 export const metadata: Metadata = { title: 'Các số đã phát hành' };
 
 export default async function Issues() {
   const d = await get('/issues');
   const [latest, ...older] = d.issues;
+  // "Trong số này": mục lục của số mới nhất, nhóm theo chuyên mục.
+  const toc = latest ? await get(`/issues/${latest.slug}`).catch(() => null) : null;
+  const groups: any[] = toc?.groups || [];
   return (
     <div className="wrap page">
       <div className="pagehead">
@@ -38,21 +42,18 @@ export default async function Issues() {
         </div>
       )}
 
-      {d.notices.length > 0 && (
-        <div className="box tint" style={{ marginBottom: 44 }}>
-          <div className="kicker" style={{ marginBottom: 16 }}>Thông báo của tòa soạn</div>
-          <div className="notice-grid">
-            {d.notices.map((n: any) => (
-              <article key={n.id}>
-                <div className="row mono" style={{ fontSize: 11, gap: 10 }}>
-                  <span className="tag" style={{ border: '1px solid var(--line2)', padding: '3px 7px' }}>{n.tag}</span>
-                  <span style={{ color: 'var(--faint)' }}>{fmtDate(n.date)}</span>
-                </div>
-                <h3>{n.title}</h3>
-              </article>
-            ))}
+      {latest && (
+        <section style={{ marginBottom: 56 }}>
+          <div className="sec-head">
+            <h2>Trong số này</h2>
+            <Link href={`/issues/${latest.slug}`}>Toàn bộ mục lục →</Link>
           </div>
-        </div>
+          {groups.length === 0 ? (
+            <p className="muted" style={{ margin: 0 }}>Mục lục của {latest.label.toLowerCase()} đang được cập nhật.</p>
+          ) : (
+            <IssueTabs articles={groups.flatMap((g) => g.items)} fields={groups.map((g) => g.field)} />
+          )}
+        </section>
       )}
 
       <h2 className="serif" style={{ fontSize: 24, marginBottom: 26 }}>Các số trước</h2>

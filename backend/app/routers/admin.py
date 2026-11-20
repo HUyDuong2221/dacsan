@@ -111,8 +111,30 @@ def coerce(model, data: dict, partial: bool) -> dict:
     return out
 
 
+def pdf_page_count(url: str | None) -> int | None:
+    """Số trang của file PDF đã tải lên (/media/...); None nếu không đọc được."""
+    if not url or not url.startswith("/media/"):
+        return None
+    path = os.path.join(settings.media_dir, *url[len("/media/"):].split("/"))
+    if not os.path.isfile(path):
+        return None
+    try:
+        import fitz  # PyMuPDF
+
+        with fitz.open(path) as doc:
+            return doc.page_count or None
+    except Exception:
+        return None
+
+
 def prepare_issue(data: dict, existing: Issue | None) -> None:
-    """Nhãn ("Số 17 (6-2026)") và năm tự sinh từ Số đặc san + Ngày đăng, không nhập tay."""
+    """Nhãn ("Số 17 (6-2026)") và năm tự sinh từ Số đặc san + Ngày đăng, không nhập tay.
+    Số trang để trống thì tự đếm từ file PDF."""
+    if data.get("page_count") in (None, "") and ("page_count" in data or "pdf_url" in data or existing is None):
+        pdf = data.get("pdf_url", existing.pdf_url if existing else None)
+        n_pages = pdf_page_count(pdf)
+        if n_pages:
+            data["page_count"] = n_pages
     if "number" not in data and "published_at" not in data:
         return
     number = data.get("number", existing.number if existing else None)
