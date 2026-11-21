@@ -174,9 +174,6 @@ export default function HomeV7(p: HomeProps) {
                     <span>{latest.articleCount} bài{latest.pageCount ? ` · ${latest.pageCount} trang` : ''}</span>
                   </div>
                   <div className="v7-iss-theme">{latest.theme}</div>
-                  <button className="v7-link" onClick={() => setCover(!cover)} aria-pressed={cover}>
-                    {cover ? 'Gập bìa lại' : 'Mở bìa xem mục lục'}
-                  </button>
                   <div className="v7-btns">
                     <Link href={`/issues/${latest.slug}`} className="p">Mục lục đầy đủ</Link>
                     {latest.pdf && <a href={latest.pdf} className="g" target="_blank" rel="noopener noreferrer">Tải PDF</a>}
@@ -228,11 +225,11 @@ export default function HomeV7(p: HomeProps) {
           <section className="v7-w v7-acts">
             <div className="v7-acts-h">
               <h2 className="v7-h2">Tin hoạt động</h2>
-              <a href="https://lhh.danang.gov.vn/chi-tiet-tin-tuc?danhmuc=1" target="_blank" rel="noopener noreferrer">Xem tất cả trên lhh.danang.gov.vn ↗</a>
+              <Link href="/tin-hoat-dong">Xem tất cả tin hoạt động →</Link>
             </div>
             <div className="v7-acts-g">
               {p.acts.map((a) => (
-                <a key={a.id} className="v7-act" href={a.url || 'https://lhh.danang.gov.vn/chi-tiet-tin-tuc?danhmuc=1'} target="_blank" rel="noopener noreferrer">
+                <a key={a.id} className="v7-act" href={a.url} {...(a.url.startsWith('http') ? { target: '_blank', rel: 'noopener noreferrer' } : {})}>
                   <span className="d"><b>{a.day}</b><small>{a.month}</small></span>
                   <span><em>{a.kind}</em><strong data-hl>{a.title}</strong></span>
                 </a>

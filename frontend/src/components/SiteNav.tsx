@@ -6,10 +6,11 @@ import './site-nav.css';
 
 const NAV = [
   { href: '/', label: 'Trang chủ', match: (p: string) => p === '/' },
-  { href: '/issues', label: 'Số đã phát hành', match: (p: string) => p.startsWith('/issues') || p.startsWith('/articles') },
+  { href: '/tieu-diem', label: 'Tiêu điểm', match: (p: string) => p.startsWith('/tieu-diem') },
+  { href: '/issues', label: 'Đặc san', match: (p: string) => p.startsWith('/issues') || p.startsWith('/articles') },
   { href: '/research', label: 'Nghiên cứu – Trao đổi', match: (p: string) => p.startsWith('/research') },
+  { href: '/tin-hoat-dong', label: 'Tin hoạt động', match: (p: string) => p.startsWith('/tin-hoat-dong') },
   { href: '/docs', label: 'Tư liệu', match: (p: string) => p.startsWith('/docs') },
-  { href: '/search', label: 'Tìm bài báo', match: (p: string) => p.startsWith('/search') },
 ];
 
 const ALT = 'Đặc san Khoa học & Phát triển thành phố Đà Nẵng';

@@ -170,9 +170,21 @@ def test_featured_issues_replace_hero(client, auth):
     assert [h["href"] for h in hero] == [f"/issues/{i['slug']}"] and hero[0]["title"] == "Số tiêu điểm"
     client.put(f"{A}/issues/{i['id']}", headers=auth, json={"title": "Tên số riêng"})
     assert client.get(f"{P}/home").json()["hero"][0]["title"] == "Tên số riêng"
+    assert [x["slug"] for x in client.get(f"{P}/featured").json()] == [i["slug"]]  # trang Tiêu điểm
     client.put(f"{A}/issues/{i['id']}", headers=auth, json={"featured": False})
+    assert client.get(f"{P}/featured").json() == []
     assert len(client.get(f"{P}/home").json()["hero"]) == 6  # không còn số tiêu điểm -> cách hiển thị cũ
     client.delete(f"{A}/issues/{i['id']}", headers=auth)
+
+
+def test_activity_detail(client, auth):
+    a = client.post(f"{A}/activities", headers=auth, json={"title": "Hội thảo thử", "content": "<p>Nội dung</p>", "published": True}).json()
+    d = client.get(f"{P}/activities/{a['id']}").json()
+    assert d["title"] == "Hội thảo thử" and d["content"] == "<p>Nội dung</p>"
+    client.put(f"{A}/activities/{a['id']}", headers=auth, json={"published": False})
+    assert client.get(f"{P}/activities/{a['id']}").status_code == 404  # ẩn thì không xem được
+    assert client.get(f"{P}/activities/999999").status_code == 404
+    client.delete(f"{A}/activities/{a['id']}", headers=auth)
 
 
 # ---------- mục lục từ PDF ----------

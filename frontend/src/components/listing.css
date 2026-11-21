@@ -1,0 +1,62 @@
+/* Trang "Tiêu điểm" và "Tin hoạt động" (cùng ngôn ngữ với trang chủ v7). */
+.lst{--blue:#03368D;--ink:#111A2E;--ink2:#38425A;--mute:#5B6478;--line:#E1E4EB;font-family:'Be Vietnam Pro',system-ui,sans-serif;color:var(--ink)}
+.lst a{color:inherit;text-decoration:none}
+.lst-head{padding:8px 0 22px;margin-bottom:28px;border-bottom:2px solid var(--ink)}
+.lst-head small{display:block;font-size:12px;font-weight:700;letter-spacing:.16em;color:#C8102E;margin-bottom:10px}
+.lst-head h1{margin:0;font-size:clamp(30px,3.4vw,44px);font-weight:800;font-style:italic;letter-spacing:-.02em;color:var(--blue)}
+.lst-head p{margin:10px 0 0;max-width:64ch;font-size:15.5px;line-height:1.65;color:var(--ink2)}
+.lst-empty{padding:40px 0;color:var(--mute)}
+@keyframes lstUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+
+/* ---- Tiêu điểm: thẻ ngang bìa + nội dung ---- */
+.spot{display:flex;flex-direction:column;gap:22px}
+.spot-card{display:grid;grid-template-columns:200px minmax(0,1fr);gap:28px;align-items:center;padding:22px;background:#fff;border:1px solid var(--line);border-left:4px solid var(--blue);animation:lstUp .55s cubic-bezier(.2,.7,.2,1) both;transition:box-shadow .25s,transform .25s}
+.spot-card:hover{box-shadow:0 18px 36px rgba(3,54,141,.12);transform:translateY(-3px)}
+.spot-cover{aspect-ratio:3/4;background:linear-gradient(160deg,#03368D,#1F4BB8);display:flex;align-items:center;justify-content:center;overflow:hidden;box-shadow:0 10px 24px rgba(3,54,141,.18)}
+.spot-cover img{width:100%;height:100%;object-fit:cover;display:block}
+.spot-cover em{font-style:italic;font-weight:800;color:#fff;font-size:20px;padding:12px;text-align:center}
+.spot-body small{display:block;font-size:12px;font-weight:700;letter-spacing:.12em;color:var(--blue);margin-bottom:8px}
+.spot-body h2{margin:0 0 10px;font-size:clamp(22px,2.2vw,28px);line-height:1.2;font-weight:800;font-style:italic;letter-spacing:-.01em;text-wrap:balance}
+.spot-body p{margin:0 0 14px;font-family:'Source Serif 4',Georgia,serif;font-size:16.5px;line-height:1.65;color:var(--ink2);max-width:70ch}
+.spot-meta{display:flex;flex-wrap:wrap;gap:6px 18px;align-items:center;font-size:13px;color:var(--mute)}
+.spot-meta .chip{padding:3px 10px;border-radius:999px;background:#EEF2FA;color:var(--blue);font-weight:600}
+.spot-meta b{margin-left:auto;color:var(--blue);font-weight:700;font-size:14px}
+
+/* ---- Tin hoạt động: danh sách theo ngày ---- */
+.news{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(420px,100%),1fr));gap:0 48px}
+.news-item{display:grid;grid-template-columns:68px minmax(0,1fr);gap:20px;align-items:start;padding:22px 0;border-bottom:1px solid var(--line);animation:lstUp .5s ease both}
+a.news-item:hover strong{color:var(--blue);text-decoration:underline;text-underline-offset:4px;text-decoration-thickness:1px}
+.news-date{text-align:center;border-right:1px solid var(--line);padding-right:14px;line-height:1}
+.news-date b{display:block;font-size:32px;font-weight:800;font-style:italic;color:var(--blue)}
+.news-date small{display:block;font-size:11px;font-weight:600;letter-spacing:.08em;color:var(--mute);margin-top:6px;white-space:nowrap}
+.news-item em{display:block;font-style:normal;font-size:11.5px;font-weight:700;letter-spacing:.12em;color:#C8102E;margin-bottom:6px;text-transform:uppercase}
+.news-item strong{display:block;font-size:17px;line-height:1.45;font-weight:600;text-wrap:pretty}
+.news-item .more{display:inline-block;margin-top:8px;font-size:13px;font-weight:600;color:var(--blue)}
+
+/* ---- Chi tiết hoạt động ---- */
+.news-detail{max-width:780px}
+.news-detail .crumb{font-size:13.5px;color:var(--mute);margin-bottom:14px}
+.news-detail .crumb a{color:var(--blue)}
+.news-detail h1{margin:0 0 12px;font-size:clamp(26px,3vw,38px);line-height:1.2;font-weight:800;letter-spacing:-.01em;text-wrap:balance}
+.news-detail .meta{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13.5px;color:var(--mute);padding-bottom:18px;margin-bottom:24px;border-bottom:1px solid var(--line)}
+.news-detail .meta em{font-style:normal;font-weight:700;letter-spacing:.1em;color:#C8102E;text-transform:uppercase;font-size:12px}
+.news-body{font-family:'Source Serif 4',Georgia,serif;font-size:18px;line-height:1.75;color:#1F2A40}
+.news-body img{max-width:100%;height:auto}
+.news-body table{border-collapse:collapse;max-width:100%;overflow-x:auto;display:block}
+.news-body td,.news-body th{border:1px solid var(--line);padding:6px 10px}
+.news-acts{display:flex;flex-wrap:wrap;gap:10px;margin-top:28px}
+.news-acts a{display:inline-flex;align-items:center;padding:11px 18px;border-radius:8px;border:1px solid var(--blue);color:var(--blue);font-size:14px;font-weight:600}
+.news-acts a.p{background:var(--blue);color:#fff}
+
+@media(max-width:640px){
+  .spot-card{grid-template-columns:96px minmax(0,1fr);gap:16px;padding:14px;align-items:start}
+  .spot-body p{display:none}
+  .spot-cover em{font-size:13px;padding:6px}
+  .spot-body h2{font-size:19px}
+  .spot-meta b{margin-left:0}
+  .news-item{grid-template-columns:56px minmax(0,1fr);gap:14px;padding:18px 0}
+  .news-date b{font-size:26px}
+  .news-item strong{font-size:15.5px}
+  .news-body{font-size:16.5px}
+}
+@media(prefers-reduced-motion:reduce){.lst *{animation:none!important;transition:none!important}}

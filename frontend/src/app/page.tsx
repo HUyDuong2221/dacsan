@@ -35,7 +35,9 @@ export default async function Home() {
 
   const acts = (d.activities || []).map((a: any) => {
     const [, m, day] = (a.date || '').slice(0, 10).split('-');
-    return { id: a.id, day: day || '', month: m ? `THG ${Number(m)}` : '', kind: a.kind || '', title: a.title, url: a.url || '' };
+    // có nội dung -> trang chi tiết trên site; chỉ có liên kết -> trang ngoài; không có gì -> trang danh sách
+    const url = a.content ? `/tin-hoat-dong/${a.id}` : a.url || '/tin-hoat-dong';
+    return { id: a.id, day: day || '', month: m ? `THG ${Number(m)}` : '', kind: a.kind || '', title: a.title, url };
   });
 
   const issues = (all.issues || []).map((i: any) => ({

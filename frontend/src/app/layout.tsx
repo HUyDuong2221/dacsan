@@ -27,7 +27,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     get('/site').catch(() => ({} as Record<string, string>)),
     get('/issues').catch(() => ({ issues: [] as any[] })),
   ]);
-  const latestLabel: string | undefined = all.issues?.[0]?.label;
+  // Dòng dưới logo: "Số 17 · Tháng 6/2026", lấy từ số và ngày đăng của số mới nhất trong DB.
+  const latest = all.issues?.[0];
+  const [y, m] = (latest?.published_at || '').slice(0, 10).split('-');
+  const latestLabel: string | undefined = latest
+    ? (y && m ? `Số ${latest.number} · Tháng ${Number(m)}/${y}` : latest.label)
+    : undefined;
   return (
     <html lang="vi">
       <head>

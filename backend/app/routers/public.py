@@ -290,6 +290,25 @@ def activities(db: Session = Depends(get_db)):
     return [activity_dict(a) for a in rows]
 
 
+@router.get("/activities/{aid}")
+def activity(aid: int, db: Session = Depends(get_db)):
+    a = db.get(Activity, aid)
+    if not a or not a.published:
+        raise HTTPException(404, "Không tìm thấy hoạt động")
+    return activity_dict(a)
+
+
+@router.get("/featured")
+def featured_issues(db: Session = Depends(get_db)):
+    """Trang "Tiêu điểm": mọi số đặc san đã công bố được tick "Tiêu điểm" trong quản trị, mới nhất trước."""
+    c = counts(db)
+    rows = db.scalars(
+        select(Issue).where(Issue.published.is_(True), Issue.featured.is_(True))
+        .order_by(Issue.published_at.desc().nullslast(), Issue.number.desc())
+    ).all()
+    return [issue_card(i, c) for i in rows]
+
+
 class SubscribeIn(BaseModel):
     email: str
 

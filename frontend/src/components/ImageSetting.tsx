@@ -156,7 +156,7 @@ function Scaled({ width, height, children }: { width: number; height: number; ch
   );
 }
 
-const NAVTXT = ['Trang chủ', 'Số đã phát hành', 'Nghiên cứu – Trao đổi', 'Tư liệu', 'Tìm bài báo'];
+const NAVTXT = ['Trang chủ', 'Tiêu điểm', 'Đặc san', 'Nghiên cứu – Trao đổi', 'Tin hoạt động', 'Tư liệu'];
 const TNR = '"Times New Roman",Times,serif';
 
 function LogoMock({ url }: { url: string }) {
