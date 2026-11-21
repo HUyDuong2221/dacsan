@@ -88,7 +88,6 @@ SETTINGS = {
     "hero_intro": "Toàn văn đọc trực tiếp trên web, không cần tải PDF. Mục lục giữ đúng thứ tự chuyên mục của bản in, kèm số trang để đối chiếu.",
     "org_name": "Liên hiệp các Hội Khoa học và Kỹ thuật thành phố Đà Nẵng",
     "issn": "2734-9098",
-    "leaders": "Chủ tịch: TS Võ Công Trí\nPhó Chủ tịch: ThS Lê Văn Trung\nPhó Chủ tịch: ThS Nguyễn Thị Hoài Nam\nTổng Thư ký: ThS Huỳnh Phạm Duy Hoàng",
     "contact": "[Số nhà, đường], phường [...], thành phố Đà Nẵng\nĐiện thoại: 0236 [......]\nEmail: [email]@dusta.org.vn",
     "license": "Giấy phép xuất bản số [.../GP-...] do [cơ quan cấp] cấp ngày [..../..../....]",
     "copyright": "Nội dung theo giấy phép CC BY-NC 4.0",

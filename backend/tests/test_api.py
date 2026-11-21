@@ -12,7 +12,7 @@ os.environ["ADMIN_PASSWORD"] = "secret-pass"
 
 import pytest  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
-from sqlalchemy import event, select  # noqa: E402
+from sqlalchemy import event  # noqa: E402
 
 from app.db import SessionLocal, engine  # noqa: E402
 from app.main import app  # noqa: E402
@@ -240,8 +240,6 @@ def test_toc_rejects_pdf_without_toc():
 
 
 def test_toc_endpoints_preview_and_idempotent_import(client, auth):
-    import shutil
-
     os.makedirs(os.environ["MEDIA_DIR"], exist_ok=True)
     _make_pdf(f"{os.environ['MEDIA_DIR']}/so55.pdf")
     i = client.post(f"{A}/issues", headers=auth, json={"number": 55, "published_at": "2026-05-01", "theme": "t", "pdf_url": "/media/so55.pdf"}).json()
@@ -297,7 +295,7 @@ def test_merge_field(client, auth):
     a = client.post(f"{A}/fields", headers=auth, json={"name": "GOP A"}).json()
     b = client.post(f"{A}/fields", headers=auth, json={"name": "GOP B"}).json()
     iss = client.post(f"{A}/issues", headers=auth, json={"number": 300, "published_at": "2027-02-01", "theme": "t"}).json()
-    e = client.post(f"{A}/toc-entries", headers=auth, json={"issue_id": iss["id"], "title": "dong gop", "field_id": a["id"]}).json()
+    client.post(f"{A}/toc-entries", headers=auth, json={"issue_id": iss["id"], "title": "dong gop", "field_id": a["id"]})
     assert client.post(f"{A}/fields/{a['id']}/merge", headers=auth, json={"target_id": a["id"]}).status_code == 422
     assert client.post(f"{A}/fields/{a['id']}/merge", headers=auth, json={"target_id": b["id"]}).json() == {"moved": 1}
     assert client.get(f"{A}/toc-entries", headers=auth, params={"issue_id": iss["id"]}).json()[0]["field_id"] == b["id"]

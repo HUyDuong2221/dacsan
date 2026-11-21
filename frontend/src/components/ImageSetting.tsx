@@ -1,7 +1,6 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import { adm } from './ResourceManager';
-import HeroBg from '@/app/_home/HeroBg';
 
 type Props = {
   token: string;
@@ -11,7 +10,7 @@ type Props = {
   hint: string;
   doneText: string;
   resetLabel: string;
-  kind: 'logo' | 'hero'; // mỗi loại ảnh có kho riêng
+  kind: 'logo'; // mỗi loại ảnh giao diện có kho riêng
 };
 
 export default function ImageSetting({ token, onAuthError, settingKey: KEY, label, hint, doneText, resetLabel, kind }: Props) {
@@ -98,13 +97,13 @@ export default function ImageSetting({ token, onAuthError, settingKey: KEY, labe
       </label>
       <div>
         <div className="muted" style={{ marginBottom: 6 }}>Xem trước đúng như hiển thị trên trang chủ</div>
-        <Scaled width={1280} height={kind === 'logo' ? 84 : 540}>
-          {kind === 'logo' ? <HeaderMock url={url.trim()} /> : <HeroMock url={url.trim()} />}
+        <Scaled width={1280} height={84}>
+          <HeaderMock url={url.trim()} />
         </Scaled>
       </div>
       <div>
         <div className="muted" style={{ marginBottom: 6 }}>
-          Kho ảnh {kind === 'logo' ? 'logo' : 'nền trang chủ'} ({media.length}) — bấm để chọn, bấm × để xóa ảnh chưa dùng
+          Kho ảnh logo ({media.length}) — bấm để chọn, bấm × để xóa ảnh chưa dùng
         </div>
         {media.length === 0 ? (
           <span className="muted">Chưa có ảnh nào trong kho này.</span>
@@ -189,38 +188,3 @@ function HeaderMock({ url }: { url: string }) {
   return <NavMock url={url} />;
 }
 
-function HeroMock({ url }: { url: string }) {
-  return (
-    <div style={{ height: 540, position: 'relative', background: '#fff', fontFamily: TNR, overflow: 'hidden' }}>
-      <div style={{ position: 'absolute', left: 0, right: 0, top: 0, zIndex: 3 }}><NavMock url="" /></div>
-      <div style={{ position: 'absolute', left: 0, right: 0, top: 84, height: 456, overflow: 'hidden', background: 'linear-gradient(180deg,#E4F0FB,#BBD6EE)' }}>
-        {url ? (
-          <>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={url} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
-            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg,rgba(255,255,255,.6),rgba(255,255,255,.2))' }} />
-          </>
-        ) : (
-          <div style={{ position: 'absolute', inset: 0 }}><HeroBg /></div>
-        )}
-        <div style={{ position: 'absolute', left: 72, top: 36, width: 220, height: 296, background: 'linear-gradient(160deg,#1C5CB0,#0B3C7A)', borderRadius: '4px 10px 10px 4px', boxShadow: '0 18px 40px rgba(11,60,122,.35)', color: '#fff', padding: 18, boxSizing: 'border-box', display: 'flex', flexDirection: 'column', justifyContent: 'center', textAlign: 'center' }}>
-          <small style={{ letterSpacing: '.1em' }}>ĐẶC SAN</small><b style={{ fontSize: 20 }}>Khoa học &amp; Phát triển</b>
-        </div>
-        <div style={{ position: 'absolute', left: 340, top: 70, right: 72 }}>
-          <span style={{ display: 'inline-block', background: '#F3DDA8', color: '#5A3B00', fontWeight: 700, fontSize: 15, padding: '7px 14px', borderRadius: 6 }}>Số mới nhất — Số 18 (11-2026)</span>
-          <div style={{ fontSize: 34, fontWeight: 700, color: '#0B2F5E', margin: '14px 0 10px' }}>Khoa Học &amp; Phát Triển</div>
-          <div style={{ fontSize: 17, lineHeight: 1.6, color: '#2E3D52', maxWidth: 620 }}>Toàn văn đọc trực tiếp trên web, không cần tải PDF. Mục lục giữ đúng thứ tự chuyên mục của bản in, kèm số trang để đối chiếu.</div>
-          <div style={{ display: 'flex', gap: 14, marginTop: 20 }}>
-            <span style={{ background: '#0B4F9C', color: '#fff', fontWeight: 700, padding: '12px 24px', borderRadius: 6 }}>Đọc số mới</span>
-            <span style={{ background: '#fff', color: '#0B4F9C', fontWeight: 700, padding: '12px 24px', borderRadius: 6, border: '1px solid #0B4F9C' }}>Xem mục lục</span>
-          </div>
-        </div>
-        <div style={{ position: 'absolute', left: 72, right: 72, bottom: 14, height: 64, background: '#fff', border: '1px solid #DCE5F0', borderRadius: 10, boxShadow: '0 6px 18px rgba(11,60,122,.10)', display: 'flex', alignItems: 'center', gap: 16, padding: '0 20px', fontSize: 16, color: '#5A6577' }}>
-          <b style={{ color: '#0B3C7A' }}>Tìm kiếm &amp; Khám phá bài viết</b>
-          <span style={{ flex: 1, border: '1px solid #C9D6E6', borderRadius: 6, padding: '9px 12px' }}>Tất cả chuyên mục</span>
-          <span style={{ flex: 1.5, border: '1px solid #C9D6E6', borderRadius: 6, padding: '9px 12px' }}>Ví dụ: đô thị thông minh…</span>
-        </div>
-      </div>
-    </div>
-  );
-}

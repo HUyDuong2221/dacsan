@@ -12,7 +12,7 @@ const GROUPS: { title: string; keys: string[] }[] = [
   { title: 'Hệ thống', keys: ['appearance', 'users', 'settings', 'subscribers'] },
 ];
 // Menu thả xuống: mục cha -> các mục con
-const SUBMENUS: Record<string, string[]> = { appearance: ['logo', 'herobg'] };
+const SUBMENUS: Record<string, string[]> = { appearance: ['logo'] };
 const SUB_KEYS = Object.values(SUBMENUS).flat();
 const ICONS: Record<string, string> = {
   issues: 'M4 5h6a2 2 0 0 1 2 2v12a2 2 0 0 0-2-2H4zM20 5h-6a2 2 0 0 0-2 2v12a2 2 0 0 1 2-2h6z',
@@ -35,7 +35,7 @@ const ADMIN = ['admin'];
 // Vai trò được thấy từng thẻ (máy chủ vẫn kiểm tra quyền ở mọi API)
 const TAB_ROLES: Record<string, string[]> = {
   issues: STAFF, submissions: EDIT, fields: EDIT, activities: EDIT, 'activity-types': EDIT, notices: EDIT, documents: EDIT,
-  users: ADMIN, appearance: ADMIN, logo: ADMIN, herobg: ADMIN, settings: ADMIN, subscribers: ADMIN,
+  users: ADMIN, appearance: ADMIN, logo: ADMIN, settings: ADMIN, subscribers: ADMIN,
 };
 
 const RESOURCES: ResourceDef[] = [
@@ -73,7 +73,6 @@ const RESOURCES: ResourceDef[] = [
     { key: 'file_url', label: 'Tệp', type: 'file' }, { key: 'sort_order', label: 'Thứ tự', type: 'number', list: true }, { key: 'published', label: 'Hiển thị', type: 'bool', list: true }] },
   { key: 'appearance', title: 'Giao diện', fields: [] },
   { key: 'logo', title: 'Logo', fields: [] },
-  { key: 'herobg', title: 'Ảnh nền trang chủ', fields: [] },
   { key: 'users', title: 'Người dùng', addLabel: 'Thêm người dùng', editLabel: 'Sửa người dùng', fields: [
     { key: 'email', label: 'Email đăng nhập', required: true, list: true },
     { key: 'full_name', label: 'Họ tên', list: true },
@@ -83,7 +82,7 @@ const RESOURCES: ResourceDef[] = [
     { key: 'password', label: 'Mật khẩu', type: 'password', hint: 'Tối thiểu 8 ký tự. Khi sửa: để trống = giữ nguyên mật khẩu.' },
   ] },
   { key: 'settings', title: 'Cấu hình site', fields: [
-    { key: 'key', label: 'Khóa', required: true, list: true, hint: 'org_name, issn, leaders, contact, license, copyright, publisher, editors' },
+    { key: 'key', label: 'Khóa', required: true, list: true, hint: 'org_name, issn, contact, license, copyright, publisher, editors' },
     { key: 'value', label: 'Giá trị', type: 'textarea', list: true }] },
   { key: 'subscribers', title: 'Đăng ký email', readonly: true, fields: [{ key: 'email', label: 'Email', list: true }, { key: 'created_at', label: 'Ngày', list: true }] },
 ];
@@ -216,11 +215,6 @@ export default function Admin() {
           label="Logo đặc san"
           hint="Nên dùng ảnh PNG/WebP nền trong suốt, dạng ngang (ví dụ 600×160px). Logo hiện ở đầu trang chủ và các trang. Để trống để dùng logo chữ mặc định."
           doneText="Đã lưu. Logo mới sẽ hiện trên website." resetLabel="Dùng logo mặc định" />
-      ) : cur.key === 'herobg' ? (
-        <ImageSetting token={token} onAuthError={logout} settingKey="hero_bg" kind="hero"
-          label="Ảnh nền khu vực đầu trang chủ"
-          hint="Nên dùng ảnh ngang, tỉ lệ khoảng 16:5 (ví dụ 2000×620px), dung lượng nhẹ. Để trống để dùng nền minh họa mặc định."
-          doneText="Đã lưu. Trang chủ sẽ dùng nền này." resetLabel="Dùng nền mặc định" />
       ) : cur.key === 'submissions' ? (
         <SubmissionsManager token={token} role={role} onAuthError={logout} />
       ) : (

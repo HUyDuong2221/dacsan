@@ -13,9 +13,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function IssuePage({ params, searchParams }: Props) {
   const d = await getOrNull(`/issues/${params.slug}`);
   if (!d) notFound();
-  return (
-    <div className="wrap page" style={{ paddingTop: 40 }}>
-      <IssueBrowser d={d} initialField={searchParams.field || ''} />
-    </div>
-  );
+  // IssueBrowser tự dựng khung (khối đầu trang tràn hết chiều ngang).
+  return <IssueBrowser d={d} initialField={searchParams.field || ''} />;
 }

@@ -24,6 +24,10 @@ python -m pytest tests/test_api.py -k name  # single test
 
 Frontend (`frontend/`): `npm run dev` (port 3000), `npm run typecheck`, `npm run build`. There is no linter and no frontend test suite. Running the frontend outside Docker needs `API_INTERNAL_URL` (default `http://localhost:8000`) pointing at a running backend.
 
+The backend cannot simply be started with `uvicorn` against a SQLite `DATABASE_URL`: the startup hook `init_db()` runs Postgres-only SQL (`CREATE EXTENSION unaccent`) and crashes. To run it without Postgres, do what the tests do: register a Python `unaccent` function on the engine, call `Base.metadata.create_all` + `seed()`, and replace the app's lifespan with a no-op.
+
+Settings (`Setting` key/value rows, edited in admin "Cài đặt trang") feed the header/footer: `org_name`, `issn`, `contact`, `license`, `copyright`, `publisher`, `editors`, `logo_url`. `seed()` only inserts keys that are missing, so changing a default in `seed.py` does not update an existing DB.
+
 ## Architecture
 
 - **frontend/**: Next.js 14 App Router, TypeScript, plain CSS (per-page css such as `admin/admin.css`, `_home/v7.css`, plus `globals.css`; no Tailwind). `next.config.mjs` rewrites `/api/*` and `/media/*` to the backend, so the browser is always same-origin and there is no CORS. Server components call the backend directly via `API_INTERNAL_URL` ([src/lib/api.ts](frontend/src/lib/api.ts) `get`/`getOrNull` pick the base URL by `typeof window`). The admin UI (`app/admin`, plus `SectionsEditor`, `SubmissionsManager`, `ResourceManager`, `TocImport`, etc. in `components/`) is client-side and talks to `/api/v1/admin` with a JWT kept in `localStorage`.
@@ -41,7 +45,12 @@ Frontend (`frontend/`): `npm run dev` (port 3000), `npm run typecheck`, `npm run
   - [layout.tsx](frontend/src/app/layout.tsx) renders the shared header `SiteNav` (utility bar + logo masthead + sticky nav, styles in `components/site-nav.css`, classes `v7h`/`v7-*`) and `Footer` (`components/footer.css`) on every public page.
   - The homepage ([page.tsx](frontend/src/app/page.tsx) → `_home/HomeV7.tsx`) only renders its body sections. Its CSS (`v7.css`) is scoped under `.v7`, and `body:has(.v7)` hides the layout's decorative `.sci-bg`.
   - Admin hides header/footer via `body:has(.adm-root)` rules in `admin.css`.
-  - The sticky nav is ~45px tall, so other sticky elements (`.ctx`, `.side`, `.aside-*`) are offset in `site-nav.css`.
+  - The sticky nav is ~45px tall, so other sticky elements (`.ctx`, `.side`, `.aside-*`, `.idt-side`) are offset in `site-nav.css` or their own CSS.
+  - `globals.css` sets `html, body { overflow-x: clip }` on small screens. Keep it `clip`, not `hidden`: `hidden` turns body into a scroll container and silently breaks every `position: sticky` on mobile.
+- **Issue UI**:
+  - `components/IssueTile.tsx` (+ `issue-tile.css`, grid class `.itile-grid`) is the shared issue card for the homepage "Chuyên mục" block and `/issues`. Use `toTile()` to map an API `issue_card` dict to it.
+  - The issue detail page `/issues/[slug]` is `components/IssueBrowser.tsx` (+ `issue-detail.css`, scoped `.idt`). It renders its own full-width hero, so the page does not wrap it in `.wrap`. Chuyên mục navigation scrolls to sections (scrollspy) instead of filtering; `?field=` still deep-links.
+  - Homepage responsive behaviour lives in a `@media(max-width:720px)` block at the end of `v7.css`. The archive ("Kho lưu trữ") paging step (10 desktop / 6 mobile) is chosen in JS via `matchMedia`, so keep the CSS breakpoint and the JS one in sync.
 - **Admin resource tables**: `ResourceManager` renders each `ResourceDef` from `app/admin/page.tsx`.
   - `FieldDef.list` puts a field in the table, and `listLabel` shortens its column header. `ResourceDef.hideId` drops the ID column.
   - `bool` list fields render as checkboxes that PUT immediately (optimistic, reverted on error).

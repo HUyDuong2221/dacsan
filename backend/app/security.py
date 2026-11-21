@@ -19,7 +19,6 @@ bearer = HTTPBearer(auto_error=False)
 #   editor      - biên tập viên: số đặc san, mục lục, chuyên mục, hoạt động, thông báo, tư liệu, bài gửi; được công bố/xóa
 #   contributor - cộng tác viên: nhập/sửa mục lục và toàn văn của số CHƯA công bố; không công bố, không xóa
 ROLES = ("admin", "editor", "contributor")
-ROLE_LABELS = {"admin": "Quản trị viên", "editor": "Biên tập viên", "contributor": "Cộng tác viên"}
 
 
 def hash_password(p: str) -> str:

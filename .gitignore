@@ -1,9 +1,44 @@
+# ===== Bí mật / cấu hình máy =====
 .env
+.env.*
+!.env.example
+!.env.*.example
+
+# ===== Frontend (Next.js) =====
 node_modules/
 .next/
+out/
+*.tsbuildinfo
+next-env.d.ts
+
+# ===== Backend (Python) =====
 __pycache__/
 *.pyc
 .pytest_cache/
 .venv/
-*.tsbuildinfo
-next-env.d.ts
+venv/
+.coverage
+htmlcov/
+
+# Dữ liệu chạy thử ngoài Docker (ảnh/PDF tải lên, bản thảo, DB SQLite)
+media/
+private/
+*.db
+*.sqlite3
+
+# ===== Công cụ thiết kế / AI agent (không phải code ứng dụng) =====
+# Cài lại skill theo skills-lock.json khi cần.
+.agents/
+.claude/skills/
+.claude/settings.local.json
+.taste-skill/
+shots/
+frontend/design/
+
+# ===== Editor / hệ điều hành / log =====
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.log
+npm-debug.log*

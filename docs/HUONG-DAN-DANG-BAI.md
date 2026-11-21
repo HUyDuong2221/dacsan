@@ -93,7 +93,7 @@ Tệp được phép tải lên: jpg, jpeg, png, webp, pdf, doc, docx, xls, xlsx
 - **Hoạt động** (trang chủ, mục "Hoạt động nổi bật"): tiêu đề, loại, ngày, liên kết tới bài gốc. Bỏ tick *Hiển thị* để ẩn.
 - **Thông báo** (trang Đặc san, khung "Thông báo của tòa soạn"): nhãn (THƯ MỜI, HỘI THI…), tiêu đề, ngày.
 - **Tư liệu** (trang Tư liệu): quy định, biểu mẫu. Tải tệp lên ở ô *Tệp*; chưa có tệp thì mục hiện "Chưa có tệp". *Thứ tự* nhỏ hiện trước.
-- **Cấu hình site**: nội dung chân trang. Khóa gồm `org_name`, `issn`, `leaders`, `contact`, `license`, `copyright`. Sửa giá trị, không đổi tên khóa.
+- **Cấu hình site**: nội dung chân trang. Khóa gồm `org_name`, `issn`, `contact`, `license`, `copyright`, `publisher` (chịu trách nhiệm xuất bản), `editors` (biên tập; mỗi dòng một tên). Sửa giá trị, không đổi tên khóa.
 - **Đăng ký email**: danh sách người đăng ký nhận thông báo. Hiện hệ thống chỉ lưu email, chưa tự gửi thư.
 
 ## 5. Sửa, ẩn và xóa

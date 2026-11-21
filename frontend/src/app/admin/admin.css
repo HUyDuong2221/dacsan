@@ -101,7 +101,7 @@
 }
 @media(prefers-reduced-motion:reduce){.adm-main .btn,.adm-main .input,.adm-main table.t tbody tr{transition:none}.adm-main .btn:hover{transform:none}}
 /* ẩn menu và chân trang của site trong khu quản trị */
-body:has(.adm-root) .shell>.topbar,body:has(.adm-root) .site-header,body:has(.adm-root) .shell>.footer,body:has(.adm-root) header,body:has(.adm-root) footer,body:has(.adm-root) .v7h{display:none}
+body:has(.adm-root) header,body:has(.adm-root) footer,body:has(.adm-root) .v7h{display:none}
 /* thanh menu quản lý: nền navy, chữ sáng */
 .adm-side{background:#132b49;border-color:#132b49;box-shadow:0 10px 28px rgba(19,43,73,.25)}
 .adm-user{border-bottom-color:rgba(255,255,255,.18)}

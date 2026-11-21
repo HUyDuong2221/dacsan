@@ -38,7 +38,8 @@ body:has(.v7){background:#FBFAF7}
 .v7-side-h{border-bottom:2px solid #111A2E;padding-bottom:8px;margin-bottom:18px}
 .v7-side-h h2{margin:0;font-size:13px;font-weight:800;letter-spacing:.16em}
 /* book */
-.v7-bookwrap{perspective:1800px;width:min(60%,270px);margin:8px 0 26px auto;padding:0}
+/* Sách: đóng thì nằm giữa cột; mở (rê chuột / chạm) thì trượt sát lề phải để bìa mở sang trái có chỗ */
+.v7-bookwrap{--bw:min(58%,250px);perspective:1800px;width:100%;margin:8px 0 26px;padding:0}
 .v7-book{position:relative;transform-style:preserve-3d;transform:rotateY(-16deg) rotateX(5deg) rotateZ(-1deg);transition:transform 900ms cubic-bezier(.2,.7,.2,1);aspect-ratio:595/860}
 .v7-bshadow{position:absolute;inset:0;transform:translateZ(-2px);box-shadow:22px 26px 46px rgba(3,30,80,.32),4px 4px 0 #E4E7EE,8px 8px 0 #D3D8E2;transition:box-shadow 900ms}
 .v7-bcover{position:absolute;inset:0;transform-origin:left center;transform-style:preserve-3d;transition:transform 1000ms cubic-bezier(.6,.05,.2,1);z-index:2}
@@ -63,7 +64,8 @@ body:has(.v7){background:#FBFAF7}
 .v7-binner li a span{font-family:'Source Serif 4',Georgia,serif;font-size:14px;line-height:1.35;text-wrap:pretty}
 .v7-binner li a i{font-style:normal;font-size:11px;color:#5B6478;white-space:nowrap}
 .v7-binner>a{margin-top:10px;font-size:12.5px;font-weight:700;color:#03368D;align-self:flex-end;white-space:nowrap}
-.v7-bookwrap:hover .v7-book,.v7-bookwrap[data-open="true"] .v7-book{transform:rotateY(-4deg) rotateX(2deg)}
+.v7-book{width:var(--bw);margin-left:calc((100% - var(--bw)) / 2);transition:transform 900ms cubic-bezier(.2,.7,.2,1),margin-left 700ms cubic-bezier(.2,.7,.2,1)}
+.v7-bookwrap:hover .v7-book,.v7-bookwrap[data-open="true"] .v7-book{transform:rotateY(-4deg) rotateX(2deg);margin-left:calc(100% - var(--bw))}
 .v7-bookwrap:hover .v7-bcover,.v7-bookwrap[data-open="true"] .v7-bcover{transform:rotateY(-128deg)}
 .v7-bookwrap:hover .v7-binner,.v7-bookwrap[data-open="true"] .v7-binner{opacity:1}
 .v7-bookwrap:hover .v7-bshadow,.v7-bookwrap[data-open="true"] .v7-bshadow{box-shadow:14px 30px 50px rgba(3,30,80,.26),2px 2px 0 #E4E7EE,4px 4px 0 #D3D8E2}
@@ -159,6 +161,7 @@ body:has(.v7){background:#FBFAF7}
 .v7-binner-h b{font-size:12px}.v7-binner-h span{font-size:10px}
 .v7-binner>a{font-size:11.5px}
 .v7-binner li:nth-child(n+4){display:none}
+.v7-binner li a span{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden}
 /* "Xem thêm" của Kho lưu trữ: cùng kiểu link "Xem tất cả trên lhh.danang.gov.vn" */
 .v7-arch-more{display:flex;align-items:center;gap:6px;margin:10px 0 -12px auto;padding:4px 0;border:0;background:transparent;color:#03368D;font-size:14px;font-weight:600;cursor:pointer}
 .v7-arch-more:hover{text-decoration:underline;text-underline-offset:4px}
@@ -172,7 +175,7 @@ body:has(.v7){background:#FBFAF7}
   .v7-arrows button{width:36px;height:36px;font-size:15px}
   .v7-front{padding-bottom:36px}
   /* Số mới nhất: sách ở giữa */
-  .v7-bookwrap{width:min(62%,240px);margin:8px auto 24px}
+  .v7-bookwrap{--bw:min(58%,210px);margin:8px 0 24px}
   .v7-side{clip-path:none}
   /* Thống kê: 2 x 2 */
   .v7-stats .v7-w{grid-template-columns:repeat(2,minmax(0,1fr));gap:20px 16px;padding-top:26px;padding-bottom:26px}

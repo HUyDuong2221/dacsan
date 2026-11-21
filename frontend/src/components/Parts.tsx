@@ -1,9 +1,9 @@
 import Link from 'next/link';
 
-export function Cover({ issue, text, shim }: { issue: any; text?: string; shim?: boolean }) {
+export function Cover({ issue, text }: { issue: any; text?: string }) {
   const label = text ?? `bìa số ${String(issue.number).padStart(2, '0')}`;
   return (
-    <div className={`cover ${shim ? 'shim' : ''}`}>
+    <div className="cover">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       {issue.cover_url && <img src={issue.cover_url} alt={`Bìa ${issue.label}`} />}
       {!issue.cover_url && <span>{label}</span>}
