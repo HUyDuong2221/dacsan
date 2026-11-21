@@ -1,9 +1,10 @@
-"""Dữ liệu mẫu lấy từ giao diện thiết kế. Chỉ chạy khi DB chưa có số nào."""
+"""Dữ liệu mẫu (SEED_DEMO). Chỉ chạy khi DB chưa có số nào. Mục lục số 17 theo bản in; các số cũ dùng nội dung mẫu tự soạn ở demo_content.py."""
 from datetime import date
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from . import demo_content as demo
 from .models import Activity, TocEntry, Document, Field, Issue, Notice, Setting
 from .util import slugify
 
@@ -106,16 +107,37 @@ def seed(db: Session) -> None:
         return
 
     fields = {}
-    for n, name in enumerate(FIELDS):
+    # Chuyên mục có số đặc san xếp trước (tab ở trang chủ), sau đó là các mục chỉ dùng trong mục lục.
+    for n, name in enumerate([G1] + demo.ISSUE_FIELDS + FIELDS[1:] + demo.EXTRA_SECTIONS):
         f = Field(name=name, sort_order=n)
         db.add(f)
         fields[name] = f
+    db.flush()
 
-    for num, period, year, theme, n_art, pages in OLD_ISSUES:
+    used: set[str] = set()
+
+    def uniq(slug: str) -> str:
+        base, n = slug, 2
+        while slug in used:
+            slug, n = f"{base}-{n}", n + 1
+        used.add(slug)
+        return slug
+
+    # Các số cũ: chuyên mục, tên số, giới thiệu và một phần mục lục lấy từ demo_content (nội dung mẫu tự soạn).
+    for num, period, year, topic, n_art, pages in OLD_ISSUES:
         label = f"Số {num:02d} ({period})"
         month = int(period.split("-")[0])
-        db.add(Issue(slug=slugify(label), number=num, label=label, year=year, theme=theme, published_at=date(year, month, 1),
-                     printed_articles=n_art, page_count=pages, published=True))
+        theme, title, summary = demo.ISSUE_META.get(num, (topic, topic, ""))
+        old = Issue(slug=slugify(label), number=num, label=label, year=year, theme=theme, title=title, summary=summary or None,
+                    published_at=date(year, month, 1), printed_articles=n_art, page_count=pages, published=True)
+        db.add(old)
+        db.flush()
+        for e in demo.demo_entries(num):
+            db.add(TocEntry(
+                slug=uniq(slugify(e["title"])), issue_id=old.id, field_id=fields[e["section"]].id if e["section"] else None,
+                title=e["title"], author=e["author"], page_label=f"tr. {e['page']}", sort_order=e["sort_order"],
+                is_front=e["is_front"], is_research=e["is_research"], lead=e["lead"], body=e["body"],
+            ))
 
     issue = Issue(
         slug="so-17-6-2026", number=17, label="Số 17 (6-2026)", year=2026, published_at=date(2026, 6, 1),
@@ -126,14 +148,9 @@ def seed(db: Session) -> None:
     db.add(issue)
     db.flush()
 
-    used: set[str] = set()
     for i, (field, author, title, page) in enumerate(ARTICLES):
-        slug = slugify(title)
-        if slug in used:
-            slug = f"{slug}-{i}"
-        used.add(slug)
         db.add(TocEntry(
-            slug=slug, issue_id=issue.id, field_id=fields[field].id, title=title, author=author,
+            slug=uniq(slugify(title)), issue_id=issue.id, field_id=fields[field].id, title=title, author=author,
             page_label=f"tr. {page}", sort_order=i, is_front=i < 2, is_research=i in RESEARCH,
             featured=i in HERO, hero_excerpt=HERO.get(i),
             lead=SAMPLE_LEAD if i == 2 else None, body=SAMPLE_BODY if i == 2 else None,

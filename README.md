@@ -20,6 +20,8 @@ docker compose up -d --build
 - Quản trị: http://localhost:3000/admin (tài khoản lấy từ `ADMIN_EMAIL` / `ADMIN_PASSWORD`)
 - Swagger: http://localhost:8000/docs (đổi bằng `BACKEND_PORT`; bỏ mục `ports` của `backend` khi production)
 
+> **Cẩn thận với `docker compose down -v`**: cờ `-v` xóa vĩnh viễn volume, tức toàn bộ DB, ảnh/PDF đã upload và bản thảo gửi về; Docker không khôi phục được. Chỉ dùng trên máy lập trình khi muốn làm lại dữ liệu mẫu (project `dacsan-dev`). **Không bao giờ chạy trên server**; trên server chỉ dùng `docker compose -f docker-compose.server.yml down` (không `-v`).
+
 Lần đầu DB trống sẽ nạp dữ liệu mẫu (số 17 + 8 số cũ, hoạt động, thông báo, tư liệu). Đặt `SEED_DEMO=false` để tắt.
 
 Trình duyệt chỉ gọi cùng origin: Next chuyển tiếp `/api/*` và `/media/*` sang backend, nên không cần CORS.

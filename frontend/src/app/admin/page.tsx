@@ -97,6 +97,8 @@ export default function Admin() {
   const [err, setErr] = useState('');
   const [me, setMe] = useState<{ email: string; full_name: string; role: string } | null>(null);
   const [pwOpen, setPwOpen] = useState(false);
+  const [q, setQ] = useState('');
+  const [newSubs, setNewSubs] = useState(0); // số bài gửi "Mới nhận", hiện cạnh mục Bài gửi
 
   useEffect(() => {
     try { setToken(localStorage.getItem('dacsan_token')); } catch {}
@@ -107,6 +109,13 @@ export default function Admin() {
     if (!token) { setMe(null); return; }
     adm('/auth/me', token).then(setMe).catch(() => logout());
   }, [token]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Đếm bài gửi mới (chỉ quản trị viên, biên tập viên được xem bài gửi); tải lại khi đổi mục
+  // để số giảm ngay sau khi xử lý bài trong mục Bài gửi.
+  useEffect(() => {
+    if (!token || !me || !EDIT.includes(me.role)) return;
+    adm('/submissions/count?status=new', token).then((d) => setNewSubs(d.count || 0)).catch(() => {});
+  }, [token, me, tab]);
 
   function logout() {
     try { localStorage.removeItem('dacsan_token'); } catch {}
@@ -147,43 +156,62 @@ export default function Admin() {
   // cộng tác viên chỉ xem danh sách số, vào "Mục lục" để nhập; không thêm/sửa/xóa số
   const res: ResourceDef = cur.key === 'issues' && role === 'contributor' ? { ...cur, readonly: true, noDelete: true } : cur;
 
+  // Nhóm và mục cha của mục đang mở (cho thanh đường dẫn)
+  const parentKey = Object.keys(SUBMENUS).find((k) => SUBMENUS[k].includes(cur.key));
+  const parent = parentKey ? RESOURCES.find((r) => r.key === parentKey) : undefined;
+  const group = GROUPS.find((g) => g.keys.includes(parentKey || cur.key));
+  // Lọc menu theo ô "Tìm mục quản trị" (không phân biệt dấu, hoa/thường)
+  const needle = fold(q.trim());
+  const match = (r: ResourceDef) => !needle || fold(r.title).includes(needle);
+  const subsOf = (key: string) => (SUBMENUS[key] || []).map((k) => tabs.find((t) => t.key === k)).filter(Boolean) as ResourceDef[];
+  const who = me.full_name || me.email;
+
   return (
-    <div className="wrap page adm-root">
+    <div className="wrap page adm-root adm-app">
       <div className="adm-shell">
-        <aside className="adm-side">
+        <aside className="adm-side" aria-label="Menu quản trị">
           <a href="/" className="adm-logo" aria-label="Về trang chủ">
             <small>ĐẶC SAN</small>
             <b>Khoa học &amp; Phát triển</b>
             <i>THÀNH PHỐ ĐÀ NẴNG</i>
           </a>
-          <nav className="adm-nav" aria-label="Menu quản trị">
+          <label className="adm-search">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="M20 20l-4-4" /></svg>
+            <input type="search" aria-label="Tìm mục quản trị" placeholder="Tìm mục quản trị…" value={q} onChange={(e) => setQ(e.target.value)} />
+          </label>
+          <nav className="adm-nav" aria-label="Các nhóm quản trị">
             {GROUPS.map((g) => {
-              const items = tabs.filter((r) => g.keys.includes(r.key) && !SUB_KEYS.includes(r.key));
+              const items = tabs
+                .filter((r) => g.keys.includes(r.key) && !SUB_KEYS.includes(r.key))
+                .filter((r) => match(r) || subsOf(r.key).some(match));
               if (!items.length) return null;
               return (
                 <div className="adm-grp" key={g.title}>
                   <h4>{g.title}</h4>
                   {items.map((r) => {
-                    const subs = (SUBMENUS[r.key] || []).map((k) => tabs.find((t) => t.key === k)).filter(Boolean) as ResourceDef[];
+                    const subs = subsOf(r.key);
+                    const cnt = r.key === 'submissions' ? newSubs : 0;
                     if (!subs.length)
                       return (
-                        <button key={r.key} className={'adm-item' + (cur.key === r.key ? ' on' : '')} aria-current={cur.key === r.key ? 'page' : undefined} onClick={() => setTab(r.key)}>
-                          <svg viewBox="0 0 24 24" aria-hidden="true"><path d={ICONS[r.key]} /></svg>{r.title}
+                        <button key={r.key} type="button" className={'adm-item' + (cur.key === r.key ? ' on' : '')} aria-current={cur.key === r.key ? 'page' : undefined} onClick={() => setTab(r.key)}
+                          aria-label={cnt ? `${r.title}, ${cnt} bài mới` : undefined}>
+                          <svg viewBox="0 0 24 24" aria-hidden="true"><path d={ICONS[r.key]} /></svg><span className="lbl">{r.title}</span>
+                          {cnt > 0 && <span className="cnt warn" aria-hidden="true" title={`${cnt} bài gửi mới nhận`}>{cnt > 99 ? '99+' : cnt}</span>}
                         </button>
                       );
                     const active = subs.some((x) => x.key === cur.key);
-                    const open = menuOpen[r.key] ?? active;
+                    const open = needle ? true : menuOpen[r.key] ?? active;
                     return (
                       <div key={r.key} className="adm-drop">
-                        <button className={'adm-item adm-parent' + (active ? ' on' : '')} aria-expanded={open}
+                        <button type="button" className={'adm-item adm-parent' + (active ? ' in' : '')} aria-expanded={open} aria-controls={`adm-sub-${r.key}`}
                           onClick={() => { setMenuOpen({ ...menuOpen, [r.key]: !open }); if (!active && !open) setTab(subs[0].key); }}>
-                          <svg viewBox="0 0 24 24" aria-hidden="true"><path d={ICONS[r.key]} /></svg>{r.title}
+                          <svg viewBox="0 0 24 24" aria-hidden="true"><path d={ICONS[r.key]} /></svg><span className="lbl">{r.title}</span>
                           <svg className="adm-caret" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
                         </button>
                         {open && (
-                          <div className="adm-sub">
+                          <div className="adm-sub" id={`adm-sub-${r.key}`}>
                             {subs.map((x) => (
-                              <button key={x.key} className={'adm-subitem' + (cur.key === x.key ? ' on' : '')} aria-current={cur.key === x.key ? 'page' : undefined} onClick={() => setTab(x.key)}>{x.title}</button>
+                              <button key={x.key} type="button" className={'adm-subitem' + (cur.key === x.key ? ' on' : '')} aria-current={cur.key === x.key ? 'page' : undefined} onClick={() => setTab(x.key)}>{x.title}</button>
                             ))}
                           </div>
                         )}
@@ -193,40 +221,66 @@ export default function Admin() {
                 </div>
               );
             })}
+            {needle && !tabs.some(match) && <p className="adm-nomatch">Không có mục nào khớp.</p>}
           </nav>
           <div className="adm-acts">
-            <div className="adm-user"><b>{me.full_name || me.email}</b><span>{ROLE_LABELS[role] || role}</span></div>
-            <button className="btn ghost" onClick={() => setPwOpen(!pwOpen)}>Đổi mật khẩu</button>
-            <button className="btn ghost" onClick={logout}>Đăng xuất</button>
+            <div className="adm-user">
+              <span className="adm-avatar" aria-hidden="true">{initials(who)}</span>
+              <div><b>{who}</b><span>{ROLE_LABELS[role] || role}</span></div>
+            </div>
+            <div className="adm-row2">
+              <button type="button" className="adm-gbtn" aria-expanded={pwOpen} onClick={() => setPwOpen(!pwOpen)}>Đổi mật khẩu</button>
+              <button type="button" className="adm-gbtn" onClick={logout}>Đăng xuất</button>
+            </div>
           </div>
         </aside>
-        <div className="adm-main">
-          <div className="adm-head"><h1 className="serif">{cur.title}</h1></div>
+        <main className="adm-main">
+          <nav className="adm-crumb" aria-label="Đường dẫn">
+            <span>Quản trị</span>
+            {group && <><span aria-hidden="true">›</span><span>{group.title}</span></>}
+            {parent && <><span aria-hidden="true">›</span><span>{parent.title}</span></>}
+            <span aria-hidden="true">›</span><b aria-current="page">{cur.title}</b>
+          </nav>
+          <div className="adm-head" key={cur.key}><h1 className="serif">{cur.title}</h1></div>
           {pwOpen && <ChangePassword token={token} onDone={() => setPwOpen(false)} onAuthError={logout} />}
-      {cur.key === 'users' && (
-        <p className="muted" style={{ marginTop: 0, lineHeight: 1.7 }}>
-          <b>Quản trị viên</b>: toàn quyền, gồm quản lý người dùng, cấu hình site, danh sách đăng ký email. ·{' '}
-          <b>Biên tập viên</b>: quản lý số đặc san, mục lục, chuyên mục, hoạt động, thông báo, tư liệu và xử lý bài gửi; được công bố và xóa. ·{' '}
-          <b>Cộng tác viên</b>: chỉ nhập/sửa mục lục và toàn văn của số <b>chưa công bố</b>; không công bố, không xóa, không xem bài gửi.
-        </p>
-      )}
-      {cur.key === 'logo' ? (
-        <ImageSetting token={token} onAuthError={logout} settingKey="logo_url" kind="logo"
-          label="Logo đặc san"
-          hint="Nên dùng ảnh PNG/WebP nền trong suốt, dạng ngang (ví dụ 600×160px). Logo hiện ở đầu trang chủ và các trang. Để trống để dùng logo chữ mặc định."
-          doneText="Đã lưu. Logo mới sẽ hiện trên website." resetLabel="Dùng logo mặc định" />
-      ) : cur.key === 'submissions' ? (
-        <SubmissionsManager token={token} role={role} onAuthError={logout} />
-      ) : (
-        <ResourceManager
-          key={cur.key} res={res} token={token} onAuthError={logout}
-          rowExtra={cur.key === 'issues' ? (row) => <IssueToc issue={row} token={token} role={role} onAuthError={logout} /> : undefined}
-        />
-      )}
-        </div>
+          <div className="adm-body" key={'b-' + cur.key}>
+            {cur.key === 'users' && (
+              <p className="muted" style={{ marginTop: 0, lineHeight: 1.7 }}>
+                <b>Quản trị viên</b>: toàn quyền, gồm quản lý người dùng, cấu hình site, danh sách đăng ký email. ·{' '}
+                <b>Biên tập viên</b>: quản lý số đặc san, mục lục, chuyên mục, hoạt động, thông báo, tư liệu và xử lý bài gửi; được công bố và xóa. ·{' '}
+                <b>Cộng tác viên</b>: chỉ nhập/sửa mục lục và toàn văn của số <b>chưa công bố</b>; không công bố, không xóa, không xem bài gửi.
+              </p>
+            )}
+            {cur.key === 'logo' ? (
+              <ImageSetting token={token} onAuthError={logout} settingKey="logo_url" kind="logo"
+                label="Logo đặc san"
+                hint="Nên dùng ảnh PNG/WebP nền trong suốt, dạng ngang (ví dụ 600×160px). Logo hiện ở đầu trang chủ và các trang. Để trống để dùng logo chữ mặc định."
+                doneText="Đã lưu. Logo mới sẽ hiện trên website." resetLabel="Dùng logo mặc định" />
+            ) : cur.key === 'submissions' ? (
+              <SubmissionsManager token={token} role={role} onAuthError={logout} />
+            ) : (
+              <ResourceManager
+                key={cur.key} res={res} token={token} onAuthError={logout}
+                rowExtra={cur.key === 'issues' ? (row) => <IssueToc issue={row} token={token} role={role} onAuthError={logout} /> : undefined}
+              />
+            )}
+          </div>
+        </main>
       </div>
     </div>
   );
+}
+
+// Bỏ dấu tiếng Việt + chữ thường, để gõ "giao dien" cũng ra "Giao diện".
+function fold(s: string) {
+  return s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[đĐ]/g, 'd').toLowerCase();
+}
+
+// Chữ viết tắt cho ô avatar: chữ đầu của hai từ cuối trong họ tên, hoặc 2 ký tự đầu của email.
+function initials(name: string) {
+  const w = name.includes('@') ? [name] : name.trim().split(/\s+/);
+  const t = w.length >= 2 ? w[w.length - 2][0] + w[w.length - 1][0] : w[0].slice(0, 2);
+  return t.toUpperCase();
 }
 
 function ChangePassword({ token, onDone, onAuthError }: { token: string; onDone: () => void; onAuthError: () => void }) {

@@ -64,7 +64,8 @@ def test_home(client):
     assert len(d["issues"]) == 8 and d["issues"][0]["number"] == 16  # không gồm số mới nhất
     assert d["hero"][0]["href"] == "/issues/so-17-6-2026" and d["hero"][0]["excerpt"]
     assert d["hero"][1]["kicker"] == "Phạm Ngọc Linh · tr. 13"
-    assert d["stats"] == {"issue_count": 13, "article_count": 23, "year_from": 2024, "year_to": 2026}
+    # 23 bài của số 17 + 25 bài mẫu ở demo_content.py (không tính trang đầu số)
+    assert d["stats"] == {"issue_count": 13, "article_count": 48, "year_from": 2024, "year_to": 2026}
 
 
 def test_issue_detail_groups(client):
@@ -430,6 +431,9 @@ def test_submission_flow(client, auth):
     lst = client.get(f"{A}/submissions", headers=auth).json()
     sub = next(x for x in lst if x["code"] == code)
     assert sub["status"] == "new" and sub["email"] == "tacgia@mail.vn" and sub["field_name"] == "Thông tin"
+    n_new = sum(1 for x in lst if x["status"] == "new")
+    assert client.get(f"{A}/submissions/count", headers=auth).json() == {"status": "new", "count": n_new}
+    assert client.get(f"{A}/submissions/count").status_code == 401
     f = client.get(f"{A}/submissions/{sub['id']}/file", headers=auth)
     assert f.status_code == 200 and f.content.startswith(b"PK")
     assert client.get(f"{A}/submissions/{sub['id']}/file").status_code == 401
@@ -444,6 +448,7 @@ def test_submission_flow(client, auth):
     assert t.status_code == 200
     body = t.json()
     assert body["status_label"] == "Cần chỉnh sửa" and body["note"].startswith("Vui lòng")
+    assert client.get(f"{A}/submissions/count", headers=auth).json()["count"] == n_new - 1  # đã xử lý thì hết là "mới"
     assert "note_internal" not in body and "tác giả hay" not in t.text and "email" not in body
     assert client.post(f"{P}/submissions/track", json={"email": "khac@mail.vn", "code": code}).status_code == 404
 
@@ -462,6 +467,7 @@ def test_contributor_cannot_read_submissions(client, auth):
     client.post(f"{A}/users", headers=auth, json={"email": "ctv2@t.vn", "password": "contrib-pass-2", "role": "contributor"})
     _, h = _login(client, "ctv2@t.vn", "contrib-pass-2")
     assert client.get(f"{A}/submissions", headers=h).status_code == 403
+    assert client.get(f"{A}/submissions/count", headers=h).status_code == 403
     uid = next(u["id"] for u in client.get(f"{A}/users", headers=auth).json() if u["email"] == "ctv2@t.vn")
     client.delete(f"{A}/users/{uid}", headers=auth)
 

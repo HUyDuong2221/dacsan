@@ -10,7 +10,7 @@ import secrets
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from ..config import settings
@@ -130,6 +130,12 @@ def list_submissions(status: str | None = None, db: Session = Depends(get_db)):
     if status:
         q = q.where(Submission.status == status)
     return [sub_dict(s) for s in db.scalars(q)]
+
+
+@admin_router.get("/count")
+def count_submissions(status: str = "new", db: Session = Depends(get_db)):
+    """Số bài gửi theo trạng thái (mặc định: Mới nhận), cho số đếm cạnh mục "Bài gửi" trong menu quản trị."""
+    return {"status": status, "count": db.scalar(select(func.count()).select_from(Submission).where(Submission.status == status)) or 0}
 
 
 class SubUpdate(BaseModel):

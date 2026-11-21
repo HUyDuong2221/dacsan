@@ -1,4 +1,6 @@
-name: dacsan
+# Tên project RIÊNG cho máy lập trình (volume: dacsan-dev_pgdata, ...). Server dùng docker-compose.server.yml với
+# name: dacsan. Hai tên khác nhau để `docker compose down -v` ở đây không bao giờ xóa volume dữ liệu của server.
+name: dacsan-dev
 
 services:
   db:

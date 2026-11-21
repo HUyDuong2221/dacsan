@@ -12,6 +12,7 @@ docker compose up -d --build        # web :3000, Swagger :8000/docs, admin :3000
 docker compose exec backend python -m pytest -q
 ```
 There are two compose files:
+- The two files use different project names (`dacsan-dev` vs `dacsan`) so their named volumes never collide. Never suggest `docker compose down -v` without first confirming which machine it runs on: it permanently deletes the DB, media and private volumes (this already wiped a developer's local data once).
 - `docker-compose.yml` is **local dev only**. It bind-mounts `backend/app`, `backend/tests` and `frontend/`, and runs `uvicorn --reload` plus `next dev` (frontend image built only to the `deps` stage). Code edits apply without rebuilding. Backend restarts on file changes, which re-runs `init_db()`.
 - `docker-compose.server.yml` is for the dev/staging server. It uses built images (frontend `run` stage = `next build` standalone), mounts no code, and keeps the DB port closed. It requires `POSTGRES_PASSWORD`/`JWT_SECRET`/`ADMIN_*` in `.env` (template: `.env.server.example`). Deploy with `docker compose -f docker-compose.server.yml up -d --build`.
 
