@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { fmtDate, get } from '@/lib/api';
-import { Cover, IssueCard, SearchBox } from '@/components/Parts';
+import { Cover, SearchBox } from '@/components/Parts';
+import IssueTile, { toTile } from '@/components/IssueTile';
 import IssueTabs from '@/components/IssueTabs';
 
 export const metadata: Metadata = { title: 'Các số đã phát hành' };
@@ -57,8 +58,8 @@ export default async function Issues() {
       )}
 
       <h2 className="serif" style={{ fontSize: 24, marginBottom: 26 }}>Các số trước</h2>
-      <div className="issue-grid auto">
-        {older.map((i: any) => <IssueCard key={i.slug} i={i} />)}
+      <div className="itile-grid">
+        {older.map((i: any) => <IssueTile key={i.slug} s={toTile(i)} />)}
       </div>
     </div>
   );

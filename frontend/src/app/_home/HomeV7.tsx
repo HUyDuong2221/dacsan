@@ -1,11 +1,12 @@
 'use client';
 import Link from 'next/link';
+import IssueTile, { type IssueTileData } from '@/components/IssueTile';
 import { useEffect, useRef, useState } from 'react';
 import './v7.css';
 
 export type Slide = { key: string; cat: string; title: string; excerpt: string; meta: string; href: string; img?: string | null };
 export type TocItem = { slug: string; title: string; page: string };
-export type TopicIssue = { slug: string; label: string; cover: string | null; date: string; articles: number; pages: number | null };
+export type TopicIssue = IssueTileData;
 export type Topic = { name: string; count: number; issues: TopicIssue[] };
 export type Act = { id: number; day: string; month: string; kind: string; title: string; url: string };
 export type IssueItem = { slug: string; label: string; theme: string; cover: string | null; year: string; number: number };
@@ -33,6 +34,18 @@ export default function HomeV7(p: HomeProps) {
   const [topic, setTopic] = useState(0);
   const years = Array.from(new Set(p.issues.map((i) => i.year)));
   const [year, setYear] = useState(years[0] || '');
+  // Kho lưu trữ: máy tính hiện 10 số (2 hàng x 5), điện thoại 6 số (2 hàng x 3);
+  // bấm "Xem thêm" hiện tiếp từng ấy số cho đến hết.
+  const [archStep, setArchStep] = useState(10);
+  const [archShown, setArchShown] = useState(10);
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 720px)');
+    const apply = () => { const n = mq.matches ? 6 : 10; setArchStep(n); setArchShown(n); };
+    apply();
+    mq.addEventListener('change', apply);
+    return () => mq.removeEventListener('change', apply);
+  }, []);
+  const archIssues = p.issues.filter((i) => i.year === year);
   const [email, setEmail] = useState('');
   const [sub, setSub] = useState<'idle' | 'ok' | 'err'>('idle');
   const n = Math.max(slides.length, 1);
@@ -188,12 +201,11 @@ export default function HomeV7(p: HomeProps) {
           <section className="v7-w v7-topics">
             <div className="v7-sec-h">
               <h2 className="v7-h2">Chuyên mục</h2>
-              <p>Chọn một chuyên mục để xem các số đặc san thuộc chuyên mục đó.</p>
             </div>
             <div className="v7-tabs" role="tablist" aria-label="Chuyên mục">
               {p.topics.map((t, i) => (
                 <button key={t.name} role="tab" aria-selected={i === topic} className={i === topic ? 'on' : ''} onClick={() => setTopic(i)}>
-                  {t.name} <em>{t.count}</em>
+                  {t.name}
                 </button>
               ))}
             </div>
@@ -201,28 +213,13 @@ export default function HomeV7(p: HomeProps) {
               <div className="v7-tintro">
                 <i aria-hidden="true" />
                 <h3>{tp.name}</h3>
-                <p>{tp.count > 0 ? `${tp.count} số đặc san thuộc chuyên mục này.` : 'Chưa có số đặc san nào thuộc chuyên mục này.'}</p>
                 <Link href="/issues">Xem tất cả các số <span aria-hidden="true">→</span></Link>
               </div>
               {tp.issues.length > 0 ? (
-                <div className="v7-tposts">
-                  {tp.issues.map((s) => (
-                    <Link key={s.slug} href={`/issues/${s.slug}`} className="v7-tcard v7-tissue">
-                      <span className="v7-tcover">
-                        {s.cover ? <img src={s.cover} alt={`Bìa ${s.label}`} loading="lazy" /> : <em>{s.label}</em>}
-                      </span>
-                      <strong>{s.label}</strong>
-                      {s.date && <small>Phát hành {s.date}</small>}
-                      <div>
-                        <span>{s.articles} bài{s.pages ? ` · ${s.pages} trang` : ''}</span>
-                        <b aria-hidden="true">→</b>
-                      </div>
-                    </Link>
-                  ))}
+                <div className="v7-tposts itile-grid">
+                  {tp.issues.map((s) => <IssueTile key={s.slug} s={s} />)}
                 </div>
-              ) : (
-                <div className="v7-tposts v7-tempty"><span>0</span> số đặc san</div>
-              )}
+              ) : null}
             </div>
           </section>
         )}
@@ -251,12 +248,12 @@ export default function HomeV7(p: HomeProps) {
                 <h2 className="v7-h2">Kho lưu trữ</h2>
                 <div className="v7-years" role="tablist" aria-label="Năm phát hành">
                   {years.map((y) => (
-                    <button key={y} role="tab" aria-selected={y === year} className={y === year ? 'on' : ''} onClick={() => setYear(y)}>{y}</button>
+                    <button key={y} role="tab" aria-selected={y === year} className={y === year ? 'on' : ''} onClick={() => { setYear(y); setArchShown(archStep); }}>{y}</button>
                   ))}
                 </div>
               </div>
               <div className="v7-grid">
-                {p.issues.filter((i) => i.year === year).map((i) => (
+                {archIssues.slice(0, archShown).map((i) => (
                   <Link key={i.slug} href={`/issues/${i.slug}`} className="v7-iss">
                     <div className="c">
                       {i.cover ? (
@@ -271,6 +268,11 @@ export default function HomeV7(p: HomeProps) {
                   </Link>
                 ))}
               </div>
+              {archIssues.length > archShown && (
+                <button className="v7-arch-more" onClick={() => setArchShown(archShown + archStep)}>
+                  Xem thêm <span aria-hidden="true">↓</span>
+                </button>
+              )}
             </div>
           </section>
         )}

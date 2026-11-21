@@ -83,7 +83,7 @@ const RESOURCES: ResourceDef[] = [
     { key: 'password', label: 'Mật khẩu', type: 'password', hint: 'Tối thiểu 8 ký tự. Khi sửa: để trống = giữ nguyên mật khẩu.' },
   ] },
   { key: 'settings', title: 'Cấu hình site', fields: [
-    { key: 'key', label: 'Khóa', required: true, list: true, hint: 'org_name, issn, leaders, contact, license, copyright' },
+    { key: 'key', label: 'Khóa', required: true, list: true, hint: 'org_name, issn, leaders, contact, license, copyright, publisher, editors' },
     { key: 'value', label: 'Giá trị', type: 'textarea', list: true }] },
   { key: 'subscribers', title: 'Đăng ký email', readonly: true, fields: [{ key: 'email', label: 'Email', list: true }, { key: 'created_at', label: 'Ngày', list: true }] },
 ];

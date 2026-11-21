@@ -21,21 +21,6 @@ export function ArticleCard({ a }: { a: any }) {
   );
 }
 
-export function IssueCard({ i, dark }: { i: any; dark?: boolean }) {
-  return (
-    <Link href={`/issues/${i.slug}`} className="issue-card">
-      <Cover issue={i} shim />
-      <div className="lab">{i.label.toUpperCase()}</div>
-      <h3>{i.theme}</h3>
-      {!dark && (
-        <div className="muted" style={{ marginTop: 'auto', fontSize: 13 }}>
-          {i.article_count} bài{i.page_count ? ` · ${i.page_count} trang` : ''}
-        </div>
-      )}
-    </Link>
-  );
-}
-
 export function SearchBox({
   action = '/search',
   placeholder = 'Tìm theo tiêu đề, tác giả hoặc chuyên mục',

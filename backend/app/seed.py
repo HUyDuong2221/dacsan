@@ -91,7 +91,9 @@ SETTINGS = {
     "leaders": "Chủ tịch: TS Võ Công Trí\nPhó Chủ tịch: ThS Lê Văn Trung\nPhó Chủ tịch: ThS Nguyễn Thị Hoài Nam\nTổng Thư ký: ThS Huỳnh Phạm Duy Hoàng",
     "contact": "[Số nhà, đường], phường [...], thành phố Đà Nẵng\nĐiện thoại: 0236 [......]\nEmail: [email]@dusta.org.vn",
     "license": "Giấy phép xuất bản số [.../GP-...] do [cơ quan cấp] cấp ngày [..../..../....]",
-    "copyright": "Bản quyền nội dung theo giấy phép CC BY-NC 4.0",
+    "copyright": "Nội dung theo giấy phép CC BY-NC 4.0",
+    "publisher": "VÕ CÔNG TRÍ",
+    "editors": "MAI ĐỨC LỘC – LÊ MINH HÙNG",
 }
 
 

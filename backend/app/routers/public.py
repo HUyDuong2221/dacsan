@@ -163,7 +163,7 @@ def home(db: Session = Depends(get_db)):
     topics = []
     for f in db.scalars(select(Field).order_by(Field.sort_order, Field.id)):
         mine = [i for i in published if (i.theme or "").strip() == f.name.strip()]
-        topics.append({"name": f.name, "count": len(mine), "issues": [issue_card(i, c) for i in mine]})
+        topics.append({"name": f.name, "count": len(mine), "issues": [issue_card(i, c) for i in mine[:4]]})  # chỉ 4 số mới nhất
     return {
         "latest_issue": issue_card(latest, c) if latest else None,
         "hero": slides,

@@ -41,9 +41,9 @@ export default function SiteNav({ site, dateStr, latestLabel }: { site: Record<s
           </Link>
           <div className="v7-mast-meta">
             {latestLabel && <><span className="nw">{latestLabel}</span><i className="hs">◆</i></>}
-            <span className="hs nw">{site.org_name || 'Liên hiệp các Hội KH&KT TP. Đà Nẵng'}</span>
+            <span className="hs nw v7-mm-org">Cơ quan của Liên hiệp các Hội KH&amp;KT TP. Đà Nẵng</span>
             <i className="hs">◆</i>
-            <span className="hs nw">Phát hành hai tháng một kỳ</span>
+            <span className="hs nw v7-mm-freq">Phát hành hai tháng một kỳ</span>
           </div>
         </div>
       </header>
@@ -77,6 +77,11 @@ export default function SiteNav({ site, dateStr, latestLabel }: { site: Record<s
                   {m.label}<span style={{ color: '#03368D' }} aria-hidden="true">→</span>
                 </Link>
               ))}
+              {/* Điện thoại: nút "Gửi bài" và link LHH bị ẩn khỏi thanh trên nên đưa vào menu */}
+              <a href="https://lhh.danang.gov.vn" target="_blank" rel="noopener noreferrer" className="v7-drawer-x">
+                lhh.danang.gov.vn<span style={{ color: '#03368D' }} aria-hidden="true">↗</span>
+              </a>
+              <Link href="/gui-bai" className="v7-drawer-cta" onClick={() => setMenu(false)}>Gửi bài cho Đặc san</Link>
             </div>
           </div>
         )}

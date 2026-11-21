@@ -1,3 +1,4 @@
+import { toTile } from '@/components/IssueTile';
 import type { Metadata } from 'next';
 import { get } from '@/lib/api';
 import HomeV7, { type HomeProps } from './_home/HomeV7';
@@ -29,14 +30,7 @@ export default async function Home() {
   const topics: HomeProps['topics'] = (d.topics || []).map((t: any) => ({
     name: t.name,
     count: t.count,
-    issues: (t.issues || []).map((i: any) => ({
-      slug: i.slug,
-      label: i.label,
-      cover: i.cover_url || null,
-      date: i.published_at ? i.published_at.slice(0, 10).split('-').reverse().join('/') : '',
-      articles: i.article_count || 0,
-      pages: i.page_count || null,
-    })),
+    issues: (t.issues || []).map(toTile),
   }));
 
   const acts = (d.activities || []).map((a: any) => {
