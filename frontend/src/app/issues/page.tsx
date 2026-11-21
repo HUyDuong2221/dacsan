@@ -2,49 +2,71 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { fmtDate, get } from '@/lib/api';
 import { Cover, SearchBox } from '@/components/Parts';
-import IssueTile, { toTile } from '@/components/IssueTile';
+import { toTile } from '@/components/IssueTile';
+import PastIssues from '@/components/PastIssues';
 import IssueTabs from '@/components/IssueTabs';
+import './issues.css';
 
 export const metadata: Metadata = { title: 'Các số đã phát hành' };
 
 export default async function Issues() {
   const d = await get('/issues');
-  const [latest, ...older] = d.issues;
+  const issues: any[] = d.issues || [];
+  const [latest, ...older] = issues;
   // "Trong số này": mục lục của số mới nhất, nhóm theo chuyên mục.
   const toc = latest ? await get(`/issues/${latest.slug}`).catch(() => null) : null;
   const groups: any[] = toc?.groups || [];
+  const totalArticles = issues.reduce((n, i) => n + (i.article_count || 0), 0);
+  const fields: string[] = groups.length ? groups.map((g) => g.field) : d.fields || [];
+
   return (
-    <div className="wrap page">
-      <div className="pagehead">
-        <div className="kicker">Đặc san Khoa học &amp; Phát triển thành phố Đà Nẵng</div>
-        <h1>Các số đã phát hành</h1>
-        <p className="muted" style={{ maxWidth: '62ch', fontSize: 16 }}>
-          Toàn bộ các số đặc san được số hóa, đọc trực tiếp trên web theo mục lục của bản in.
-        </p>
-        <div style={{ maxWidth: 560 }}><SearchBox /></div>
-      </div>
+    <div className="wrap page iss">
+      <header className="iss-head">
+        <div className="iss-head-text">
+          <div className="kicker">Đặc san Khoa học &amp; Phát triển thành phố Đà Nẵng</div>
+          <h1>Các số đã phát hành</h1>
+          <p>Toàn bộ các số đặc san được số hóa, đọc trực tiếp trên web theo mục lục của bản in.</p>
+          <ul className="iss-stats" aria-label="Thống kê">
+            <li><b>{issues.length}</b> số đặc san</li>
+            <li><b>{totalArticles}</b> bài viết</li>
+          </ul>
+        </div>
+        <div className="iss-search">
+          <SearchBox placeholder="Tìm bài, tác giả, chuyên mục" />
+        </div>
+      </header>
 
       {latest && (
-        <div className="row" style={{ alignItems: 'flex-start', gap: 44, paddingBottom: 44, marginBottom: 44, borderBottom: '1px solid var(--line)' }}>
-          <Link href={`/issues/${latest.slug}`} style={{ flex: '0 1 240px' }}><Cover issue={latest} text={`bìa ${latest.label.toLowerCase()}`} /></Link>
-          <div style={{ flex: '1 1 420px' }}>
-            <div className="kicker" style={{ marginBottom: 12 }}>Số mới nhất · {latest.label}</div>
-            <h2 className="serif" style={{ fontSize: 'clamp(24px,2.8vw,32px)', lineHeight: 1.2, marginBottom: 14 }}>{latest.theme}</h2>
-            <p style={{ color: 'var(--ink2)', maxWidth: '64ch', lineHeight: 1.66 }}>{latest.summary}</p>
-            <div className="row" style={{ margin: '20px 0' }}>
-              <Link href={`/issues/${latest.slug}`} className="btn">Xem mục lục {latest.label.toLowerCase()}</Link>
-              {latest.pdf_url && <Link href={`/issues/${latest.slug}/pdf`} className="btn ghost">Đọc bản PDF của số</Link>}
-              <span className="muted">{latest.published_at ? `Ngày đăng ${fmtDate(latest.published_at)} · ` : ''}{latest.article_count} bài{latest.page_count ? ` · ${latest.page_count} trang` : ''}</span>
-            </div>
-            <div className="row" style={{ gap: 8 }}>
-              {d.fields.map((f: string) => <span key={f} className="chip">{f}</span>)}
+        <section className="iss-feat" aria-label="Số mới nhất">
+          <Link href={`/issues/${latest.slug}`} className="iss-feat-cover">
+            <Cover issue={latest} text={`bìa ${latest.label.toLowerCase()}`} />
+          </Link>
+          <div className="iss-feat-head">
+            <span className="iss-badge">Số mới nhất</span>
+            <div className="iss-label">{latest.label}</div>
+            <h2>{latest.theme || latest.label}</h2>
+            <div className="iss-meta">
+              {latest.published_at && <span className="iss-date">Phát hành {fmtDate(latest.published_at)}</span>}
+              <span>{latest.article_count} bài</span>
+              {latest.page_count ? <span>{latest.page_count} trang</span> : null}
             </div>
           </div>
-        </div>
+          {latest.summary && <p className="iss-feat-sum">{latest.summary}</p>}
+          <div className="iss-feat-act">
+            <Link href={`/issues/${latest.slug}`} className="btn">Xem mục lục</Link>
+            {latest.pdf_url && <Link href={`/issues/${latest.slug}/pdf`} className="btn ghost">Đọc bản PDF</Link>}
+          </div>
+          {fields.length > 0 && (
+            <div className="iss-feat-fields">
+              <span>Chuyên mục trong số</span>
+              <div>{fields.map((f) => <span key={f} className="chip">{f}</span>)}</div>
+            </div>
+          )}
+        </section>
       )}
 
       {latest && (
-        <section style={{ marginBottom: 56 }}>
+        <section className="iss-sec">
           <div className="sec-head">
             <h2>Trong số này</h2>
             <Link href={`/issues/${latest.slug}`}>Toàn bộ mục lục →</Link>
@@ -57,10 +79,9 @@ export default async function Issues() {
         </section>
       )}
 
-      <h2 className="serif" style={{ fontSize: 24, marginBottom: 26 }}>Các số trước</h2>
-      <div className="itile-grid">
-        {older.map((i: any) => <IssueTile key={i.slug} s={toTile(i)} />)}
-      </div>
+      {older.length > 0 && (
+        <PastIssues issues={older.map((i: any) => ({ ...toTile(i), year: (i.published_at || '').slice(0, 4) }))} />
+      )}
     </div>
   );
 }

@@ -11,6 +11,9 @@ Full stack (Docker; copy `.env.example` to `.env` first):
 docker compose up -d --build        # web :3000, Swagger :8000/docs, admin :3000/admin
 docker compose exec backend python -m pytest -q
 ```
+Host ports come from `WEB_PORT`/`BACKEND_PORT` in `.env` (defaults 3000/8000). A local `.env` may override them (e.g. 3100/8100), so read `.env` or `docker ps` before assuming a port. Another process on the default port may not be this stack's backend.
+
+Admin API scripting: `POST /api/v1/admin/auth/login` with `{email, password}` returns `{"token": ...}`; send it as `Authorization: Bearer <token>`. Uploads go to `POST /api/v1/admin/upload` (multipart field `file`) and return `{"url": "/media/..."}`.
 There are two compose files:
 - The two files use different project names (`dacsan-dev` vs `dacsan`) so their named volumes never collide. Never suggest `docker compose down -v` without first confirming which machine it runs on: it permanently deletes the DB, media and private volumes (this already wiped a developer's local data once).
 - `docker-compose.yml` is **local dev only**. It bind-mounts `backend/app`, `backend/tests` and `frontend/`, and runs `uvicorn --reload` plus `next dev` (frontend image built only to the `deps` stage). Code edits apply without rebuilding. Backend restarts on file changes, which re-runs `init_db()`.
@@ -36,6 +39,7 @@ Settings (`Setting` key/value rows, edited in admin "Cài đặt trang") feed th
   - `admin.py` builds most endpoints with a generic `crud(model, prefix, order, ...)` factory driven by SQLAlchemy column metadata (`coerce()` does type conversion and required-field checks; `prepare=` hooks derive fields, e.g. `prepare_issue` auto-generates an issue's `label`/`year` from `number` + `published_at`; `guard=` enforces role rules). New simple resources should use this factory instead of hand-written routes.
   - Roles: `admin` > `editor` > `contributor`, enforced per endpoint with `require_roles(...)` (role sets `ADMIN`/`EDIT`/`STAFF`) and re-read from the DB on every request. Contributors may only edit TOC entries of unpublished issues (`guard_entry`).
   - An issue's chuyên mục is its `theme` string, picked in admin from `Field` names. There is no FK; the homepage "Chuyên mục" block matches `Issue.theme == Field.name`. This is separate from `TocEntry.field_id`, the per-article section inside an issue's TOC. `Issue.featured` + `Issue.title` drive the homepage "Tiêu điểm" carousel (10 newest featured; falls back to latest issue + featured TOC entries). `Issue.page_count` is auto-filled from the uploaded PDF (`pdf_page_count`, also backfilled in `init_db`). Use `media_path(url)` in `admin.py` to map a `/media/...` (or full `http(s)://host/media/...`) URL to a file in `MEDIA_DIR`.
+  - `Issue.number` is unique and drives ordering. Public `/issues` and "latest issue" sort by `number desc`, not by date, so an issue with a higher number but an older `published_at` would become "Số mới nhất". The `/featured` list and the homepage Tiêu điểm block sort by `published_at`.
   - Domain model: an `Issue` has many `TocEntry` rows (the table of contents). There is no separate "article" table; the public `/articles/{slug}` serves a TOC entry, and full text (`body`, a small markdown subset: `##` headings, `![caption](/media/..)` images) is optional. `toc.py` extracts a TOC from an uploaded PDF (PyMuPDF) via `issues/{id}/toc/preview` and `toc/import`.
   - Uploaded media goes to `MEDIA_DIR` (served publicly at `/media`); submitted manuscripts go to `PRIVATE_DIR` and must never be exposed under `/media`.
   - Search uses Postgres `unaccent`; chatbot is keyword lookup only (no LLM).
@@ -51,6 +55,8 @@ Settings (`Setting` key/value rows, edited in admin "Cài đặt trang") feed th
 - **Issue UI**:
   - `components/IssueTile.tsx` (+ `issue-tile.css`, grid class `.itile-grid`) is the shared issue card for the homepage "Chuyên mục" block and `/issues`. Use `toTile()` to map an API `issue_card` dict to it.
   - The issue detail page `/issues/[slug]` is `components/IssueBrowser.tsx` (+ `issue-detail.css`, scoped `.idt`). It renders its own full-width hero, so the page does not wrap it in `.wrap`. Chuyên mục navigation scrolls to sections (scrollspy) instead of filtering; `?field=` still deep-links.
+  - The `/issues` list page (styles `app/issues/issues.css`, scoped `.iss`) has three parts. The latest-issue card is first. "Trong số này" (`IssueTabs`) shows 4 articles per step. "Các số trước" (`PastIssues`) has year tabs and shows 4 issues per step.
+  - Listing pages use a "show N, then Xem thêm adds N" client pattern with a `STEP` constant: `PastIssues`/`IssueTabs` (4), `SpotList` for `/tieu-diem` (10), and `NewsList` for `/tin-hoat-dong` (10). The server page fetches the data and passes the full list to the client component.
   - Homepage responsive behaviour lives in a `@media(max-width:720px)` block at the end of `v7.css`. The archive ("Kho lưu trữ") paging step (10 desktop / 6 mobile) is chosen in JS via `matchMedia`, so keep the CSS breakpoint and the JS one in sync.
 - **Admin resource tables**: `ResourceManager` renders each `ResourceDef` from `app/admin/page.tsx`.
   - `FieldDef.list` puts a field in the table, and `listLabel` shortens its column header. `ResourceDef.hideId` drops the ID column.

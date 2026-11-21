@@ -178,7 +178,7 @@ body:has(.v7){background:#FBFAF7}
   .v7-side{clip-path:none}
   /* Thống kê: 2 x 2 */
   .v7-stats .v7-w{grid-template-columns:repeat(2,minmax(0,1fr));gap:20px 16px;padding-top:26px;padding-bottom:26px}
-  .v7-stat{flex-direction:column;gap:6px}
+  .v7-stat{flex-direction:column;align-items:center;text-align:center;gap:6px}
   .v7-stat b{font-size:32px}
   .v7-stat span{font-size:12.5px}
   /* Chuyên mục */
