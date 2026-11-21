@@ -51,10 +51,6 @@ export default function SiteNav({ site, dateStr, latestLabel }: { site: Record<s
 
       <nav className="v7h v7-nav" aria-label="Điều hướng chính">
         <div className="v7-w">
-          <Link href="/" className="v7-mini" aria-label="Trang chủ">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={logo} alt="" />
-          </Link>
           <button className="v7-ibtn v7-menu-btn" onClick={() => setMenu(!menu)} aria-label="Mở menu" aria-expanded={menu}>
             <span className="v7-bars"><span /><span /><span /></span>
           </button>

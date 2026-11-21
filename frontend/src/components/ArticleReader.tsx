@@ -1,8 +1,9 @@
 'use client';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Portal from './Portal';
 import PdfViewer from './PdfViewer';
+import './article.css';
 
 type Block = { t: 'h'; text: string; id: string } | { t: 'p'; text: string } | { t: 'img'; alt: string; src: string };
 
@@ -26,18 +27,35 @@ function parse(body: string): Block[] {
   return out;
 }
 
+const I = {
+  toc: 'M4 6h16M4 12h16M4 18h10',
+  search: 'M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4',
+  prev: 'M15 6l-6 6 6 6',
+  next: 'M9 6l6 6-6 6',
+  quote: 'M7 7h4v4c0 3-2 5-4 5M14 7h4v4c0 3-2 5-4 5',
+  share: 'M8 12h8M15 8l4 4-4 4M4 5v14',
+  pdf: 'M7 3h7l4 4v14H7zM14 3v4h4M9.5 13h5M9.5 16.5h5',
+};
+const Ico = ({ d }: { d: string }) => (
+  <svg viewBox="0 0 24 24" aria-hidden="true"><path d={d} /></svg>
+);
+
 export default function ArticleReader({ a }: { a: any }) {
   const [size, setSize] = useState(18);
   const [drawer, setDrawer] = useState(false);
   const [search, setSearch] = useState(false);
   const [scope, setScope] = useState<'issue' | 'all'>('issue');
   const [note, setNote] = useState('');
+  // "Nội dung bài": mở sẵn trên máy tính, gập trên điện thoại cho đỡ chiếm chỗ
+  const contents = useRef<HTMLDetailsElement>(null);
+  useEffect(() => {
+    if (contents.current && window.matchMedia('(min-width: 961px)').matches) contents.current.open = true;
+  }, []);
   const blocks = parse(a.body || '');
   const pageNo = parseInt(String(a.page_label).replace(/\D/g, ''), 10);
   const pdfHref = `/issues/${a.issue.slug}/pdf${pageNo > 0 ? `?page=${pageNo}` : ''}`;
   // file PDF mở đúng trang in của bài (#page=N được trình xem PDF của trình duyệt hỗ trợ)
   const pdfSrc = a.pdf_url ? `${a.pdf_url}${pageNo > 0 ? `#page=${pageNo}` : ''}` : '';
-  let hi = 0;
 
   async function copy(text: string, msg: string) {
     try {
@@ -50,99 +68,110 @@ export default function ArticleReader({ a }: { a: any }) {
   }
 
   return (
-    <>
-      <div className="ctx">
-        <div className="wrap">
-          <div className="row" style={{ gap: 12 }}>
-            <button className="btn ghost sm" onClick={() => setDrawer(true)}>☰ Mục lục số</button>
-            <Link href={`/issues/${a.issue.slug}`} className="ctx-label" style={{ color: '#32424c', fontSize: 14 }}>Đặc san {a.issue.label.toLowerCase()}</Link>
-            <span className="mono muted" style={{ fontSize: 11.5 }}>Bài {a.position.index}/{a.position.total}</span>
-          </div>
-          <div className="row" style={{ gap: 8 }}>
-            <button className="btn ghost sm" onClick={() => setSearch(!search)}>Tìm kiếm</button>
-            <Link href={`/articles/${a.prev.slug}`} className="btn ghost sm" title={a.prev.title}>←</Link>
-            <Link href={`/articles/${a.next.slug}`} className="btn ghost sm" title={a.next.title}>→</Link>
+    <div className="ar">
+      {/* Thanh công cụ dính dưới menu: một hàng duy nhất */}
+      <div className="ar-bar">
+        <div className="ar-w ar-bar-in">
+          <button type="button" className="ar-btn" onClick={() => setDrawer(true)}><Ico d={I.toc} /><span>Mục lục số</span></button>
+          <span className="ar-pos">
+            <Link href={`/issues/${a.issue.slug}`}>{a.issue.label}</Link>
+            <i>Bài {a.position.index}/{a.position.total}</i>
+          </span>
+          <div className="ar-bar-r">
+            <button type="button" className={'ar-ib ar-find' + (search ? ' on' : '')} onClick={() => setSearch(!search)} aria-label="Tìm kiếm" aria-expanded={search}><Ico d={I.search} /></button>
+            <Link href={`/articles/${a.prev.slug}`} className="ar-ib" aria-label={`Bài trước: ${a.prev.title}`} title={a.prev.title}><Ico d={I.prev} /></Link>
+            <Link href={`/articles/${a.next.slug}`} className="ar-ib" aria-label={`Bài sau: ${a.next.title}`} title={a.next.title}><Ico d={I.next} /></Link>
           </div>
         </div>
         {search && (
-          <div style={{ borderTop: '1px solid var(--line)', background: 'var(--tint)' }}>
-            <form action="/search" className="wrap row" style={{ padding: '14px 28px' }}>
-              {scope === 'issue' && <input type="hidden" name="issue" value={a.issue.slug} />}
-              <input className="input" name="q" required minLength={2} placeholder="Nhập từ khóa hoặc tên tác giả" style={{ flex: '1 1 260px', width: 'auto' }} />
-              <div className="row" style={{ gap: 0 }}>
-                {(['issue', 'all'] as const).map((s) => (
-                  <button type="button" key={s} className={`chip ${scope === s ? 'on' : ''}`} onClick={() => setScope(s)}>
-                    {s === 'issue' ? 'Trong số này' : 'Toàn bộ đặc san'}
-                  </button>
-                ))}
-              </div>
-              <button className="btn">Tìm</button>
-            </form>
-          </div>
+          <form action="/search" className="ar-w ar-search">
+            {scope === 'issue' && <input type="hidden" name="issue" value={a.issue.slug} />}
+            <input name="q" required minLength={2} placeholder="Nhập từ khóa hoặc tên tác giả" aria-label="Từ khóa" autoFocus />
+            <div className="ar-seg" role="group" aria-label="Phạm vi tìm">
+              {(['issue', 'all'] as const).map((s) => (
+                <button type="button" key={s} className={scope === s ? 'on' : ''} aria-pressed={scope === s} onClick={() => setScope(s)}>
+                  {s === 'issue' ? 'Trong số này' : 'Toàn bộ'}
+                </button>
+              ))}
+            </div>
+            <button className="ar-go">Tìm</button>
+          </form>
         )}
       </div>
 
       {drawer && (
         <Portal>
-        <div className="drawer-wrap">
-          <div className="drawer-bg" onClick={() => setDrawer(false)} />
-          <aside className="drawer">
-            <div className="row" style={{ justifyContent: 'space-between', padding: '22px 26px 18px', borderBottom: '1px solid var(--line)', flexWrap: 'nowrap' }}>
-              <div>
-                <div className="kicker" style={{ marginBottom: 8 }}>Mục lục số này</div>
-                <div className="serif" style={{ fontSize: 20, fontWeight: 700 }}>Đặc san Khoa học &amp; Phát triển — {a.issue.label.toLowerCase()}</div>
-              </div>
-              <button className="btn ghost sm" onClick={() => setDrawer(false)}>✕</button>
-            </div>
-            <div className="list">
-              {a.issue_toc.map((g: any) => (
-                <div key={g.field} style={{ paddingTop: 14 }}>
-                  <div className="tag" style={{ padding: '0 26px 8px' }}>{g.field}</div>
-                  {g.items.map((it: any) => (
-                    <Link key={it.slug} href={`/articles/${it.slug}`} className={it.slug === a.slug ? 'cur' : ''} onClick={() => setDrawer(false)}>
-                      <span style={{ flex: 1 }}>{it.title}</span>
-                      <span className="mono muted" style={{ fontSize: 11 }}>{it.page_label.replace('tr. ', '')}</span>
-                    </Link>
-                  ))}
+          <div className="drawer-wrap">
+            <div className="drawer-bg" onClick={() => setDrawer(false)} />
+            <aside className="drawer">
+              <div className="row" style={{ justifyContent: 'space-between', padding: '22px 26px 18px', borderBottom: '1px solid var(--line)', flexWrap: 'nowrap' }}>
+                <div>
+                  <div className="kicker" style={{ marginBottom: 8 }}>Mục lục số này</div>
+                  <div className="serif" style={{ fontSize: 20, fontWeight: 700 }}>Đặc san Khoa học &amp; Phát triển — {a.issue.label.toLowerCase()}</div>
                 </div>
-              ))}
-            </div>
-          </aside>
-        </div>
+                <button className="btn ghost sm" onClick={() => setDrawer(false)} aria-label="Đóng">✕</button>
+              </div>
+              <div className="list">
+                {a.issue_toc.map((g: any) => (
+                  <div key={g.field} style={{ paddingTop: 14 }}>
+                    <div className="tag" style={{ padding: '0 26px 8px' }}>{g.field}</div>
+                    {g.items.map((it: any) => (
+                      <Link key={it.slug} href={`/articles/${it.slug}`} className={it.slug === a.slug ? 'cur' : ''} onClick={() => setDrawer(false)}>
+                        <span style={{ flex: 1 }}>{it.title}</span>
+                        <span className="mono muted" style={{ fontSize: 11 }}>{it.page_label.replace('tr. ', '')}</span>
+                      </Link>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </aside>
+          </div>
         </Portal>
       )}
 
-      <div className="ahead">
-        <div className="wrap">
-          <div className="muted row" style={{ gap: 10 }}>
-            <Link href="/issues">Đặc san</Link>/<Link href={`/issues/${a.issue.slug}`}>{a.issue.label}</Link>/<span>{a.field}</span>
-          </div>
+      {/* Đầu bài */}
+      <header className="ar-head">
+        <div className="ar-w">
+          <nav className="ar-crumb" aria-label="Đường dẫn">
+            <Link href="/issues">Đặc san</Link><span aria-hidden="true">›</span><Link href={`/issues/${a.issue.slug}`}>{a.issue.label}</Link>
+          </nav>
+          {a.field && <div className="ar-field">{a.field}</div>}
           <h1>{a.title}</h1>
-          <div style={{ fontSize: 16.5, color: '#32424c', marginBottom: 20 }}>{a.author}</div>
-          <div className="row mono muted" style={{ gap: 22, fontSize: 12 }}>
-            <span>{a.issue.label.toUpperCase()}</span><span>{(a.field || '').toUpperCase()}</span><span>{a.page_label.toUpperCase()}</span>
+          <div className="ar-by">
+            {a.author && <b>{a.author}</b>}
+            <span>{a.issue.label} · {a.page_label}</span>
+          </div>
+          {/* Các nút chức năng gom về một hàng */}
+          <div className="ar-tools">
+            {a.has_fulltext && (
+              <div className="ar-seg" role="group" aria-label="Cỡ chữ">
+                <button type="button" onClick={() => setSize((s) => Math.max(14, s - 1))} aria-label="Giảm cỡ chữ">A−</button>
+                <button type="button" onClick={() => setSize((s) => Math.min(26, s + 1))} aria-label="Tăng cỡ chữ">A+</button>
+              </div>
+            )}
+            <button type="button" className="ar-btn" onClick={() => copy(a.citation, 'Đã sao chép trích dẫn')}><Ico d={I.quote} /><span>Trích dẫn</span></button>
+            <button type="button" className="ar-btn" onClick={() => copy(window.location.href, 'Đã sao chép liên kết')}><Ico d={I.share} /><span>Chia sẻ</span></button>
+            {a.pdf_url && a.has_fulltext && <Link className="ar-btn" href={pdfHref}><Ico d={I.pdf} /><span>Bản in PDF</span></Link>}
+            <span className="ar-note" role="status" aria-live="polite">{note}</span>
           </div>
         </div>
-      </div>
+      </header>
 
-      <div className="wrap alayout">
-        <aside className="aside-l">
-          {a.has_fulltext && <div className="toc-label mono muted" style={{ fontSize: 11.5, letterSpacing: '.08em', marginBottom: 12 }}>NỘI DUNG BÀI</div>}
-          <nav>
-            {a.toc.map((t: string, k: number) => (
-              <a key={k} href={a.lead && k === 0 ? '#h-lead' : `#h-${a.lead ? k - 1 : k}`}>{t}</a>
-            ))}
-          </nav>
-          <div className="fs-box" style={{ marginTop: 26 }}>
-            <div className="mono muted" style={{ fontSize: 11.5, letterSpacing: '.08em', marginBottom: 10 }}>CỠ CHỮ</div>
-            <div className="row" style={{ gap: 6 }}>
-              <button className="btn ghost sm" onClick={() => setSize((s) => Math.max(14, s - 1))}>A−</button>
-              <button className="btn ghost sm" onClick={() => setSize((s) => Math.min(26, s + 1))}>A+</button>
-            </div>
-          </div>
-        </aside>
+      <div className="ar-w ar-grid">
+        {a.has_fulltext && a.toc.length > 0 && (
+          <aside className="ar-side">
+            <details className="ar-contents" ref={contents}>
+              <summary>Nội dung bài</summary>
+              <nav>
+                {a.toc.map((t: string, k: number) => (
+                  <a key={k} href={a.lead && k === 0 ? '#h-lead' : `#h-${a.lead ? k - 1 : k}`}>{t}</a>
+                ))}
+              </nav>
+            </details>
+          </aside>
+        )}
 
-        <article className="art">
+        <article className="ar-main">
           {a.has_fulltext ? (
             <>
               {a.lead && (
@@ -166,59 +195,52 @@ export default function ArticleReader({ a }: { a: any }) {
             </>
           ) : a.pdf_url ? (
             // Chưa có toàn văn: hiển thị luôn trang in trong file PDF của số, không cần bấm thêm.
-            <div className="pdf-inline">
-              <div className="row" style={{ justifyContent: 'space-between', marginBottom: 10 }}>
-                <span className="mono muted" style={{ fontSize: 12, letterSpacing: '.06em' }}>BẢN IN · {a.page_label.toUpperCase()}</span>
-                <div className="row" style={{ gap: 8 }}>
-                  <a href={pdfSrc} target="_blank" rel="noopener noreferrer" className="btn ghost sm">Mở tab mới</a>
-                  <a href={a.pdf_url} download className="btn ghost sm">Tải PDF</a>
+            <div className="ar-pdf">
+              <div className="ar-pdf-h">
+                <span>Bản in · {a.page_label}</span>
+                <div>
+                  <a href={pdfSrc} target="_blank" rel="noopener noreferrer" className="ar-btn">Mở tab mới</a>
+                  <a href={a.pdf_url} download className="ar-btn">Tải PDF</a>
                 </div>
               </div>
               <PdfViewer src={a.pdf_url} page={pageNo > 0 ? pageNo : 0} title={`Bản in: ${a.title}`} height="calc(100vh - 160px)" />
-              <p className="muted" style={{ marginTop: 8, fontSize: 14 }}>
+              <p className="ar-hint">
                 Bài này chưa có toàn văn trên web, đây là trang in trong {a.issue.label.toLowerCase()}. Nếu điện thoại không hiển thị được PDF, hãy bấm “Mở tab mới” hoặc “Tải PDF”.
               </p>
             </div>
           ) : (
-            <div className="leadbox" style={{ padding: 32 }}>
+            <div className="leadbox" style={{ padding: 28 }}>
               <div className="kicker" style={{ marginBottom: 12 }}>Chưa có toàn văn trên web</div>
               <p style={{ fontStyle: 'normal', fontSize: 17, marginBottom: 20 }}>
                 Bài này hiện chỉ có trong bản in {a.issue.label.toLowerCase()}. Bản số hóa toàn văn đang được biên tập và sẽ cập nhật tại đây.
               </p>
-              <div className="row">
-                <button className="btn ghost" onClick={() => setDrawer(true)}>Mở mục lục số</button>
-              </div>
+              <button type="button" className="ar-btn" onClick={() => setDrawer(true)}><Ico d={I.toc} /><span>Mở mục lục số</span></button>
             </div>
           )}
 
-          <nav className="pn">
-            <Link href={`/articles/${a.prev.slug}`}><span className="tag">← Bài trước</span><span className="t">{a.prev.title}</span></Link>
-            <Link href={`/articles/${a.next.slug}`} className="r"><span className="tag">Bài sau →</span><span className="t">{a.next.title}</span></Link>
+          <section className="ar-cite" aria-label="Trích dẫn nguồn">
+            <h2>Trích dẫn nguồn</h2>
+            <p>{a.citation}</p>
+            <button type="button" className="ar-btn" onClick={() => copy(a.citation, 'Đã sao chép trích dẫn')}><Ico d={I.quote} /><span>Sao chép trích dẫn</span></button>
+          </section>
+
+          <nav className="ar-pn" aria-label="Bài trước, bài sau">
+            <Link href={`/articles/${a.prev.slug}`}><small>← Bài trước</small><span>{a.prev.title}</span></Link>
+            <Link href={`/articles/${a.next.slug}`} className="r"><small>Bài sau →</small><span>{a.next.title}</span></Link>
           </nav>
-        </article>
 
-        <aside className="aside-r">
-          <div className="box" style={{ margin: 0, padding: 20 }}>
-            <div className="mono muted" style={{ fontSize: 11.5, letterSpacing: '.08em', marginBottom: 12 }}>TRÍCH DẪN NGUỒN</div>
-            <p style={{ fontSize: 13.5, lineHeight: 1.65, margin: '0 0 14px' }}>{a.citation}</p>
-            <button className="btn ghost" style={{ width: '100%' }} onClick={() => copy(a.citation, 'Đã sao chép trích dẫn')}>
-              {note || 'Sao chép trích dẫn'}
-            </button>
-          </div>
-          <div className="row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 8 }}>
-            {a.pdf_url ? <Link className="btn ghost" href={pdfHref}>Đọc PDF bản in của số</Link> : <span className="btn ghost disabled">Chưa có PDF của số</span>}
-            <button className="btn ghost" onClick={() => copy(window.location.href, 'Đã sao chép liên kết')}>Chia sẻ liên kết</button>
-          </div>
           {a.related.length > 0 && (
-            <div style={{ borderTop: '1px solid var(--line)', paddingTop: 18 }}>
-              <div className="mono muted" style={{ fontSize: 11.5, letterSpacing: '.08em', marginBottom: 12 }}>CÙNG SỐ NÀY</div>
-              {a.related.map((r: any) => (
-                <Link key={r.slug} href={`/articles/${r.slug}`} className="serif" style={{ display: 'block', fontSize: 15.5, lineHeight: 1.4, marginBottom: 14 }}>{r.title}</Link>
-              ))}
-            </div>
+            <section className="ar-related">
+              <h2>Cùng số này</h2>
+              <div>
+                {a.related.map((r: any) => (
+                  <Link key={r.slug} href={`/articles/${r.slug}`}>{r.title}</Link>
+                ))}
+              </div>
+            </section>
           )}
-        </aside>
+        </article>
       </div>
-    </>
+    </div>
   );
 }

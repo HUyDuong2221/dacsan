@@ -29,8 +29,6 @@
 .v7h .v7-ibtn:hover{border-color:#03368D}
 .v7h a.v7-cta{background:#03368D;color:#fff;padding:8px 14px;border-radius:7px;font-size:13.5px;font-weight:600;white-space:nowrap}
 .v7h a.v7-cta:hover{background:#02266A}
-.v7h .v7-mini{display:none;width:140px;flex-shrink:0}
-.v7h .v7-mini img{display:block;width:100%;height:auto}
 .v7h .v7-menu-btn{display:none}
 .v7h .v7-bars{display:flex;flex-direction:column;gap:4px;width:16px}
 .v7h .v7-bars span{height:2px;background:#03368D;display:block}
@@ -39,12 +37,9 @@
 .v7h .v7-drawer a{display:flex;justify-content:space-between;padding:14px 0;border-bottom:1px solid #EEF0F4;font-size:15.5px}
 .v7h .v7-drawer a.on{color:#03368D;font-weight:700}
 @keyframes v7hFade{from{opacity:0}to{opacity:1}}
-@media(max-width:860px){.v7h .v7-links{display:none}.v7h .v7-mini{display:block}.v7h .v7-menu-btn{display:flex;order:3;margin-left:-8px}.v7h .v7-nav-r{margin-left:auto}.v7h .v7-util-r a{display:none}.v7h .v7-mast-meta i.hs{display:none}.v7h .v7-mast-meta{gap:4px 14px;font-size:10.5px;letter-spacing:.08em}.v7h .v7-mast-meta .v7-mm-org{order:3;flex-basis:100%;text-align:center;white-space:normal}}
+@media(max-width:860px){.v7h .v7-links{display:none}.v7h .v7-menu-btn{display:flex;order:3;margin-left:-8px}.v7h .v7-nav-r{margin-left:auto}.v7h .v7-util-r a{display:none}.v7h .v7-mast-meta i.hs{display:none}.v7h .v7-mast-meta{gap:4px 14px;font-size:10.5px;letter-spacing:.08em}.v7h .v7-mast-meta .v7-mm-org{order:3;flex-basis:100%;text-align:center;white-space:normal}}
 @media(max-width:560px){.v7h .v7-w{padding-left:16px;padding-right:16px}.v7h a.v7-cta{display:none}}
-/* các khối dính của trang con nằm dưới menu dính (cao ~45px) */
-.shell .ctx{top:45px}
 .shell .side{top:69px}
-.shell .aside-l,.shell .aside-r{top:100px}
 /* Menu điện thoại: link LHH + nút Gửi bài */
 .v7h .v7-drawer a.v7-drawer-x{color:#4A5468;font-size:14.5px}
 .v7h .v7-drawer a.v7-drawer-cta{justify-content:center;margin-top:14px;padding:12px 16px;border:0;border-radius:8px;background:#03368D;color:#fff;font-weight:600}
