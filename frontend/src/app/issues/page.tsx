@@ -22,7 +22,7 @@ export default async function Issues() {
     <div className="wrap page iss">
       <header className="iss-head">
         <div className="iss-head-text">
-          <div className="kicker">Đặc san Khoa học &amp; Phát triển thành phố Đà Nẵng</div>
+          <div className="kicker iss-kicker">Đặc san Khoa học &amp; Phát triển <span>thành phố Đà Nẵng</span></div>
           <h1>Các số đã phát hành</h1>
           <p>Toàn bộ các số đặc san được số hóa, đọc trực tiếp trên web theo mục lục của bản in.</p>
           <ul className="iss-stats" aria-label="Thống kê">

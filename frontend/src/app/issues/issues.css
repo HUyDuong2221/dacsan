@@ -3,10 +3,18 @@
 /* đầu trang: chữ bên trái, ô tìm kiếm bên phải */
 .iss-head { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 440px); align-items: end; gap: 24px 48px; padding-bottom: 28px; margin-bottom: 32px; border-bottom: 1px solid var(--line); }
 .iss-head h1 { font-family: var(--serif); font-size: clamp(28px, 3.4vw, 40px); line-height: 1.15; margin: 10px 0 12px; }
+.iss-kicker span { white-space: nowrap; } /* "thành phố Đà Nẵng" xuống dòng cả cụm, không rớt chữ lẻ */
 .iss-head p { color: var(--ink2); font-size: 16px; line-height: 1.6; max-width: 58ch; margin: 0; }
 .iss-stats { display: flex; gap: 20px; list-style: none; padding: 0; margin: 16px 0 0; font-size: 14px; color: var(--mute); }
 .iss-stats b { color: var(--blue); font-family: var(--serif); font-size: 20px; margin-right: 4px; }
 .iss-search form { min-width: 0 !important; }
+/* màn hẹp: chữ gợi ý không bị cắt (chữ gõ vẫn 16px để iOS không tự phóng to khi chạm vào ô) */
+@media (max-width: 400px) {
+  .iss-search form { gap: 8px; }
+  .iss-search .input { padding-left: 12px; padding-right: 8px; }
+  .iss-search .input::placeholder { font-size: 14px; }
+  .iss-search .btn { padding: 0 12px; }
+}
 
 /* số mới nhất: thẻ nổi, bìa bên trái */
 .iss-feat {
@@ -55,6 +63,7 @@
 @media (max-width: 640px) {
   .iss-head { gap: 18px; padding-bottom: 22px; margin-bottom: 22px; }
   .iss-head h1 { margin: 8px 0 10px; }
+  .iss-kicker { font-size: 11px; letter-spacing: .03em; }
   .iss-head p { font-size: 15px; }
   .iss-stats { margin-top: 12px; }
   .iss-feat {
