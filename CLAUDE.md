@@ -51,6 +51,7 @@ Settings (`Setting` key/value rows, edited in admin "Cài đặt trang") feed th
   - The homepage ([page.tsx](frontend/src/app/page.tsx) → `_home/HomeV7.tsx`) only renders its body sections. Its CSS (`v7.css`) is scoped under `.v7`, and `body:has(.v7)` hides the layout's decorative `.sci-bg`.
   - Admin hides header/footer via `body:has(.adm-root)` rules in `admin.css`.
   - The sticky nav is ~45px tall, so other sticky elements (`.ctx`, `.side`, `.aside-*`, `.idt-side`) are offset in `site-nav.css` or their own CSS.
+  - `.shell > main` has `z-index: 1`, which creates a stacking context. A `position: fixed` full-screen overlay rendered inside a page can never sit above the header, whatever its z-index. Hide the chrome with a `body:has(...)` rule instead (as `pdf-reader.css` and `admin.css` do) or portal the overlay out.
   - `globals.css` sets `html, body { overflow-x: clip }` on small screens. Keep it `clip`, not `hidden`: `hidden` turns body into a scroll container and silently breaks every `position: sticky` on mobile.
 - **Issue UI**:
   - `components/IssueTile.tsx` (+ `issue-tile.css`, grid class `.itile-grid`) is the shared issue card for the homepage "Chuyên mục" block and `/issues`. Use `toTile()` to map an API `issue_card` dict to it.
@@ -58,6 +59,10 @@ Settings (`Setting` key/value rows, edited in admin "Cài đặt trang") feed th
   - The `/issues` list page (styles `app/issues/issues.css`, scoped `.iss`) has three parts. The latest-issue card is first. "Trong số này" (`IssueTabs`) shows 4 articles per step. "Các số trước" (`PastIssues`) has year tabs and shows 4 issues per step.
   - Listing pages use a "show N, then Xem thêm adds N" client pattern with a `STEP` constant: `PastIssues`/`IssueTabs` (4), `SpotList` for `/tieu-diem` (10), and `NewsList` for `/tin-hoat-dong` (10). The server page fetches the data and passes the full list to the client component.
   - Homepage responsive behaviour lives in a `@media(max-width:720px)` block at the end of `v7.css`. The archive ("Kho lưu trữ") paging step (10 desktop / 6 mobile) is chosen in JS via `matchMedia`, so keep the CSS breakpoint and the JS one in sync.
+- **PDF reading**: every place that shows an issue PDF uses `components/PdfReader.tsx` (+ `pdf-reader.css`, scoped `.pdr`). It is a Google-Drive-style reader drawn with `pdfjs-dist` (pinned 3.11.174, `legacy` build, worker loaded via `new URL(..., import.meta.url)`). It provides lazy page rendering, thumbnails, a "Mục lục" panel, search with highlights, zoom and rotate. Do not reintroduce `<iframe>` PDF embeds.
+  - Full-screen mode is the route `/issues/[slug]/pdf?page=N`. Every "Đọc bản PDF" link (homepage, `/issues`, issue detail, article page) points there.
+  - `embed` mode renders it inline with a fixed height. `ArticleReader` uses it for articles without full text, opened at the article's page.
+  - Page convention: the digits of `TocEntry.page_label` ("tr. 45") are the PDF page index. The "Mục lục" panel is built from the issue's TOC this way. If an issue has no TOC, the panel falls back to the PDF's own bookmarks.
 - **Admin resource tables**: `ResourceManager` renders each `ResourceDef` from `app/admin/page.tsx`.
   - `FieldDef.list` puts a field in the table, and `listLabel` shortens its column header. `ResourceDef.hideId` drops the ID column.
   - `bool` list fields render as checkboxes that PUT immediately (optimistic, reverted on error).
