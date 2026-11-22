@@ -3,7 +3,6 @@ import Link from 'next/link';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { fmtDate } from '@/lib/api';
 import { SearchBox } from './Parts';
-import PdfViewer from './PdfViewer';
 import './issue-detail.css';
 
 const pad = (n: number) => (n < 10 ? '0' : '') + n;
@@ -39,14 +38,7 @@ export default function IssueBrowser({ d, initialField }: { d: any; initialField
   const { issue, groups, front } = d;
   const base = `/issues/${issue.slug}`;
   const all: any[] = groups.flatMap((g: any) => g.items);
-  const first = front[0] || all[0];
 
-  // ---- PDF xem ngay trong trang ----
-  const [pdf, setPdf] = useState(false);
-  const pdfBox = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (pdf) pdfBox.current?.scrollIntoView({ behavior: reduced() ? 'auto' : 'smooth', block: 'start' });
-  }, [pdf]);
 
   // ---- Bìa sách: nghiêng theo chuột, mở bìa khi rê chuột / chạm ----
   const book = useRef<HTMLDivElement>(null);
@@ -192,10 +184,7 @@ export default function IssueBrowser({ d, initialField }: { d: any; initialField
               <Stat n={groups.length} label="chuyên mục" />
             </div>
             <div className="idt-cta idt-up" style={{ ['--d' as any]: '360ms' }}>
-              {first && <Link href={`/articles/${first.slug}`} className="w">Bắt đầu đọc →</Link>}
-              {issue.pdf_url && (
-                <button type="button" className="o" onClick={() => setPdf(!pdf)} aria-expanded={pdf}>{pdf ? 'Đóng bản PDF' : 'Đọc bản PDF'}</button>
-              )}
+              {issue.pdf_url && <Link href={`${base}/pdf`} className="w">Đọc bản PDF →</Link>}
               {issue.published_at && <span>Phát hành {fmtDate(issue.published_at)}</span>}
             </div>
           </div>
@@ -217,21 +206,6 @@ export default function IssueBrowser({ d, initialField }: { d: any; initialField
         </aside>
 
         <div className="idt-main">
-          {pdf && issue.pdf_url && (
-            <div ref={pdfBox} className="idt-pdf">
-              <div className="idt-pdf-h">
-                <strong>Bản PDF {issue.label.toLowerCase()}</strong>
-                <div>
-                  <a href={issue.pdf_url} target="_blank" rel="noopener noreferrer">Mở tab mới</a>
-                  <a href={issue.pdf_url} download>Tải về</a>
-                  <button type="button" onClick={() => setPdf(false)}>Đóng</button>
-                </div>
-              </div>
-              <PdfViewer src={issue.pdf_url} title={`PDF ${issue.label}`} height="calc(100vh - 140px)" />
-              <p>Nếu trình duyệt không hiển thị được PDF (một số điện thoại), hãy bấm “Mở tab mới” hoặc “Tải về”.</p>
-            </div>
-          )}
-
           <div className="idt-search">
             <SearchBox placeholder="Tìm trong số này" hidden={{ issue: issue.slug }} />
           </div>

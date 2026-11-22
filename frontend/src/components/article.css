@@ -60,9 +60,6 @@ body:has(.ar){background:#FBFAF7}
 .ar-contents nav a:hover{color:var(--blue);border-left-color:var(--blue);padding-left:16px}
 .ar .body{max-width:none}
 .ar .leadbox{max-width:none}
-.ar-pdf-h{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
-.ar-pdf-h span{font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--mute)}
-.ar-pdf-h div{display:flex;gap:8px}
 .ar-hint{margin:10px 0 0;font-size:14px;color:var(--mute)}
 
 .ar-cite{margin-top:40px;padding:22px 24px;background:#fff;border:1px solid var(--line);border-left:4px solid var(--blue);border-radius:10px}

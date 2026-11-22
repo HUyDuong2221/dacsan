@@ -176,7 +176,7 @@ export default function HomeV7(p: HomeProps) {
                   <div className="v7-iss-theme">{latest.theme}</div>
                   <div className="v7-btns">
                     <Link href={`/issues/${latest.slug}`} className="p">Mục lục đầy đủ</Link>
-                    {latest.pdf && <a href={latest.pdf} className="g" target="_blank" rel="noopener noreferrer">Tải PDF</a>}
+                    {latest.pdf && <Link href={`/issues/${latest.slug}/pdf`} className="g">Đọc bản PDF</Link>}
                   </div>
                 </>
               ) : (

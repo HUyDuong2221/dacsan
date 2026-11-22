@@ -17,7 +17,6 @@ export default async function Issues() {
   const toc = latest ? await get(`/issues/${latest.slug}`).catch(() => null) : null;
   const groups: any[] = toc?.groups || [];
   const totalArticles = issues.reduce((n, i) => n + (i.article_count || 0), 0);
-  const fields: string[] = groups.length ? groups.map((g) => g.field) : d.fields || [];
 
   return (
     <div className="wrap page iss">
@@ -56,12 +55,6 @@ export default async function Issues() {
             <Link href={`/issues/${latest.slug}`} className="btn">Xem mục lục</Link>
             {latest.pdf_url && <Link href={`/issues/${latest.slug}/pdf`} className="btn ghost">Đọc bản PDF</Link>}
           </div>
-          {fields.length > 0 && (
-            <div className="iss-feat-fields">
-              <span>Chuyên mục trong số</span>
-              <div>{fields.map((f) => <span key={f} className="chip">{f}</span>)}</div>
-            </div>
-          )}
         </section>
       )}
 

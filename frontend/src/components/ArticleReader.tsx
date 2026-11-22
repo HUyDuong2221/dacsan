@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import Portal from './Portal';
-import PdfViewer from './PdfViewer';
+import PdfReader from './PdfReader';
 import './article.css';
 
 type Block = { t: 'h'; text: string; id: string } | { t: 'p'; text: string } | { t: 'img'; alt: string; src: string };
@@ -54,8 +54,11 @@ export default function ArticleReader({ a }: { a: any }) {
   const blocks = parse(a.body || '');
   const pageNo = parseInt(String(a.page_label).replace(/\D/g, ''), 10);
   const pdfHref = `/issues/${a.issue.slug}/pdf${pageNo > 0 ? `?page=${pageNo}` : ''}`;
-  // file PDF mở đúng trang in của bài (#page=N được trình xem PDF của trình duyệt hỗ trợ)
-  const pdfSrc = a.pdf_url ? `${a.pdf_url}${pageNo > 0 ? `#page=${pageNo}` : ''}` : '';
+  // mục lục của số cho nút "Mục lục" trong trình đọc PDF (số trong page_label = trang của file PDF)
+  const pdfToc = (a.issue_toc || []).map((g: any) => ({
+    name: g.field,
+    items: g.items.map((it: any) => ({ title: it.title, author: it.author || '', page: parseInt(String(it.page_label || '').replace(/\D/g, ''), 10) || 0 })),
+  }));
 
   async function copy(text: string, msg: string) {
     try {
@@ -196,16 +199,17 @@ export default function ArticleReader({ a }: { a: any }) {
           ) : a.pdf_url ? (
             // Chưa có toàn văn: hiển thị luôn trang in trong file PDF của số, không cần bấm thêm.
             <div className="ar-pdf">
-              <div className="ar-pdf-h">
-                <span>Bản in · {a.page_label}</span>
-                <div>
-                  <a href={pdfSrc} target="_blank" rel="noopener noreferrer" className="ar-btn">Mở tab mới</a>
-                  <a href={a.pdf_url} download className="ar-btn">Tải PDF</a>
-                </div>
-              </div>
-              <PdfViewer src={a.pdf_url} page={pageNo > 0 ? pageNo : 0} title={`Bản in: ${a.title}`} height="calc(100vh - 160px)" />
+              <PdfReader
+                embed
+                src={a.pdf_url}
+                page={pageNo > 0 ? pageNo : 0}
+                title={`Bản in · ${a.title}`}
+                meta={`${a.issue.label}${a.page_label ? ` · ${a.page_label}` : ''}`}
+                toc={pdfToc}
+              />
               <p className="ar-hint">
-                Bài này chưa có toàn văn trên web, đây là trang in trong {a.issue.label.toLowerCase()}. Nếu điện thoại không hiển thị được PDF, hãy bấm “Mở tab mới” hoặc “Tải PDF”.
+                Bài này chưa có toàn văn trên web, đây là trang in trong {a.issue.label.toLowerCase()}.{' '}
+                <Link href={pdfHref}>Mở toàn màn hình</Link>
               </p>
             </div>
           ) : (

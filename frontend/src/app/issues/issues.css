@@ -11,7 +11,7 @@
 /* số mới nhất: thẻ nổi, bìa bên trái */
 .iss-feat {
   display: grid; grid-template-columns: 240px minmax(0, 1fr);
-  grid-template-areas: "cover head" "cover sum" "cover act" "cover fields";
+  grid-template-areas: "cover head" "cover sum" "cover act" "cover .";
   grid-template-rows: auto auto auto 1fr;
   gap: 0 40px; padding: 32px; margin-bottom: 56px;
   background: linear-gradient(135deg, #fff 0%, #f4f8fe 100%);
@@ -27,11 +27,6 @@
 .iss-meta span + span::before { content: "·"; margin: 0 8px; color: var(--faint); }
 .iss-feat-sum { grid-area: sum; color: var(--ink2); line-height: 1.66; max-width: 64ch; margin: 18px 0 0; }
 .iss-feat-act { grid-area: act; display: flex; flex-wrap: wrap; gap: 12px; margin-top: 22px; }
-.iss-feat-fields { grid-area: fields; margin-top: 24px; padding-top: 18px; border-top: 1px dashed var(--line2); }
-.iss-feat-fields > span { display: block; font-size: 12px; color: var(--mute); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 10px; }
-.iss-feat-fields > div { display: flex; flex-wrap: wrap; gap: 8px; }
-.iss-feat-fields .chip { padding: 6px 12px; font-size: 13px; }
-.iss-feat-fields .chip:hover { transform: none; border-color: var(--line2); color: inherit; }
 
 .iss-sec { margin-bottom: 56px; }
 .iss-sec:last-child { margin-bottom: 0; }
@@ -64,7 +59,7 @@
   .iss-stats { margin-top: 12px; }
   .iss-feat {
     grid-template-columns: 108px minmax(0, 1fr);
-    grid-template-areas: "cover head" "sum sum" "act act" "fields fields";
+    grid-template-areas: "cover head" "sum sum" "act act";
     grid-template-rows: auto;
     gap: 0 16px; padding: 16px; margin-bottom: 40px; border-radius: 14px;
   }
@@ -82,7 +77,6 @@
   .iss-feat-act .btn:only-child { grid-column: 1 / -1; }
   .iss-feat-act .btn { padding: 0 12px; }
   /* chuyên mục đã có ngay bên dưới (tab "Trong số này"), ẩn để thẻ gọn */
-  .iss-feat-fields { display: none; }
   .iss-sec { margin-bottom: 40px; }
   .itile-grid { gap: 12px; }
   .iss-years { flex-wrap: nowrap; overflow-x: auto; max-width: 100%; scrollbar-width: none; }

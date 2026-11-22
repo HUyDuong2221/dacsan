@@ -74,12 +74,6 @@ body:has(.idt){background:#FBFAF7}
 .idt-rail button.on em{color:var(--blue)}
 
 .idt-search{padding-bottom:22px;margin-bottom:10px;border-bottom:1px solid var(--line)}
-.idt-pdf{margin-bottom:28px;scroll-margin-top:64px;animation:idtUp 500ms ease-out both}
-.idt-pdf-h{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}
-.idt-pdf-h strong{font-size:18px}
-.idt-pdf-h div{display:flex;gap:8px}
-.idt-pdf-h a,.idt-pdf-h button{border:1px solid var(--blue);background:#fff;color:var(--blue);border-radius:7px;padding:7px 12px;font-size:13px;font-weight:600;cursor:pointer}
-.idt-pdf p{margin:8px 0 0;font-size:13.5px;color:var(--mute)}
 
 .idt-sec{padding-top:30px;scroll-margin-top:64px}
 .idt-sec-h{display:flex;align-items:center;gap:14px;margin-bottom:6px}

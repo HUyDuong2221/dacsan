@@ -252,11 +252,3 @@ a:hover { color: var(--blue-d); text-decoration: underline; text-underline-offse
 .side button.f { width: 100%; font: inherit; font-size: 14.5px; text-align: left; background: transparent; border-top: 0; border-right: 0; border-bottom: 0; cursor: pointer; }
 .side button.f.on { background: #e4ecfd; }
 @media (max-width: 860px) { .side button.f { width: auto; border: 1px solid var(--line2); background: #fff; } .side button.f.on { border-color: var(--blue); background: #e0e9fb; } }
-/* khung đọc PDF dùng chung (components/PdfViewer.tsx) */
-.pdfv-frame { display: block; width: 100%; max-width: 100%; min-height: 480px; border: 1px solid var(--line2); background: #fff; }
-.pdfv-wrap { position: relative; width: 100%; max-width: 100%; }
-.pdfv-box { width: 100%; max-width: 100%; border: 1px solid var(--line2); background: #e9edf2; }
-.pdfv-scroll { position: relative; height: calc(100svh - 130px); min-height: 360px; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; padding: 8px; display: flex; flex-direction: column; gap: 8px; }
-.pdfv-page { width: 100%; flex: none; background: #fff; box-shadow: 0 1px 3px rgba(16,34,64,.15); }
-.pdfv-msg { padding: 24px 16px; color: var(--mute); text-align: center; }
-.pdfv-count { position: absolute; right: 12px; bottom: 12px; background: rgba(17,26,46,.78); color: #fff; font-size: 12px; padding: 4px 10px; border-radius: 999px; pointer-events: none; font-variant-numeric: tabular-nums; }

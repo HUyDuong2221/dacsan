@@ -1,8 +1,7 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getOrNull } from '@/lib/api';
-import PdfViewer from '@/components/PdfViewer';
+import PdfReader, { type TocGroup } from '@/components/PdfReader';
 
 type Props = { params: { slug: string }; searchParams: { page?: string } };
 
@@ -11,28 +10,26 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return { title: d ? `Đọc PDF ${d.issue.label}` : 'Không tìm thấy' };
 }
 
+// Trình đọc PDF toàn màn hình; ?page=N mở thẳng tới trang N.
 export default async function IssuePdf({ params, searchParams }: Props) {
   const d = await getOrNull(`/issues/${params.slug}`);
   if (!d || !d.issue.pdf_url) notFound();
   const { issue } = d;
   const page = parseInt(searchParams.page || '', 10);
-  const src = `${issue.pdf_url}${page > 0 ? `#page=${page}` : ''}`;
+  // mục lục cho nút "Mục lục": số trong page_label ("tr. 9") là số trang của file PDF
+  const item = (a: any) => ({ title: a.title, author: a.author || '', page: parseInt(String(a.page_label || '').replace(/\D/g, ''), 10) || 0 });
+  const toc: TocGroup[] = [
+    ...(d.front.length ? [{ name: 'Trang đầu số', items: d.front.map(item) }] : []),
+    ...d.groups.map((g: any) => ({ name: g.field, items: g.items.map(item) })),
+  ];
   return (
-    <div className="wrap" style={{ paddingTop: 16, paddingBottom: 24 }}>
-      <div className="row" style={{ justifyContent: 'space-between', marginBottom: 12 }}>
-        <div className="row" style={{ gap: 14 }}>
-          <Link href={`/issues/${issue.slug}`} className="btn ghost sm">← Mục lục</Link>
-          <span className="serif" style={{ fontSize: 18, fontWeight: 600 }}>Đặc san {issue.label.toLowerCase()} — bản PDF</span>
-        </div>
-        <div className="row" style={{ gap: 8 }}>
-          <a href={src} target="_blank" rel="noopener noreferrer" className="btn ghost sm">Mở tab mới</a>
-          <a href={issue.pdf_url} download className="btn ghost sm">Tải về</a>
-        </div>
-      </div>
-      <PdfViewer src={issue.pdf_url} page={page > 0 ? page : 0} title={`PDF ${issue.label}`} />
-      <p className="muted" style={{ marginTop: 10 }}>
-        Nếu trình duyệt không hiển thị được PDF (một số điện thoại), hãy bấm “Mở tab mới” hoặc “Tải về”.
-      </p>
-    </div>
+    <PdfReader
+      src={issue.pdf_url}
+      title={`Đặc san ${issue.label.toLowerCase()}.pdf`}
+      meta="Đặc san Khoa học & Phát triển"
+      backHref={`/issues/${issue.slug}`}
+      page={page > 0 ? page : 0}
+      toc={toc}
+    />
   );
 }
