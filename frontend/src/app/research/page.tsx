@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { get } from '@/lib/api';
-import { ArticleCard } from '@/components/Parts';
+import { ArticleCard } from '@/components/reader/Parts';
 
 export const metadata: Metadata = { title: 'Nghiên cứu – Trao đổi' };
 

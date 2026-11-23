@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { get } from '@/lib/api';
-import SpotList from '@/components/SpotList';
-import '@/components/listing.css';
+import SpotList from '@/components/site/SpotList';
+import '@/components/site/listing.css';
 
 export const metadata: Metadata = { title: 'Tiêu điểm' };
 

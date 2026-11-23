@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { fmtDate } from '@/lib/api';
 
 const TONE: Record<string, string> = {
-  new: '#5a6b76', reviewing: '#0B4F9C', revision: '#b26a00', accepted: '#0e7a4b', rejected: '#c8372d',
+  new: '#5a6b76', reviewing: '#0B4F9C', in_review: '#5b3fa8', approved: '#0a6f80', revision: '#b26a00', accepted: '#0e7a4b', rejected: '#c8372d',
 };
 
 export default function TheoDoi() {

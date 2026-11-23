@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { get } from '@/lib/api';
-import NewsList from '@/components/NewsList';
-import '@/components/listing.css';
+import NewsList from '@/components/site/NewsList';
+import '@/components/site/listing.css';
 
 export const metadata: Metadata = { title: 'Tin hoạt động' };
 

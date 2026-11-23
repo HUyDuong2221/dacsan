@@ -1,4 +1,4 @@
-import { toTile } from '@/components/IssueTile';
+import { toTile } from '@/components/reader/IssueTile';
 import type { Metadata } from 'next';
 import { get } from '@/lib/api';
 import HomeV7, { type HomeProps } from './_home/HomeV7';
@@ -6,10 +6,11 @@ import HomeV7, { type HomeProps } from './_home/HomeV7';
 export const metadata: Metadata = { title: 'Trang chủ' };
 
 export default async function Home() {
-  const [d, site, all] = await Promise.all([
+  const [d, site, all, banners] = await Promise.all([
     get('/home'),
     get('/site').catch(() => ({} as Record<string, string>)),
     get('/issues').catch(() => ({ issues: [] as any[] })),
+    get('/banners').catch(() => [] as HomeProps['banners']),
   ]);
   const latest = d.latest_issue;
   const articles: any[] = d.articles || [];
@@ -69,6 +70,7 @@ export default async function Home() {
     topics,
     acts,
     issues,
+    banners,
   };
 
   return <HomeV7 {...props} />;

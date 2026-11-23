@@ -1,8 +1,8 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
-import SiteNav from '@/components/SiteNav';
-import Footer from '@/components/Footer';
-import ChatWidget from '@/components/ChatWidget';
+import SiteNav from '@/components/site/SiteNav';
+import Footer from '@/components/site/Footer';
+import ChatWidget from '@/components/site/ChatWidget';
 import { get } from '@/lib/api';
 
 export const metadata: Metadata = {
@@ -23,9 +23,10 @@ function viDate() {
 }
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const [site, all] = await Promise.all([
+  const [site, all, pages] = await Promise.all([
     get('/site').catch(() => ({} as Record<string, string>)),
     get('/issues').catch(() => ({ issues: [] as any[] })),
+    get('/pages').catch(() => [] as { slug: string; title: string }[]),
   ]);
   // Dòng dưới logo: "Số 17 · Tháng 6/2026", lấy từ số và ngày đăng của số mới nhất trong DB.
   const latest = all.issues?.[0];
@@ -61,7 +62,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           </div>
           <SiteNav site={site} dateStr={viDate()} latestLabel={latestLabel} />
           <main>{children}</main>
-          <Footer site={site} />
+          <Footer site={site} pages={pages} />
         </div>
         <ChatWidget />
       </body>

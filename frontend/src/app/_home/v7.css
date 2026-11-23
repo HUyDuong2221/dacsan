@@ -173,7 +173,7 @@ body:has(.v7){background:#FBFAF7}
   .v7-text p{font-size:16px;line-height:1.6}
   .v7-arrows button{width:36px;height:36px;font-size:15px}
   .v7-front{padding-bottom:36px}
-  /* Số mới nhất: sách ở giữa */
+      /* Số mới nhất: sách ở giữa */
   .v7-bookwrap{--bw:min(58%,210px);margin:8px 0 24px}
   .v7-side{clip-path:none}
   /* Thống kê: 2 x 2 */

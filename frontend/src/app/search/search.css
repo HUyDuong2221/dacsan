@@ -1,0 +1,8 @@
+/* Trang tìm kiếm: bộ lọc dùng .form/.input/.btn chung của site; chỉ chỉnh bố cục ở đây. */
+.srch .srch-form{max-width:none;grid-template-columns:repeat(4,minmax(0,1fr));margin-bottom:22px}
+.srch .srch-form .full{grid-column:1/-1}
+.srch .srch-sum{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;margin:0 0 18px;color:var(--ink2);font-size:15px}
+.srch .srch-chips{display:flex;flex-wrap:wrap;gap:6px}
+.srch .srch-chip{display:inline-flex;align-items:center;height:28px;padding:0 12px;border:1px solid var(--line2);border-radius:14px;background:#f5f8fe;color:var(--ink);font-size:13.5px}
+@media(max-width:900px){.srch .srch-form{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:560px){.srch .srch-form{grid-template-columns:1fr}}

@@ -252,3 +252,7 @@ a:hover { color: var(--blue-d); text-decoration: underline; text-underline-offse
 .side button.f { width: 100%; font: inherit; font-size: 14.5px; text-align: left; background: transparent; border-top: 0; border-right: 0; border-bottom: 0; cursor: pointer; }
 .side button.f.on { background: #e4ecfd; }
 @media (max-width: 860px) { .side button.f { width: auto; border: 1px solid var(--line2); background: #fff; } .side button.f.on { border-color: var(--blue); background: #e0e9fb; } }
+
+/* Dải "Bản xem trước" của số chưa công bố (components/PreviewBar.tsx) */
+.preview-bar{position:sticky;top:45px;z-index:40;display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;justify-content:center;padding:10px 16px;background:#FFF4D6;border-bottom:1px solid #EBC768;color:#5A3D00;font-size:14.5px;text-align:center}
+.preview-bar a{color:#03368D;font-weight:600}

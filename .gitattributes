@@ -1,0 +1,2 @@
+# script chạy trong container Linux: luôn xuống dòng LF
+*.sh text eol=lf

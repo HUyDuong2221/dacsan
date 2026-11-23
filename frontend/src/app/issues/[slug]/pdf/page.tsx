@@ -1,18 +1,20 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getOrNull } from '@/lib/api';
-import PdfReader, { type TocGroup } from '@/components/PdfReader';
+import { previewQS } from '@/lib/preview';
+import PdfReader, { type TocGroup } from '@/components/reader/PdfReader';
+import TrackView from '@/components/site/TrackView';
 
 type Props = { params: { slug: string }; searchParams: { page?: string } };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const d = await getOrNull(`/issues/${params.slug}`);
+  const d = await getOrNull(`/issues/${params.slug}${previewQS()}`);
   return { title: d ? `Đọc PDF ${d.issue.label}` : 'Không tìm thấy' };
 }
 
 // Trình đọc PDF toàn màn hình; ?page=N mở thẳng tới trang N.
 export default async function IssuePdf({ params, searchParams }: Props) {
-  const d = await getOrNull(`/issues/${params.slug}`);
+  const d = await getOrNull(`/issues/${params.slug}${previewQS()}`);
   if (!d || !d.issue.pdf_url) notFound();
   const { issue } = d;
   const page = parseInt(searchParams.page || '', 10);
@@ -23,6 +25,8 @@ export default async function IssuePdf({ params, searchParams }: Props) {
     ...d.groups.map((g: any) => ({ name: g.field, items: g.items.map(item) })),
   ];
   return (
+    <>
+    {!d.preview && <TrackView kind="read" issue={issue.slug} />}
     <PdfReader
       src={issue.pdf_url}
       title={`Đặc san ${issue.label.toLowerCase()}.pdf`}
@@ -30,6 +34,8 @@ export default async function IssuePdf({ params, searchParams }: Props) {
       backHref={`/issues/${issue.slug}`}
       page={page > 0 ? page : 0}
       toc={toc}
+      stats={d.preview ? undefined : { issue: issue.slug }}
     />
+    </>
   );
 }

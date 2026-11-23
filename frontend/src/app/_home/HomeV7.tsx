@@ -1,15 +1,17 @@
 'use client';
 import Link from 'next/link';
-import IssueTile, { type IssueTileData } from '@/components/IssueTile';
+import IssueTile, { type IssueTileData } from '@/components/reader/IssueTile';
 import { useEffect, useRef, useState } from 'react';
+import BannerSlider from '@/components/site/BannerSlider';
+import { BANNER_POSITIONS, parseLayouts, type BannerItem, type BannerPosition } from '@/lib/banners';
 import './v7.css';
 
-export type Slide = { key: string; cat: string; title: string; excerpt: string; meta: string; href: string; img?: string | null };
-export type TocItem = { slug: string; title: string; page: string };
-export type TopicIssue = IssueTileData;
-export type Topic = { name: string; count: number; issues: TopicIssue[] };
-export type Act = { id: number; day: string; month: string; kind: string; title: string; url: string };
-export type IssueItem = { slug: string; label: string; theme: string; cover: string | null; year: string; number: number };
+type Slide = { key: string; cat: string; title: string; excerpt: string; meta: string; href: string; img?: string | null };
+type TocItem = { slug: string; title: string; page: string };
+type TopicIssue = IssueTileData;
+type Topic = { name: string; count: number; issues: TopicIssue[] };
+type Act = { id: number; day: string; month: string; kind: string; title: string; url: string };
+type IssueItem = { slug: string; label: string; theme: string; cover: string | null; year: string; number: number };
 
 export type HomeProps = {
   site: Record<string, string>;
@@ -22,6 +24,7 @@ export type HomeProps = {
   topics: Topic[];
   acts: Act[];
   issues: IssueItem[];
+  banners: BannerItem[];
 };
 
 const pad = (n: number) => (n < 10 ? '0' : '') + n;
@@ -48,6 +51,7 @@ export default function HomeV7(p: HomeProps) {
   const archIssues = p.issues.filter((i) => i.year === year);
   const [email, setEmail] = useState('');
   const [sub, setSub] = useState<'idle' | 'ok' | 'err'>('idle');
+  const [subMsg, setSubMsg] = useState('');
   const n = Math.max(slides.length, 1);
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -77,15 +81,26 @@ export default function HomeV7(p: HomeProps) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email }),
     });
+    const j = await r.json().catch(() => ({}));
     setSub(r.ok ? 'ok' : 'err');
+    setSubMsg(typeof j.message === 'string' ? j.message : typeof j.detail === 'string' ? j.detail : '');
     if (r.ok) setEmail('');
   }
 
   const tp = p.topics[topic] || p.topics[0];
+  // Banner theo vị trí (admin: Giao diện › Banner trang chủ); cùng vị trí thành slider, kích thước theo vị trí.
+  const layouts = parseLayouts(p.site.banner_layout);
+  const zone = (pos: BannerPosition) => {
+    if (layouts[pos].hidden) return null; // cả vị trí đang ẩn (admin: Banner trang chủ › Cấu hình theo vị trí)
+    const items = (p.banners || []).filter((b) => b.position === pos);
+    const label = BANNER_POSITIONS.find((x) => x.value === pos)!.label;
+    return items.length ? <BannerSlider items={items} layout={layouts[pos]} label={`Banner: ${label}`} /> : null;
+  };
 
   return (
     <div className="v7">
       <main>
+        {zone('top')}
         <section className="v7-w v7-front">
           <div className="v7-front-row">
             <article className="v7-lead" aria-roledescription="carousel" aria-label="Bài tiêu điểm"
@@ -186,6 +201,8 @@ export default function HomeV7(p: HomeProps) {
           </div>
         </section>
 
+        {zone('after_front')}
+
         <section className="v7-stats">
           <div className="v7-w">
             {p.stats.map((s) => (
@@ -193,6 +210,8 @@ export default function HomeV7(p: HomeProps) {
             ))}
           </div>
         </section>
+
+        {zone('before_topics')}
 
         {tp && (
           <section className="v7-w v7-topics">
@@ -221,6 +240,8 @@ export default function HomeV7(p: HomeProps) {
           </section>
         )}
 
+        {zone('before_acts')}
+
         {p.acts.length > 0 && (
           <section className="v7-w v7-acts">
             <div className="v7-acts-h">
@@ -237,6 +258,8 @@ export default function HomeV7(p: HomeProps) {
             </div>
           </section>
         )}
+
+        {zone('before_archive')}
 
         {years.length > 0 && (
           <section className="v7-arch">
@@ -274,6 +297,8 @@ export default function HomeV7(p: HomeProps) {
           </section>
         )}
 
+        {zone('before_submit')}
+
         <section className="v7-w v7-submit" id="gui-bai">
           <div className="v7-submit-row">
             <div className="v7-sbox">
@@ -293,8 +318,8 @@ export default function HomeV7(p: HomeProps) {
                   <input id="v7-email" type="email" required placeholder="ten@email.com" value={email} onChange={(e) => setEmail(e.target.value)} />
                   <button type="submit">Đăng ký</button>
                 </div>
-                {sub === 'ok' && <div className="v7-nmsg ok">Đã đăng ký. Cảm ơn bạn!</div>}
-                {sub === 'err' && <div className="v7-nmsg err">Email không hợp lệ.</div>}
+                {sub === 'ok' && <div className="v7-nmsg ok" role="status">{subMsg || 'Đã nhận đăng ký. Vui lòng mở email và bấm liên kết xác nhận.'}</div>}
+                {sub === 'err' && <div className="v7-nmsg err" role="alert">{subMsg || 'Email không hợp lệ.'}</div>}
               </form>
             </div>
           </div>

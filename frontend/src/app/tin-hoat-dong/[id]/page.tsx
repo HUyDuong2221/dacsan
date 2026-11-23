@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { fmtDate, getOrNull } from '@/lib/api';
-import '@/components/listing.css';
+import '@/components/site/listing.css';
 
 type Props = { params: { id: string } };
 

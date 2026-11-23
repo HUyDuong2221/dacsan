@@ -1,10 +1,10 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { fmtDate, get } from '@/lib/api';
-import { Cover, SearchBox } from '@/components/Parts';
-import { toTile } from '@/components/IssueTile';
-import PastIssues from '@/components/PastIssues';
-import IssueTabs from '@/components/IssueTabs';
+import { Cover, SearchBox } from '@/components/reader/Parts';
+import { toTile } from '@/components/reader/IssueTile';
+import PastIssues from '@/components/reader/PastIssues';
+import IssueTabs from '@/components/reader/IssueTabs';
 import './issues.css';
 
 export const metadata: Metadata = { title: 'Các số đã phát hành' };

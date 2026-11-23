@@ -1,0 +1,46 @@
+/* Header dùng chung mọi trang (thanh tiện ích + logo + menu dính), cùng kiểu với trang chủ v7. */
+.v7h{background:#FBFAF7;color:#111A2E;font-family:'Be Vietnam Pro',system-ui,sans-serif;-webkit-font-smoothing:antialiased;position:relative;z-index:30}
+.v7h *{box-sizing:border-box}
+.v7h a{color:inherit;text-decoration:none}
+.v7h button{font-family:inherit}
+.v7h .v7-w{max-width:1280px;width:100%;margin:0 auto;padding-left:32px;padding-right:32px}
+.v7h .nw{white-space:nowrap}
+/* utility bar */
+.v7h.v7-util{border-bottom:1px solid #E6E8EE;font-size:12.5px;color:#4A5468}
+.v7h.v7-util .v7-w{padding-top:5px;padding-bottom:5px;display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;align-items:center}
+.v7h .v7-util-r{display:flex;gap:22px;align-items:center}
+.v7h .v7-util-r a{color:#03368D}
+/* masthead */
+.v7h.v7-mast{padding-top:12px}
+.v7h.v7-mast .v7-w{display:flex;flex-direction:column;align-items:center}
+.v7h .v7-logo{display:block;width:min(400px,100%)}
+.v7h .v7-logo img{display:block;width:100%;height:auto}
+.v7h .v7-mast-meta{width:100%;margin-top:12px;border-top:2px solid #03368D;border-bottom:1px solid #03368D;padding:6px 0;display:flex;flex-wrap:wrap;gap:8px 24px;justify-content:center;font-size:11px;letter-spacing:.12em;color:#03368D;font-weight:600;text-transform:uppercase}
+.v7h .v7-mast-meta i{font-style:normal;color:#9AA6C6}
+/* nav */
+.v7h.v7-nav{position:sticky;top:0;z-index:40;background:rgba(251,250,247,.95);backdrop-filter:blur(10px);border-bottom:1px solid #DCDFE6}
+.v7h.v7-nav>.v7-w{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:44px}
+.v7h .v7-links{display:flex;gap:26px;align-items:center;font-size:14px;flex:1;justify-content:center}
+.v7h .v7-links a{padding:11px 0 9px;border-bottom:3px solid transparent;color:#111A2E;font-weight:500;white-space:nowrap}
+.v7h .v7-links a:hover{color:#03368D}
+.v7h .v7-links a.on{border-bottom-color:#03368D;color:#03368D;font-weight:700}
+.v7h .v7-nav-r{display:flex;gap:8px;align-items:center;flex-shrink:0}
+.v7h .v7-ibtn{width:34px;height:34px;border:1px solid #DCDFE6;background:#fff;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
+.v7h .v7-ibtn:hover{border-color:#03368D}
+.v7h a.v7-cta{background:#03368D;color:#fff;padding:8px 14px;border-radius:7px;font-size:13.5px;font-weight:600;white-space:nowrap}
+.v7h a.v7-cta:hover{background:#02266A}
+.v7h .v7-menu-btn{display:none}
+.v7h .v7-bars{display:flex;flex-direction:column;gap:4px;width:16px}
+.v7h .v7-bars span{height:2px;background:#03368D;display:block}
+.v7h .v7-drawer{border-top:1px solid #DCDFE6;background:#fff;animation:v7hFade 220ms ease-out}
+.v7h .v7-drawer .v7-w{padding-top:8px;padding-bottom:16px;display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:0 32px}
+.v7h .v7-drawer a{display:flex;justify-content:space-between;padding:14px 0;border-bottom:1px solid #EEF0F4;font-size:15.5px}
+.v7h .v7-drawer a.on{color:#03368D;font-weight:700}
+@keyframes v7hFade{from{opacity:0}to{opacity:1}}
+@media(max-width:860px){.v7h .v7-links{display:none}.v7h .v7-menu-btn{display:flex;order:3;margin-left:-8px}.v7h .v7-nav-r{margin-left:auto}.v7h .v7-util-r a{display:none}.v7h .v7-mast-meta i.hs{display:none}.v7h .v7-mast-meta{gap:4px 14px;font-size:10.5px;letter-spacing:.08em}.v7h .v7-mast-meta .v7-mm-org{order:3;flex-basis:100%;text-align:center;white-space:normal}}
+@media(max-width:560px){.v7h .v7-w{padding-left:16px;padding-right:16px}.v7h a.v7-cta{display:none}}
+.shell .side{top:69px}
+/* Menu điện thoại: link LHH + nút Gửi bài */
+.v7h .v7-drawer a.v7-drawer-x{color:#4A5468;font-size:14.5px}
+.v7h .v7-drawer a.v7-drawer-cta{justify-content:center;margin-top:14px;padding:12px 16px;border:0;border-radius:8px;background:#03368D;color:#fff;font-weight:600}
+@media(min-width:561px){.v7h .v7-drawer a.v7-drawer-cta{display:none}}

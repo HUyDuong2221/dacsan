@@ -5,8 +5,8 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from . import demo_content as demo
-from .models import Activity, TocEntry, Document, Field, Issue, Notice, Setting
-from .util import slugify
+from .models import Activity, TocEntry, Document, Field, Issue, Setting
+from .services.util import slugify
 
 FIELDS = ["Đại hội đại biểu LHH Đà Nẵng lần thứ I", "Nhân vật", "Câu chuyện văn hóa", "Câu chuyện quốc tế", "Thông tin"]
 G1 = FIELDS[0]
@@ -166,14 +166,6 @@ def seed(db: Session) -> None:
     ]:
         db.add(Activity(title=t, kind=k, event_date=dt, url="https://lhh.danang.gov.vn/chi-tiet-tin-tuc?danhmuc=1"))
 
-    for tag, dt, t in [
-        ("THƯ MỜI", d(2026, 9, 8), "Thư mời viết bài cho Đặc san Khoa học & Phát triển số 18 (8-2026)"),
-        ("HỘI THI", d(2026, 9, 1), "Phát động Hội thi Sáng tạo Kỹ thuật thành phố Đà Nẵng lần thứ 19 (2026–2027)"),
-        ("GIẢI THƯỞNG", d(2026, 8, 22), "Hướng dẫn nộp hồ sơ tham dự Giải thưởng Sáng tạo Khoa học Kỹ thuật thành phố"),
-        ("TẬP HUẤN", d(2026, 8, 15), "Đăng ký tập huấn kỹ năng phản biện chính sách cho hội viên các hội thành viên"),
-        ("THÔNG BÁO", d(2026, 8, 4), "Kế hoạch tổ chức Ngày Khoa học và Công nghệ Việt Nam 18-5 trên địa bàn thành phố"),
-    ]:
-        db.add(Notice(tag=tag, title=t, notice_date=dt))
 
     for n, (t, ty) in enumerate([
         ("Quy định về xuất bản Đặc san Khoa học và Công nghệ", "QUY ĐỊNH"),

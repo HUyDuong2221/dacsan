@@ -13,10 +13,13 @@ from pydantic import BaseModel
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from ..services import scanner
 from ..config import settings
 from ..db import get_db
-from ..models import SUBMISSION_STATUSES, Submission
-from ..security import client_ip, require_roles, submit_limiter, track_limiter
+from ..models import (SUBMISSION_STATUSES, SUBMISSION_TRANSITIONS, Field, Issue, Submission, SubmissionHistory,
+                      TocEntry, User)
+from ..security import client_ip, current_user, require_roles, submit_limiter, track_limiter
+from ..services.util import slugify
 
 public_router = APIRouter()
 admin_router = APIRouter(prefix="/submissions", dependencies=[Depends(require_roles("admin", "editor"))])
@@ -27,6 +30,14 @@ ALLOWED_EXT = {".doc", ".docx", ".pdf", ".odt"}
 
 def _dt(v):
     return v.isoformat() if v else None
+
+
+def add_history(s: Submission, to_status: str, note: str, user: User | None = None) -> None:
+    """Ghi một dòng lịch sử rồi đặt trạng thái mới. to_status == s.status dùng cho sự kiện không đổi trạng thái
+    (phân công, nhắc hạn, phản biện viên nộp đánh giá)."""
+    s.history.append(SubmissionHistory(
+        from_status=s.status, to_status=to_status, note=note, changed_by=user.id if user else None))
+    s.status = to_status
 
 
 # ---------- công khai ----------
@@ -79,15 +90,18 @@ async def submit(
     if size == 0:
         os.remove(path)
         raise HTTPException(422, "Tệp bản thảo trống")
+    scanner.check_file(path, request, file.filename or stored, entity="submissions_public")
 
     code = secrets.token_hex(4).upper()
     while db.scalars(select(Submission.id).where(Submission.code == code)).first():
         code = secrets.token_hex(4).upper()
-    db.add(Submission(
+    sub = Submission(
         code=code, name=name[:200], email=email, organization=organization.strip()[:300], phone=phone.strip()[:40],
         field_name=field_name.strip()[:200], title=title, abstract=abstract,
-        file_path=stored, file_name=(file.filename or stored)[:300],
-    ))
+        file_path=stored, file_name=(file.filename or stored)[:300], status="new",
+    )
+    sub.history.append(SubmissionHistory(from_status=None, to_status="new", note="Tác giả gửi bài"))
+    db.add(sub)
     db.commit()
     submit_limiter.record(ip)
     return {"code": code}
@@ -119,7 +133,12 @@ def sub_dict(s: Submission) -> dict:
         "id": s.id, "code": s.code, "name": s.name, "email": s.email, "organization": s.organization, "phone": s.phone,
         "field_name": s.field_name, "title": s.title, "abstract": s.abstract, "file_name": s.file_name,
         "status": s.status, "status_label": SUBMISSION_STATUSES.get(s.status, s.status),
+        "next_statuses": [{"value": k, "label": SUBMISSION_STATUSES[k]} for k in SUBMISSION_TRANSITIONS.get(s.status, [])],
         "note_public": s.note_public, "note_internal": s.note_internal,
+        "toc_entry": {
+            "id": e.id, "slug": e.slug, "title": e.title, "page_label": e.page_label,
+            "issue_id": e.issue_id, "issue_label": e.issue.label, "issue_published": e.issue.published,
+        } if (e := s.toc_entry) else None,
         "created_at": _dt(s.created_at), "updated_at": _dt(s.updated_at),
     }
 
@@ -149,16 +168,97 @@ def update_submission(sid: int, body: SubUpdate, db: Session = Depends(get_db)):
     s = db.get(Submission, sid)
     if not s:
         raise HTTPException(404, "Không tìm thấy bài gửi")
-    if body.status is not None:
-        if body.status not in SUBMISSION_STATUSES:
-            raise HTTPException(422, "Trạng thái không hợp lệ")
-        s.status = body.status
+    if body.status is not None and body.status != s.status:
+        # mọi lần đổi trạng thái phải có ghi chú và vào lịch sử: dùng POST /submissions/{id}/decision
+        raise HTTPException(422, "Đổi trạng thái bằng Quyết định biên tập (cần ghi chú)")
     if body.note_public is not None:
         s.note_public = body.note_public.strip() or None
     if body.note_internal is not None:
         s.note_internal = body.note_internal.strip() or None
     db.commit()
     return sub_dict(s)
+
+
+class DecisionIn(BaseModel):
+    status: str
+    note: str
+
+
+@admin_router.post("/{sid}/decision")
+def decide(sid: int, body: DecisionIn, db: Session = Depends(get_db), user: User = Depends(current_user)):
+    """Quyết định biên tập: chuyển trạng thái theo SUBMISSION_TRANSITIONS, bắt buộc ghi chú, ghi lịch sử."""
+    s = db.get(Submission, sid)
+    if not s:
+        raise HTTPException(404, "Không tìm thấy bài gửi")
+    note = body.note.strip()
+    if not note:
+        raise HTTPException(422, "Vui lòng nhập ghi chú cho quyết định")
+    if body.status not in SUBMISSION_STATUSES:
+        raise HTTPException(422, "Trạng thái không hợp lệ")
+    if body.status not in SUBMISSION_TRANSITIONS.get(s.status, []):
+        frm, to = SUBMISSION_STATUSES.get(s.status, s.status), SUBMISSION_STATUSES[body.status]
+        raise HTTPException(422, f"Không thể chuyển từ “{frm}” sang “{to}”")
+    add_history(s, body.status, note[:5000], user)
+    db.commit()
+    return sub_dict(s)
+
+
+class TocEntryIn(BaseModel):
+    issue_id: int
+    field_id: int | None = None  # bỏ trống: tự khớp theo chuyên mục đề xuất của tác giả (nếu trùng tên)
+    page_label: str = ""
+
+
+@admin_router.post("/{sid}/toc-entry", status_code=201)
+def add_to_toc(sid: int, body: TocEntryIn, db: Session = Depends(get_db), user: User = Depends(current_user)):
+    """Đưa bài Đã nhận đăng vào mục lục của một số CHƯA công bố: tạo sẵn dòng mục lục (tiêu đề, tác giả, chuyên mục),
+    lưu liên kết và ghi lịch sử. Số trang, tóm tắt, toàn văn nhập tiếp ở mục lục của số."""
+    s = db.get(Submission, sid)
+    if not s:
+        raise HTTPException(404, "Không tìm thấy bài gửi")
+    if s.status != "accepted":
+        raise HTTPException(409, "Chỉ đưa vào mục lục bài ở trạng thái “Đã nhận đăng”")
+    if s.toc_entry:
+        raise HTTPException(409, f"Bài đã có trong mục lục {s.toc_entry.issue.label}")
+    issue = db.get(Issue, body.issue_id)
+    if not issue:
+        raise HTTPException(404, "Không tìm thấy số đặc san")
+    if issue.published:
+        raise HTTPException(409, "Chỉ đưa vào số chưa công bố; số đã công bố hãy thêm trực tiếp ở mục lục")
+    if body.field_id is not None:
+        field = db.get(Field, body.field_id)
+        if not field:
+            raise HTTPException(404, "Không tìm thấy chuyên mục")
+    else:
+        key = slugify(s.field_name) if s.field_name else ""
+        field = next((f for f in db.scalars(select(Field)) if key and slugify(f.name) == key), None)
+    base = (slugify(s.title) or "bai")[:280]  # chừa chỗ cho hậu tố -2, -3... trong giới hạn 300 ký tự
+    slug, n = base, 2
+    while db.scalars(select(TocEntry.id).where(TocEntry.slug == slug)).first():
+        slug, n = f"{base}-{n}", n + 1
+    order = (db.scalar(select(func.max(TocEntry.sort_order)).where(TocEntry.issue_id == issue.id)) or 0) + 1
+    entry = TocEntry(slug=slug[:300], issue_id=issue.id, field_id=field.id if field else None, title=s.title[:600],
+                     author=s.name[:300], page_label=body.page_label.strip()[:40], sort_order=order)
+    db.add(entry)
+    db.flush()
+    s.toc_entry_id = entry.id
+    add_history(s, s.status, f"Đưa vào mục lục {issue.label}" + (f", chuyên mục {field.name}" if field else ""), user)
+    db.commit()
+    db.refresh(s)
+    return sub_dict(s)
+
+
+@admin_router.get("/{sid}/history")
+def get_history(sid: int, db: Session = Depends(get_db)):
+    s = db.get(Submission, sid)
+    if not s:
+        raise HTTPException(404, "Không tìm thấy bài gửi")
+    return [{
+        "id": h.id, "from_status": h.from_status, "from_label": SUBMISSION_STATUSES.get(h.from_status or "", h.from_status),
+        "to_status": h.to_status, "to_label": SUBMISSION_STATUSES.get(h.to_status, h.to_status), "note": h.note,
+        "changed_by": h.changed_by, "changed_by_name": (h.user.full_name or h.user.email) if h.user else None,
+        "changed_at": _dt(h.changed_at),
+    } for h in s.history]
 
 
 @admin_router.get("/{sid}/file")

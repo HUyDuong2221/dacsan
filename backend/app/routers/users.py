@@ -1,11 +1,12 @@
 """Quản lý người dùng và phân quyền (chỉ quản trị viên)."""
 import re
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from pydantic import BaseModel
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from ..services import audit, mailer
 from ..db import get_db
 from ..models import User
 from ..security import ROLES, hash_password, require_roles
@@ -21,6 +22,8 @@ def user_dict(u: User) -> dict:
         "full_name": u.full_name,
         "role": u.role,
         "is_active": u.is_active,
+        "pending": bool(u.pending),
+        "status_label": "Chờ duyệt" if u.pending else ("Đang hoạt động" if u.is_active else "Đã khóa"),
         "created_at": u.created_at.isoformat() if u.created_at else None,
     }
 
@@ -61,7 +64,7 @@ def list_users(db: Session = Depends(get_db), me: User = Depends(require_roles("
 
 
 @router.post("", status_code=201)
-def create_user(body: UserIn, db: Session = Depends(get_db), me: User = Depends(require_roles("admin"))):
+def create_user(body: UserIn, request: Request, db: Session = Depends(get_db), me: User = Depends(require_roles("admin"))):
     _check(body, creating=True)
     email = body.email.strip().lower()
     if db.scalars(select(User).where(User.email == email)).first():
@@ -76,11 +79,13 @@ def create_user(body: UserIn, db: Session = Depends(get_db), me: User = Depends(
     db.add(u)
     db.commit()
     db.refresh(u)
+    audit.note(request, f"{u.email} ({u.role})", entity_id=u.id)
     return user_dict(u)
 
 
 @router.put("/{user_id}")
-def update_user(user_id: int, body: UserIn, db: Session = Depends(get_db), me: User = Depends(require_roles("admin"))):
+def update_user(user_id: int, body: UserIn, request: Request, bg: BackgroundTasks, db: Session = Depends(get_db),
+                me: User = Depends(require_roles("admin"))):
     u = db.get(User, user_id)
     if not u:
         raise HTTPException(404, "Không tìm thấy người dùng")
@@ -102,12 +107,28 @@ def update_user(user_id: int, body: UserIn, db: Session = Depends(get_db), me: U
     u.role, u.is_active = new_role, new_active
     if body.password:  # để trống = giữ nguyên mật khẩu
         u.password_hash = hash_password(body.password)
+    approved = bool(u.pending and new_active)  # tài khoản tự đăng ký được quản trị viên bật hoạt động = duyệt
+    mail_ids: list[int] = []
+    if approved:
+        u.pending = False
+        text, page = mailer.render(db, "Tài khoản đã được duyệt", [
+            f"Chào {u.full_name or u.email},",
+            f"Quản trị viên đã duyệt tài khoản của bạn trên trang quản trị Đặc san (vai trò: "
+            f"{ {'admin': 'Quản trị viên', 'editor': 'Biên tập viên'}.get(u.role, 'Cộng tác viên') }).",
+            "Đăng nhập bằng email và mật khẩu bạn đã đặt khi đăng ký.",
+        ], ("Đăng nhập", mailer.site_url("/admin")))
+        mail_ids.append(mailer.queue(db, u.email, "Tài khoản Đặc san KH&PT của bạn đã được duyệt", text, "account_approved", page).id)
+    changes = [k for k in ("email", "full_name", "role", "is_active") if getattr(body, k) is not None]
+    audit.note(request, f"{u.email}: {', '.join(changes + (['mật khẩu'] if body.password else [])) or 'không đổi'}"
+               + ("" if u.is_active else " (đang khóa)") + (" · đã duyệt đăng ký" if approved else ""))
     db.commit()
+    if mail_ids:
+        bg.add_task(mailer.deliver, mail_ids)
     return user_dict(u)
 
 
 @router.delete("/{user_id}", status_code=204)
-def delete_user(user_id: int, db: Session = Depends(get_db), me: User = Depends(require_roles("admin"))):
+def delete_user(user_id: int, request: Request, db: Session = Depends(get_db), me: User = Depends(require_roles("admin"))):
     u = db.get(User, user_id)
     if not u:
         raise HTTPException(404, "Không tìm thấy người dùng")
@@ -115,5 +136,6 @@ def delete_user(user_id: int, db: Session = Depends(get_db), me: User = Depends(
         raise HTTPException(422, "Bạn không thể tự xóa tài khoản của mình")
     if u.role == "admin" and u.is_active and _active_admins(db, u.id) == 0:
         raise HTTPException(422, "Phải còn ít nhất một quản trị viên đang hoạt động")
+    audit.note(request, u.email)
     db.delete(u)
     db.commit()

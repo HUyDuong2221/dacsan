@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { get } from '@/lib/api';
-import SubmitForm from '@/components/SubmitForm';
+import SubmitForm from '@/components/site/SubmitForm';
 
 export const metadata: Metadata = { title: 'Gửi bài cho Đặc san' };
 

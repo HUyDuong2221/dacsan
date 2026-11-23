@@ -6,8 +6,9 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
 from ..db import get_db
-from ..models import Activity, TocEntry, Document, Field, Issue, Notice, Setting, Subscriber
-from ..util import headings
+from ..models import BANNER_POSITIONS, Activity, Banner, Document, Field, Issue, Page, Setting, TocEntry
+from ..security import preview_issue_id
+from ..services.util import headings
 
 router = APIRouter()
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
@@ -59,12 +60,15 @@ def published_articles():
     return select(TocEntry).join(Issue).where(Issue.published.is_(True))
 
 
+def visible_articles(preview_id: int | None):
+    """Như published_articles, cộng thêm các bài của số đang được xem trước (token hợp lệ)."""
+    if preview_id is None:
+        return published_articles()
+    return select(TocEntry).join(Issue).where(or_(Issue.published.is_(True), Issue.id == preview_id))
+
+
 def activity_dict(a: Activity) -> dict:
     return {"id": a.id, "title": a.title, "kind": a.kind, "date": a.event_date.isoformat() if a.event_date else None, "url": a.url, "content": a.content, "attachment_url": a.attachment_url}
-
-
-def notice_dict(n: Notice) -> dict:
-    return {"id": n.id, "tag": n.tag, "title": n.title, "content": n.content, "date": n.notice_date.isoformat() if n.notice_date else None}
 
 
 def sections_of(entries) -> list[str]:
@@ -180,22 +184,21 @@ def home(db: Session = Depends(get_db)):
 def issues(db: Session = Depends(get_db)):
     c = counts(db)
     rows = db.scalars(select(Issue).where(Issue.published.is_(True)).order_by(Issue.number.desc())).all()
-    notices = db.scalars(select(Notice).where(Notice.published.is_(True)).order_by(Notice.notice_date.desc().nullslast()).limit(6)).all()
     top = rows[0] if rows else None
     fields_ = sections_of(db.scalars(ordered(published_articles().where(TocEntry.issue_id == top.id))).unique().all()) if top else []
     return {
         "issues": [issue_card(i, c) for i in rows],
-        "notices": [notice_dict(n) for n in notices],
         "fields": fields_,
     }
 
 
 @router.get("/issues/{slug}")
-def issue_detail(slug: str, db: Session = Depends(get_db)):
-    i = db.scalars(select(Issue).where(Issue.slug == slug, Issue.published.is_(True))).first()
-    if not i:
+def issue_detail(slug: str, preview: str | None = None, db: Session = Depends(get_db)):
+    pid = preview_issue_id(preview)
+    i = db.scalars(select(Issue).where(Issue.slug == slug)).first()
+    if not i or not (i.published or i.id == pid):
         raise HTTPException(404, "Không tìm thấy số này")
-    arts = db.scalars(ordered(published_articles().where(TocEntry.issue_id == i.id))).unique().all()
+    arts = db.scalars(ordered(visible_articles(pid).where(TocEntry.issue_id == i.id))).unique().all()
     groups: list[dict] = []
     for a in arts:
         if a.is_front:
@@ -211,15 +214,17 @@ def issue_detail(slug: str, db: Session = Depends(get_db)):
         "front": [article_card(a) for a in arts if a.is_front],
         "groups": groups,
         "total": len(arts),
+        "preview": not i.published,
     }
 
 
 @router.get("/articles/{slug}")
-def article_detail(slug: str, db: Session = Depends(get_db)):
-    a = db.scalars(published_articles().where(TocEntry.slug == slug)).unique().first()
+def article_detail(slug: str, preview: str | None = None, db: Session = Depends(get_db)):
+    pid = preview_issue_id(preview)
+    a = db.scalars(visible_articles(pid).where(TocEntry.slug == slug)).unique().first()
     if not a:
         raise HTTPException(404, "Không tìm thấy bài viết")
-    siblings = db.scalars(ordered(published_articles().where(TocEntry.issue_id == a.issue_id))).unique().all()
+    siblings = db.scalars(ordered(visible_articles(pid).where(TocEntry.issue_id == a.issue_id))).unique().all()
     pos = next(k for k, s in enumerate(siblings) if s.id == a.id)
     prev_, next_ = siblings[(pos - 1) % len(siblings)], siblings[(pos + 1) % len(siblings)]
     toc = ([ "Lời dẫn" ] if a.lead else []) + headings(a.body)
@@ -244,26 +249,58 @@ def article_detail(slug: str, db: Session = Depends(get_db)):
         "prev": {"slug": prev_.slug, "title": prev_.title},
         "next": {"slug": next_.slug, "title": next_.title},
         "issue_toc": groups,
+        "preview": not a.issue.published,
         "related": [article_card(s) for s in siblings if s.id != a.id][2:5],
     }
 
 
+SEARCH_LIMIT = 100
+
+
 @router.get("/search")
 def search(
-    q: str = Query(min_length=2, max_length=100),
+    q: str = Query("", max_length=100),
     issue: str | None = None,
     field: str | None = None,
+    author: str = Query("", max_length=100),
+    year: int | None = None,
     db: Session = Depends(get_db),
 ):
-    stmt = published_articles().where(
-        or_(like(TocEntry.title, q), like(TocEntry.author, q), like(TocEntry.lead, q), like(TocEntry.body, q))
-    )
+    """Tìm bài theo từ khóa (tiêu đề, tác giả, lời dẫn, toàn văn) và/hoặc lọc theo số, chuyên mục, tác giả, năm."""
+    q, author = q.strip(), author.strip()
+    if q and len(q) < 2:
+        raise HTTPException(422, "Từ khóa cần ít nhất 2 ký tự")
+    if author and len(author) < 2:
+        raise HTTPException(422, "Tên tác giả cần ít nhất 2 ký tự")
+    if not (q or issue or field or author or year):
+        raise HTTPException(422, "Nhập từ khóa hoặc chọn ít nhất một bộ lọc")
+    stmt = published_articles()
+    if q:
+        stmt = stmt.where(or_(like(TocEntry.title, q), like(TocEntry.author, q), like(TocEntry.lead, q), like(TocEntry.body, q)))
+    if author:
+        stmt = stmt.where(like(TocEntry.author, author))
     if issue:
         stmt = stmt.where(Issue.slug == issue)
+    if year:
+        stmt = stmt.where(Issue.year == year)
     if field:
         stmt = stmt.join(Field, TocEntry.field_id == Field.id).where(Field.name == field)
-    rows = db.scalars(stmt.order_by(Issue.number.desc(), TocEntry.sort_order).limit(50)).unique().all()
-    return {"q": q, "count": len(rows), "results": [article_card(a) for a in rows]}
+    total = db.scalar(select(func.count()).select_from(stmt.with_only_columns(TocEntry.id).subquery())) or 0
+    rows = db.scalars(stmt.order_by(Issue.number.desc(), TocEntry.sort_order).limit(SEARCH_LIMIT)).unique().all()
+    return {"q": q, "count": len(rows), "total": total, "results": [article_card(a) for a in rows]}
+
+
+@router.get("/search/options")
+def search_options(db: Session = Depends(get_db)):
+    """Giá trị cho các ô lọc ở trang tìm kiếm: số, chuyên mục, năm (chỉ những gì có trong số đã công bố)."""
+    issues_ = db.scalars(select(Issue).where(Issue.published.is_(True)).order_by(Issue.number.desc())).all()
+    used = db.scalars(select(Field).join(TocEntry, TocEntry.field_id == Field.id).join(Issue, TocEntry.issue_id == Issue.id)
+                      .where(Issue.published.is_(True)).distinct()).all()
+    return {
+        "issues": [{"slug": i.slug, "label": i.label} for i in issues_],
+        "fields": [f.name for f in sorted(used, key=lambda f: (f.sort_order, f.id))],
+        "years": sorted({i.year for i in issues_ if i.year}, reverse=True),
+    }
 
 
 @router.get("/research")
@@ -276,12 +313,6 @@ def research(db: Session = Depends(get_db)):
 def documents(db: Session = Depends(get_db)):
     rows = db.scalars(select(Document).where(Document.published.is_(True)).order_by(Document.sort_order, Document.id)).all()
     return [{"id": d.id, "title": d.title, "doc_type": d.doc_type, "file_url": d.file_url, "updated": d.updated_at.date().isoformat()} for d in rows]
-
-
-@router.get("/notices")
-def notices(db: Session = Depends(get_db)):
-    rows = db.scalars(select(Notice).where(Notice.published.is_(True)).order_by(Notice.notice_date.desc().nullslast())).all()
-    return [notice_dict(n) for n in rows]
 
 
 @router.get("/activities")
@@ -300,7 +331,7 @@ def activity(aid: int, db: Session = Depends(get_db)):
 
 @router.get("/featured")
 def featured_issues(db: Session = Depends(get_db)):
-    """Trang "Tiêu điểm": mọi số đặc san đã công bố được tick "Tiêu điểm" trong quản trị, mới nhất trước."""
+    """Trang "Tiêu điểm": mọi số đặc san đã công bố được đánh dấu "Tiêu điểm" trong quản trị, mới nhất trước."""
     c = counts(db)
     rows = db.scalars(
         select(Issue).where(Issue.published.is_(True), Issue.featured.is_(True))
@@ -309,19 +340,6 @@ def featured_issues(db: Session = Depends(get_db)):
     return [issue_card(i, c) for i in rows]
 
 
-class SubscribeIn(BaseModel):
-    email: str
-
-
-@router.post("/subscribe")
-def subscribe(body: SubscribeIn, db: Session = Depends(get_db)):
-    email = body.email.strip().lower()
-    if not EMAIL_RE.match(email) or len(email) > 255:
-        raise HTTPException(422, "Email không hợp lệ")
-    if not db.scalars(select(Subscriber).where(Subscriber.email == email)).first():
-        db.add(Subscriber(email=email))
-        db.commit()
-    return {"ok": True}
 
 
 class ChatIn(BaseModel):
@@ -344,3 +362,28 @@ def chat(body: ChatIn, db: Session = Depends(get_db)):
     if not rows:
         return {"answer": "Chưa tìm thấy bài phù hợp. Hãy thử tên tác giả hoặc từ khóa trong tiêu đề.", "link": None, "articles": []}
     return {"answer": f"Tìm thấy {len(rows)} bài phù hợp:", "link": None, "articles": [article_card(a) for a in rows]}
+
+
+# ---------- trang nội dung tĩnh ----------
+@router.get("/pages")
+def pages(db: Session = Depends(get_db)):
+    rows = db.scalars(select(Page).where(Page.published.is_(True)).order_by(Page.sort_order, Page.id)).all()
+    return [{"slug": p.slug, "title": p.title} for p in rows]
+
+
+@router.get("/pages/{slug}")
+def page_detail(slug: str, db: Session = Depends(get_db)):
+    p = db.scalars(select(Page).where(Page.slug == slug, Page.published.is_(True))).first()
+    if not p:
+        raise HTTPException(404, "Không tìm thấy trang")
+    return {"slug": p.slug, "title": p.title, "content": p.content or "",
+            "updated_at": p.updated_at.isoformat() if p.updated_at else None}
+
+
+# ---------- banner trang chủ ----------
+@router.get("/banners")
+def banners(db: Session = Depends(get_db)):
+    """Banner đang hiển thị, theo vị trí rồi thứ tự. Kích thước theo vị trí: cấu hình banner_layout trong /site."""
+    rows = db.scalars(select(Banner).where(Banner.published.is_(True), Banner.position.in_(BANNER_POSITIONS))
+                      .order_by(Banner.position, Banner.sort_order, Banner.id)).all()
+    return [{"id": b.id, "image_url": b.image_url, "link": b.link, "alt": b.alt, "position": b.position} for b in rows]

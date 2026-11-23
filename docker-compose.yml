@@ -30,6 +30,17 @@ services:
       ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@example.com}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin12345}
       SEED_DEMO: ${SEED_DEMO:-false}
+      FORWARDED_HOPS: ${FORWARDED_HOPS:-1}   # IP thật = phần tử cuối X-Forwarded-For do reverse proxy (nginx/Caddy) ghi; không có reverse proxy thì đặt 0
+      SMTP_HOST: ${SMTP_HOST:-}            # để trống: thư chỉ lưu ở Hộp thư đi, không gửi
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-}
+      SMTP_SECURITY: ${SMTP_SECURITY:-starttls}   # starttls | ssl | none
+      SITE_URL: ${SITE_URL:-http://localhost:3000}   # địa chỉ website, dùng tạo link trong email
+      CLAMAV_HOST: ${CLAMAV_HOST:-}   # để trống: không quét mã độc
+      CLAMAV_FAIL_OPEN: ${CLAMAV_FAIL_OPEN:-false}   # false: máy quét lỗi thì từ chối tệp
+      BACKUP_DIR: /backups
       MEDIA_DIR: /data/media
       PRIVATE_DIR: /data/private
     # Chế độ dev: mount code và tự reload khi sửa file, không cần build lại.
@@ -37,10 +48,42 @@ services:
     volumes:
       - media:/data/media
       - private:/data/private   # bản thảo gửi về, không công khai
+      - backups:/backups        # đọc danh sách / tải bản sao lưu; ghi .request để sao lưu ngay
       - ./backend/app:/srv/app
       - ./backend/tests:/srv/tests
     ports:
       - "127.0.0.1:${BACKEND_PORT:-8000}:8000"   # chỉ để xem Swagger tại /docs; bỏ dòng này khi production
+
+  # Sao lưu hằng ngày: DB + media + private -> volume backups (xem backup/backup.sh, docs/SAO-LUU.md).
+  # Volume backups nằm CÙNG máy: hãy định kỳ tải bản sao lưu về nơi khác (admin > Hệ thống > Sao lưu).
+  backup:
+    build: ./backup
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-dacsan}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dacsan}
+      POSTGRES_DB: ${POSTGRES_DB:-dacsan}
+      PGHOST: db
+      TZ: ${TZ:-Asia/Ho_Chi_Minh}
+      BACKUP_AT: ${BACKUP_AT:-02:00}     # giờ chạy hằng ngày (theo TZ)
+      BACKUP_KEEP: ${BACKUP_KEEP:-14}    # số bản giữ lại
+    volumes:
+      - backups:/backups
+      - media:/data/media:ro
+      - private:/data/private:ro
+
+  # Quét mã độc tệp tải lên (clamd). Cần ~1–1,5GB RAM; lần đầu tải bộ nhận diện mất vài phút.
+  clamav:
+    image: clamav/clamav:1.4
+    restart: unless-stopped
+    profiles: ["scan"]   # máy dev: chỉ chạy khi cần, `docker compose --profile scan up -d` và đặt CLAMAV_HOST=clamav
+    volumes:
+      - clamdb:/var/lib/clamav
+      - media:/data/media:ro       # cùng đường dẫn với backend để quét bằng SCAN <path>
+      - private:/data/private:ro
 
   frontend:
     build:
@@ -67,3 +110,5 @@ volumes:
   pgdata:
   media:
   private:
+  backups:
+  clamdb:
