@@ -267,6 +267,7 @@ class Post(Stamped, Base):
     title: Mapped[str] = mapped_column(String(600))
     author: Mapped[str] = mapped_column(String(300), default="")
     body: Mapped[str | None] = mapped_column(Text, nullable=True)
+    cover_url: Mapped[str | None] = mapped_column(String(500), nullable=True)  # ảnh bìa (Alembic 0013); trống = ảnh đầu tiên trong bài
     published_at: Mapped[date | None] = mapped_column(Date, nullable=True)
     published: Mapped[bool] = mapped_column(Boolean, default=False)
 

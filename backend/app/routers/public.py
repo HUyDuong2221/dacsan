@@ -119,7 +119,7 @@ def spotlight_items(db: Session, limit: int | None = None) -> list[dict]:
             if not po or not po.published:
                 continue
             it = {"kind": "post", "kicker": po.author or "Bài viết", "title": po.title, "excerpt": html_excerpt(po.body),
-                  "href": f"/bai-viet/{po.slug}", "img": html_first_image(po.body),
+                  "href": f"/bai-viet/{po.slug}", "img": po.cover_url or html_first_image(po.body),
                   "date": po.published_at.isoformat() if po.published_at else None}
         else:
             continue
@@ -292,7 +292,7 @@ def article_detail(slug: str, preview: str | None = None, db: Session = Depends(
 def post_card(p: Post) -> dict:
     """Thẻ bài viết: đoạn đầu làm tóm tắt, ảnh đầu tiên (nếu có) làm ảnh đại diện. p.body là HTML từ trình soạn thảo."""
     return {"slug": p.slug, "title": p.title, "author": p.author, "published_at": p.published_at.isoformat() if p.published_at else None,
-            "excerpt": html_excerpt(p.body), "cover": html_first_image(p.body)}
+            "excerpt": html_excerpt(p.body), "cover": p.cover_url or html_first_image(p.body)}
 
 
 @router.get("/posts")
@@ -308,7 +308,7 @@ def post_detail(slug: str, db: Session = Depends(get_db)):
     if not p:
         raise HTTPException(404, "Không tìm thấy bài viết")
     body, toc = html_add_heading_ids(p.body)
-    return {**post_card(p), "body": body, "toc": toc,
+    return {**post_card(p), "body": body, "toc": toc, "cover_url": p.cover_url,
             "updated_at": p.updated_at.isoformat() if p.updated_at else None}
 
 

@@ -74,6 +74,11 @@ def prepare_post(data: dict, existing: Post | None) -> None:
             raise HTTPException(422, "Thiếu trường: title")
     if existing is None and not data.get("published_at"):
         data["published_at"] = date.today().isoformat()
+    if "cover_url" in data:
+        cover = (data.get("cover_url") or "").strip()
+        if cover and not (cover.startswith("/") and not cover.startswith("//") or cover.startswith("https://")):
+            raise HTTPException(422, "Ảnh bìa phải là đường dẫn /media/… hoặc liên kết https://")
+        data["cover_url"] = cover or None
 
 
 SPOT_REFS = {"issue_id": Issue, "activity_id": Activity, "page_id": Page, "post_id": Post}

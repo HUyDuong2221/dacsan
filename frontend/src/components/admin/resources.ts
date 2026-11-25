@@ -110,6 +110,7 @@ export const RESOURCES: ResourceDef[] = [
       { key: 'author', label: 'Tác giả', list: true },
       { key: 'published_at', label: 'Ngày đăng', type: 'date', list: true, hint: 'Để trống thì lấy ngày hôm nay.' },
       { key: 'published', label: 'Công bố trên website', listLabel: 'Công bố', type: 'bool', list: true, hint: 'Chưa đánh dấu thì bài chưa hiện ra ngoài. Bài đã công bố có ở trang /bai-viet.' },
+      { key: 'cover_url', label: 'Ảnh bìa', type: 'image', full: true, hint: 'Hiện ở danh sách bài viết và khối Tiêu điểm, không hiện trong trang bài. Để trống thì lấy ảnh đầu tiên trong bài.' },
       { key: 'body', label: 'Toàn văn', type: 'richtext', hint: 'Soạn như trong mục Hoạt động; có nút “Nhập từ Word”. Muốn lấy bài từ tệp PDF, dùng khung “Tạo nội dung từ PDF” ở đầu form.' },
     ],
   },

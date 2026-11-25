@@ -368,7 +368,7 @@ def extract_article(path: str, first: int, last: int, images_dir: str | None = N
                 for j in reversed(kick):
                     del items[j]
                 k -= len(kick)
-                if k < len(items) and items[k]["k"] == "p" and len(items[k]["t"]) <= 60 and (items[k]["t"].isupper() or items[k]["sym"]):
+                if k < len(items) and items[k]["k"] == "p" and len(items[k]["t"]) <= 60 and (items[k]["t"].isupper() or items[k].get("sym")):
                     author = items[k]["t"].strip(" *").title()
                     del items[k]
                 break

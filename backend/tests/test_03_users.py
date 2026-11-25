@@ -90,3 +90,19 @@ def test_update_profile(client, auth):
     assert me["full_name"] == "Nguyễn Văn A" and me["position"] == "Biên tập" and me["created_at"]
     assert client.put(f"{A}/auth/me", headers=h, json={"full_name": " "}).status_code == 422
     assert client.put(f"{A}/auth/me", headers=h, json={"full_name": "A", "phone": "abc"}).status_code == 422
+
+
+def test_post_cover(client, auth):
+    from helpers import P
+    r = client.post(f"{A}/posts", headers=auth, json={"title": "Bài có bìa", "body": '<p>x</p><img src="/media/trong-bai.jpg">', "published": True})
+    assert r.status_code == 201, r.text
+    pid, slug = r.json()["id"], r.json()["slug"]
+    assert client.get(f"{P}/posts/{slug}").json()["cover"] == "/media/trong-bai.jpg"  # chưa đặt bìa: ảnh đầu tiên trong bài
+    assert client.put(f"{A}/posts/{pid}", headers=auth, json={"cover_url": "javascript:alert(1)"}).status_code == 422
+    assert client.put(f"{A}/posts/{pid}", headers=auth, json={"cover_url": "/media/bia.jpg"}).status_code == 200
+    d = client.get(f"{P}/posts/{slug}").json()
+    assert d["cover"] == "/media/bia.jpg" and d["cover_url"] == "/media/bia.jpg"
+    assert [x["cover"] for x in client.get(f"{P}/posts").json() if x["slug"] == slug] == ["/media/bia.jpg"]
+    client.put(f"{A}/posts/{pid}", headers=auth, json={"cover_url": ""})
+    assert client.get(f"{P}/posts/{slug}").json()["cover"] == "/media/trong-bai.jpg"
+    client.delete(f"{A}/posts/{pid}", headers=auth)
