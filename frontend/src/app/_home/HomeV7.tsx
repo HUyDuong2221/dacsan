@@ -311,7 +311,7 @@ export default function HomeV7(p: HomeProps) {
             </div>
             <div className="v7-nbox" id="dang-ky">
               <h3>Nhận thông báo số mới</h3>
-              <p>Mỗi hai tháng một email khi số mới lên web.</p>
+              <p>Mỗi ba tháng một email khi số mới lên web.</p>
               <form onSubmit={subscribe}>
                 <label htmlFor="v7-email">Email</label>
                 <div className="v7-nform">

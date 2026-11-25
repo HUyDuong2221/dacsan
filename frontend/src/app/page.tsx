@@ -54,7 +54,7 @@ export default async function Home() {
     { v: String(d.stats?.issue_count ?? issues.length), l: 'số đặc san\nđã phát hành' },
     { v: String(d.stats?.article_count ?? 0), l: `bài viết theo\n${topics.length} chuyên mục` },
     { v: latest?.page_count ? String(latest.page_count) : '—', l: 'trang trong\nsố mới nhất' },
-    { v: '2', l: 'tháng\nmột kỳ' },
+    { v: '3', l: 'tháng\nmột kỳ' },
   ];
 
   const props: HomeProps = {

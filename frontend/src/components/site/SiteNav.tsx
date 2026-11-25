@@ -50,7 +50,7 @@ export default function SiteNav({ site, dateStr, latestLabel }: { site: Record<s
             {latestLabel && <><span className="nw">{latestLabel}</span><i className="hs">◆</i></>}
             <span className="hs nw v7-mm-org">Cơ quan của Liên hiệp các Hội KH&amp;KT TP. Đà Nẵng</span>
             <i className="hs">◆</i>
-            <span className="hs nw v7-mm-freq">Phát hành hai tháng một kỳ</span>
+            <span className="hs nw v7-mm-freq">Phát hành ba tháng một kỳ</span>
           </div>
         </div>
       </header>
