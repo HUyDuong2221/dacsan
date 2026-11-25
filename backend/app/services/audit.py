@@ -26,11 +26,11 @@ ENTITY_LABELS = {
     "submissions": "Bài gửi", "activities": "Hoạt động", "activity-types": "Loại hoạt động",
     "documents": "Tư liệu", "pages": "Trang nội dung", "settings": "Cấu hình site", "subscribers": "Đăng ký email",
     "upload": "Tệp tải lên", "media": "Kho ảnh", "banners": "Banner", "outbox": "Hộp thư đi",
-    "backups": "Sao lưu", "submissions_public": "Bài gửi (tác giả)",
+    "backups": "Sao lưu", "pdf-articles": "Bài từ PDF", "posts": "Bài viết", "submissions_public": "Bài gửi (tác giả)",
 }
 ACTION_LABELS = {
     "create": "Thêm", "update": "Sửa", "delete": "Xóa", "login": "Đăng nhập", "login_failed": "Đăng nhập thất bại",
-    "change_password": "Đổi mật khẩu", "upload": "Tải tệp lên", "merge": "Gộp chuyên mục", "import": "Nhập mục lục từ PDF",
+    "change_password": "Đổi mật khẩu", "upload": "Tải tệp lên", "merge": "Gộp chuyên mục", "import": "Nhập mục lục từ PDF", "extract": "Lấy bài từ PDF",
     "decision": "Quyết định biên tập", "reviews": "Phân công phản biện", "remind": "Nhắc hạn phản biện",
     "link": "Tạo lại liên kết phản biện", "toc-entry": "Đưa vào mục lục",
     "forgot_password": "Yêu cầu đặt lại mật khẩu", "reset_password": "Đặt lại mật khẩu", "register": "Tự đăng ký tài khoản",

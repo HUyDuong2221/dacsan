@@ -1,9 +1,10 @@
 'use client';
 import Link from 'next/link';
 import IssueTile, { type IssueTileData } from '@/components/reader/IssueTile';
-import { useEffect, useRef, useState } from 'react';
+import { Fragment, useEffect, useRef, useState } from 'react';
 import BannerSlider from '@/components/site/BannerSlider';
 import { BANNER_POSITIONS, parseLayouts, type BannerItem, type BannerPosition } from '@/lib/banners';
+import { parseHomeLayout, type HomeBlockKey } from '@/lib/homeLayout';
 import './v7.css';
 
 type Slide = { key: string; cat: string; title: string; excerpt: string; meta: string; href: string; img?: string | null };
@@ -11,6 +12,7 @@ type TocItem = { slug: string; title: string; page: string };
 type TopicIssue = IssueTileData;
 type Topic = { name: string; count: number; issues: TopicIssue[] };
 type Act = { id: number; day: string; month: string; kind: string; title: string; url: string };
+type PostCard = { slug: string; title: string; author: string; date: string; excerpt: string; cover: string | null };
 type IssueItem = { slug: string; label: string; theme: string; cover: string | null; year: string; number: number };
 
 export type HomeProps = {
@@ -25,6 +27,7 @@ export type HomeProps = {
   acts: Act[];
   issues: IssueItem[];
   banners: BannerItem[];
+  posts: PostCard[];
 };
 
 const pad = (n: number) => (n < 10 ? '0' : '') + n;
@@ -97,10 +100,12 @@ export default function HomeV7(p: HomeProps) {
     return items.length ? <BannerSlider items={items} layout={layouts[pos]} label={`Banner: ${label}`} /> : null;
   };
 
-  return (
-    <div className="v7">
-      <main>
-        {zone('top')}
+  // Bố cục (admin: Giao diện › Bố cục trang chủ): thứ tự, bật/tắt và tiêu đề của từng khối. Banner đi theo khối đứng sau nó.
+  const layout = parseHomeLayout(p.site.home_layout);
+  const ttl = (k: HomeBlockKey) => layout.find((b) => b.key === k)?.title || '';
+  const blocks: Record<HomeBlockKey, React.ReactNode> = {
+    front: (
+      <>
         <section className="v7-w v7-front">
           <div className="v7-front-row">
             <article className="v7-lead" aria-roledescription="carousel" aria-label="Bài tiêu điểm"
@@ -202,7 +207,9 @@ export default function HomeV7(p: HomeProps) {
         </section>
 
         {zone('after_front')}
-
+      </>
+    ),
+    stats: (
         <section className="v7-stats">
           <div className="v7-w">
             {p.stats.map((s) => (
@@ -210,13 +217,15 @@ export default function HomeV7(p: HomeProps) {
             ))}
           </div>
         </section>
-
+    ),
+    topics: (
+      <>
         {zone('before_topics')}
 
         {tp && (
           <section className="v7-w v7-topics">
             <div className="v7-sec-h">
-              <h2 className="v7-h2">Chuyên mục</h2>
+              <h2 className="v7-h2">{ttl('topics')}</h2>
             </div>
             <div className="v7-tabs" role="tablist" aria-label="Chuyên mục">
               {p.topics.map((t, i) => (
@@ -239,13 +248,41 @@ export default function HomeV7(p: HomeProps) {
             </div>
           </section>
         )}
-
+      </>
+    ),
+    posts: (
+      <>
+        {p.posts.length > 0 && (
+          <section className="v7-w v7-posts">
+            <div className="v7-acts-h">
+              <h2 className="v7-h2">{ttl('posts')}</h2>
+              <Link href="/bai-viet">Xem tất cả bài viết →</Link>
+            </div>
+            <div className="v7-posts-g">
+              {p.posts.map((x) => (
+                <Link key={x.slug} href={`/bai-viet/${x.slug}`} className="v7-post">
+                  <span className="pc">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    {x.cover && <img src={x.cover} alt="" loading="lazy" />}
+                  </span>
+                  <strong data-hl>{x.title}</strong>
+                  {(x.author || x.date) && <small>{[x.author, x.date].filter(Boolean).join(' · ')}</small>}
+                  {x.excerpt && <span className="px">{x.excerpt}</span>}
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
+      </>
+    ),
+    acts: (
+      <>
         {zone('before_acts')}
 
         {p.acts.length > 0 && (
           <section className="v7-w v7-acts">
             <div className="v7-acts-h">
-              <h2 className="v7-h2">Tin hoạt động</h2>
+              <h2 className="v7-h2">{ttl('acts')}</h2>
               <Link href="/tin-hoat-dong">Xem tất cả tin hoạt động →</Link>
             </div>
             <div className="v7-acts-g">
@@ -258,14 +295,17 @@ export default function HomeV7(p: HomeProps) {
             </div>
           </section>
         )}
-
+      </>
+    ),
+    archive: (
+      <>
         {zone('before_archive')}
 
         {years.length > 0 && (
           <section className="v7-arch">
             <div className="v7-w">
               <div className="v7-arch-h">
-                <h2 className="v7-h2">Kho lưu trữ</h2>
+                <h2 className="v7-h2">{ttl('archive')}</h2>
                 <div className="v7-years" role="tablist" aria-label="Năm phát hành">
                   {years.map((y) => (
                     <button key={y} role="tab" aria-selected={y === year} className={y === year ? 'on' : ''} onClick={() => { setYear(y); setArchShown(archStep); }}>{y}</button>
@@ -296,7 +336,10 @@ export default function HomeV7(p: HomeProps) {
             </div>
           </section>
         )}
-
+      </>
+    ),
+    submit: (
+      <>
         {zone('before_submit')}
 
         <section className="v7-w v7-submit" id="gui-bai">
@@ -324,6 +367,15 @@ export default function HomeV7(p: HomeProps) {
             </div>
           </div>
         </section>
+      </>
+    ),
+  };
+
+  return (
+    <div className="v7">
+      <main>
+        {zone('top')}
+        {layout.filter((b) => !b.hidden).map((b) => <Fragment key={b.key}>{blocks[b.key]}</Fragment>)}
       </main>
     </div>
   );

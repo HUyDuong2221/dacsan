@@ -8,7 +8,6 @@ export const DEFAULT_MENU: MenuItem[] = [
   { href: '/issues', label: 'Đặc san' },
   { href: '/research', label: 'Nghiên cứu – Trao đổi' },
   { href: '/tin-hoat-dong', label: 'Tin hoạt động' },
-  { href: '/docs', label: 'Tư liệu' },
 ];
 
 export const MENU_KEY = 'nav_menu';

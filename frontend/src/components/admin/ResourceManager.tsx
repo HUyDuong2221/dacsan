@@ -39,10 +39,11 @@ export async function adm(path: string, token: string, init: RequestInit = {}) {
   return data;
 }
 
-export default function ResourceManager({ res, token, onAuthError, rowExtra, query, defaults, onChanged }: { res: ResourceDef; token: string; onAuthError: () => void; rowExtra?: (row: any) => React.ReactNode; query?: string; defaults?: Record<string, any>; onChanged?: () => void }) {
+export default function ResourceManager({ res, token, onAuthError, rowExtra, formExtra, query, defaults, onChanged }: { res: ResourceDef; token: string; onAuthError: () => void; rowExtra?: (row: any) => React.ReactNode; formExtra?: (edit: any, setEdit: (fn: (x: any) => any) => void, remountEditor: () => void) => React.ReactNode; query?: string; defaults?: Record<string, any>; onChanged?: () => void }) {
   const [rows, setRows] = useState<any[]>([]);
   const [opts, setOpts] = useState<Record<string, { value: string; label: string }[]>>({});
   const [edit, setEdit] = useState<any | null>(null);
+  const [rv, setRv] = useState(0); // đổi để dựng lại trình soạn thảo khi nội dung được đổ vào từ bên ngoài (formExtra)
   const [filter, setFilter] = useState('');
   const [err, setErr] = useState('');
   const [msg, setMsg] = useState('');
@@ -163,11 +164,12 @@ export default function ResourceManager({ res, token, onAuthError, rowExtra, que
           <h3 className="full serif" style={{ fontSize: 20 }}>
             {edit.id ? res.editLabel || 'Sửa' : res.addLabel || 'Thêm mới'}
           </h3>
+          {formExtra && <div className="full">{formExtra(edit, setEdit, () => setRv((v) => v + 1))}</div>}
           {res.fields.filter((f) => !f.listOnly).map((f) => (
             <FieldWrap key={f.key} rich={f.type === 'richtext'} className={f.full || f.type === 'textarea' || f.type === 'richtext' ? 'full' : ''}>
               <span>{f.label}{f.required && ' *'}</span>
               {f.type === 'richtext' ? (
-                <RichText key={edit.id ?? 'new'} token={token} value={edit[f.key] ?? ''} onChange={(html) => setEdit((x: any) => ({ ...x, [f.key]: html }))} />
+                <RichText key={`${edit.id ?? 'new'}-${rv}`} token={token} value={edit[f.key] ?? ''} onChange={(html) => setEdit((x: any) => ({ ...x, [f.key]: html }))} />
               ) : f.type === 'textarea' ? (
                 <textarea className="input" rows={f.key === 'body' ? 18 : 4} value={edit[f.key] ?? ''} onChange={(e) => setEdit({ ...edit, [f.key]: e.target.value })} />
               ) : f.type === 'bool' ? (

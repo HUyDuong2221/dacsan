@@ -3,21 +3,21 @@
 import type { ResourceDef } from './ResourceManager';
 
 export const GROUPS: { title: string; keys: string[] }[] = [
-  { title: 'Nội dung', keys: ['issues', 'submissions', 'fields', 'pages'] },
-  { title: 'Truyền thông', keys: ['activities', 'activity-types', 'documents'] },
+  { title: 'Nội dung', keys: ['issues', 'posts', 'submissions', 'fields', 'pages'] },
+  { title: 'Truyền thông', keys: ['activities', 'activity-types'] },
   { title: 'Báo cáo', keys: ['stats'] },
   { title: 'Hệ thống', keys: ['appearance', 'users', 'settings', 'subscribers', 'outbox', 'backups', 'audit'] },
 ];
 // Menu thả xuống: mục cha -> các mục con
-export const SUBMENUS: Record<string, string[]> = { appearance: ['logo', 'banner', 'menu'] };
+export const SUBMENUS: Record<string, string[]> = { appearance: ['logo', 'banner', 'menu', 'home'] };
 export const SUB_KEYS = Object.values(SUBMENUS).flat();
 export const ICONS: Record<string, string> = {
   issues: 'M4 5h6a2 2 0 0 1 2 2v12a2 2 0 0 0-2-2H4zM20 5h-6a2 2 0 0 0-2 2v12a2 2 0 0 1 2-2h6z',
   submissions: 'M3 7l9 6 9-6M5 5h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z',
   fields: 'M4 6h16M4 12h16M4 18h10',
+  posts: 'M5 4h14v16H5zM8 8h8M8 12h8M8 16h5',
   activities: 'M8 3v4M16 3v4M4 9h16M5 5h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z',
   'activity-types': 'M4 7h16M4 12h16M4 17h16M2 7h.01M2 12h.01M2 17h.01',
-  documents: 'M7 3h7l4 4v14H7zM14 3v4h4',
   users: 'M3 19c0-3 2.7-5 6-5s6 2 6 5M12 8a3 3 0 1 1-6 0 3 3 0 0 1 6 0zM16 14c2.5 0 5 1.5 5 4',
   appearance: 'M4 5h16v11H4zM4 16l5-5 4 4 3-3 4 4M9 21h6',
   settings: 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19 12l2-1-2-4-2 1-2-1-1-2h-4l-1 2-2 1-2-1-2 4 2 1v2l-2 1 2 4 2-1 2 1 1 2h4l1-2 2-1 2 1 2-4-2-1z',
@@ -35,8 +35,8 @@ export const EDIT = ['admin', 'editor'];
 export const ADMIN = ['admin'];
 // Vai trò được thấy từng thẻ (máy chủ vẫn kiểm tra quyền ở mọi API)
 export const TAB_ROLES: Record<string, string[]> = {
-  issues: STAFF, submissions: EDIT, fields: EDIT, activities: EDIT, 'activity-types': EDIT, documents: EDIT,
-  users: ADMIN, appearance: ADMIN, logo: ADMIN, banner: ADMIN, menu: ADMIN, settings: ADMIN, subscribers: ADMIN,
+  issues: STAFF, posts: EDIT, submissions: EDIT, fields: EDIT, activities: EDIT, 'activity-types': EDIT,
+  users: ADMIN, appearance: ADMIN, logo: ADMIN, banner: ADMIN, menu: ADMIN, home: ADMIN, settings: ADMIN, subscribers: ADMIN,
   pages: EDIT, audit: ADMIN, stats: EDIT, outbox: ADMIN, backups: ADMIN,
 };
 
@@ -75,13 +75,11 @@ export const RESOURCES: ResourceDef[] = [
     { key: 'published', label: 'Hiển thị', type: 'bool', list: true }] },
   { key: 'activity-types', title: 'Loại hoạt động', addLabel: 'Thêm loại hoạt động', editLabel: 'Sửa loại hoạt động', fields: [
     { key: 'name', label: 'Tên loại', required: true, list: true }, { key: 'sort_order', label: 'Thứ tự', type: 'number', list: true }] },
-  { key: 'documents', title: 'Tư liệu', fields: [
-    { key: 'title', label: 'Tiêu đề', required: true, list: true, full: true }, { key: 'doc_type', label: 'Loại', list: true },
-    { key: 'file_url', label: 'Tệp', type: 'file' }, { key: 'sort_order', label: 'Thứ tự', type: 'number', list: true }, { key: 'published', label: 'Hiển thị', type: 'bool', list: true }] },
   { key: 'appearance', title: 'Giao diện', fields: [] },
   { key: 'logo', title: 'Logo', fields: [] },
   { key: 'banner', title: 'Banner trang chủ', fields: [] },
   { key: 'menu', title: 'Menu điều hướng', fields: [] },
+  { key: 'home', title: 'Bố cục trang chủ', fields: [] },
   { key: 'users', title: 'Người dùng', addLabel: 'Thêm người dùng', editLabel: 'Sửa người dùng', fields: [
     { key: 'email', label: 'Email đăng nhập', required: true, list: true },
     { key: 'full_name', label: 'Họ tên', list: true },
@@ -95,6 +93,16 @@ export const RESOURCES: ResourceDef[] = [
     { key: 'key', label: 'Khóa', required: true, list: true, hint: 'org_name, issn, contact, license, copyright, publisher, editors' },
     { key: 'value', label: 'Giá trị', type: 'textarea', list: true }] },
   { key: 'audit', title: 'Nhật ký hoạt động', fields: [] },
+  {
+    key: 'posts', title: 'Bài viết', addLabel: 'Thêm bài viết', editLabel: 'Sửa bài viết', hideId: true,
+    fields: [
+      { key: 'title', label: 'Tiêu đề', required: true, list: true, full: true },
+      { key: 'author', label: 'Tác giả', list: true },
+      { key: 'published_at', label: 'Ngày đăng', type: 'date', list: true, hint: 'Để trống thì lấy ngày hôm nay.' },
+      { key: 'published', label: 'Công bố trên website', listLabel: 'Công bố', type: 'bool', list: true, hint: 'Chưa đánh dấu thì bài chưa hiện ra ngoài. Bài đã công bố có ở trang /bai-viet.' },
+      { key: 'body', label: 'Toàn văn', type: 'richtext', hint: 'Soạn như trong mục Hoạt động; có nút “Nhập từ Word”. Muốn lấy bài từ tệp PDF, dùng khung “Tạo nội dung từ PDF” ở đầu form.' },
+    ],
+  },
   { key: 'stats', title: 'Thống kê', fields: [] },
   { key: 'outbox', title: 'Hộp thư đi', fields: [] },
   { key: 'backups', title: 'Sao lưu và bảo mật tệp', fields: [] },

@@ -5,7 +5,7 @@ Dành cho biên tập viên. Mọi thao tác thực hiện tại trang quản tr
 ## 1. Đăng nhập
 
 1. Mở `/admin`, nhập email và mật khẩu do quản trị viên cấp.
-2. Đăng nhập xong, menu bên trái có các nhóm: **Nội dung** (Số đặc san, Bài gửi, Chuyên mục, Trang nội dung), **Truyền thông** (Hoạt động, Loại hoạt động, Tư liệu), **Báo cáo** (Thống kê) và **Hệ thống** (Giao diện, Người dùng, Cấu hình site, Đăng ký email, Hộp thư đi, Sao lưu và bảo mật tệp, Nhật ký hoạt động). Mỗi người chỉ thấy các mục đúng với vai trò của mình (xem mục 8).
+2. Đăng nhập xong, menu bên trái có các nhóm: **Nội dung** (Số đặc san, Bài viết, Bài gửi, Chuyên mục, Trang nội dung), **Truyền thông** (Hoạt động, Loại hoạt động), **Báo cáo** (Thống kê) và **Hệ thống** (Giao diện, Người dùng, Cấu hình site, Đăng ký email, Hộp thư đi, Sao lưu và bảo mật tệp, Nhật ký hoạt động). Mỗi người chỉ thấy các mục đúng với vai trò của mình (xem mục 8).
 3. Hết phiên (khoảng 12 giờ) hoặc đăng nhập sai nhiều lần sẽ bị yêu cầu thử lại sau. Dùng nút **Đăng xuất** khi xong việc.
 4. **Quên mật khẩu?** ở màn hình đăng nhập: nhập email, hệ thống gửi liên kết đặt mật khẩu mới (hiệu lực 60 phút, dùng một lần).
 5. **Đăng ký tài khoản** ở màn hình đăng nhập: cộng tác viên tự đăng ký (họ tên, email, mật khẩu, đơn vị). Tài khoản ở trạng thái *Chờ duyệt* cho tới khi quản trị viên duyệt (xem mục 8); khi được duyệt, người đăng ký nhận email báo.
@@ -39,6 +39,19 @@ Sau khi đã tải **Tệp PDF** lên cho số đặc san:
 4. Bấm **Thêm … dòng vào mục lục**. Chuyên mục chưa có sẽ được tạo mới; tên chuyên mục khớp với chuyên mục đã có (không phân biệt dấu) thì dùng lại.
 
 Lưu ý: chức năng chỉ lấy **mục lục**, không lấy nội dung bài. Bấm lại lần nữa không tạo trùng các dòng đã có. Nếu báo "Không nhận diện được mục lục" thì PDF không có bookmark và trang mục lục không đúng dạng dòng "Tiêu đề … số trang"; khi đó hãy nhập từng dòng ở Bước 3.
+
+### Bước 1c. Tạo bài viết riêng, có thể lấy nội dung từ tệp PDF (tùy chọn)
+Dùng khi muốn đăng một bài đọc trực tiếp trên web mà không thuộc số đặc san nào. Vào menu **Nội dung › Bài viết** (biên tập viên và quản trị viên). Bài viết đọc tại `/bai-viet/<đường dẫn>` bằng kiểu chữ Times New Roman.
+
+1. Bấm **Thêm bài viết**. Ở đầu form có khung **Tạo nội dung từ PDF** (bấm để mở).
+2. **Chọn tệp PDF** (cả số đặc san hoặc riêng một bài, tối đa 50MB, PDF có lớp chữ, không phải bản scan). Tệp chỉ dùng để xử lý, không công khai và tự xóa sau 24 giờ.
+3. Nhập **Từ trang – Đến trang** (có ảnh trang để đối chiếu), chọn có **lấy ảnh** hay không, bấm **Đưa vào bài viết**.
+4. Hệ thống điền sẵn **Tiêu đề, Tác giả** (chỉ khi các ô này còn trống) và **Toàn văn** vào form; ảnh lấy từ PDF nằm sẵn trong bài, chú thích in nghiêng cạnh ảnh được gắn làm chú thích. Nếu bài đã có nội dung, hệ thống hỏi có thêm vào cuối bài không, nên có thể lấy nhiều dải trang liên tiếp.
+5. Ô **Toàn văn** là trình soạn thảo giống mục Hoạt động (định dạng chữ, đề mục, danh sách, bảng, chèn ảnh, nhập từ Word). Đọc lại và sửa, nhất là tên riêng, số liệu và chỗ ngắt đoạn; đánh dấu **Công bố trên website** khi sẵn sàng (hoặc để chưa đánh dấu để lưu nháp), rồi bấm **Lưu**.
+
+Cũng ở **Nội dung › Bài viết**: sửa nội dung, đổi ngày đăng, công bố hoặc ẩn, xóa bài. Danh sách công khai ở `/bai-viet`; muốn hiện trên thanh menu, thêm mục liên kết `/bai-viet` ở **Giao diện › Menu điều hướng**. Bài viết không gửi thư báo cho người đăng ký nhận tin.
+
+Lưu ý: bài xếp hai cột, bài có bảng, biểu đồ hoặc khung chữ đặc biệt có thể cần sửa tay nhiều hơn. Dòng chạy đầu trang, số trang và chữ cái lớn đầu bài được xử lý tự động. Ảnh không dùng đến vẫn nằm lại trong kho ảnh của site.
 
 ### Bước 2. Kiểm tra chuyên mục
 Thẻ **Chuyên mục** liệt kê các chuyên mục và thứ tự hiển thị (số nhỏ hiện trước). Thêm chuyên mục mới nếu cần, ví dụ "Khoa học đời sống".
@@ -84,7 +97,7 @@ Nội dung dưới đề mục.
 
 ### Lấy đường dẫn cho ảnh trong bài
 Hệ thống chưa có thư viện ảnh riêng. Cách làm hiện tại:
-1. Mở một biểu mẫu có ô tải tệp (ví dụ **Tư liệu → + Thêm mới → ô Tệp**), chọn ảnh.
+1. Mở một biểu mẫu có ô tải tệp (ví dụ **Hoạt động → + Thêm mới → ô Tệp đính kèm**), chọn ảnh.
 2. Ô bên cạnh sẽ hiện đường dẫn dạng `/media/xxxx.jpg`. Sao chép nó.
 3. Bấm **Hủy** (không cần lưu), quay lại bài và dán vào cú pháp ảnh ở trên.
 
@@ -93,7 +106,6 @@ Tệp được phép tải lên: jpg, jpeg, png, webp, pdf, doc, docx, xls, xlsx
 ## 4. Các nội dung khác
 
 - **Hoạt động** (trang chủ, khối "Tin hoạt động", và trang Tin hoạt động): tiêu đề, loại, ngày, nội dung (có *Nhập từ Word*), tệp đính kèm, liên kết tới bài gốc. Bỏ đánh dấu *Hiển thị* để ẩn.
-- **Tư liệu** (trang Tư liệu): quy định, biểu mẫu. Tải tệp lên ở ô *Tệp*; chưa có tệp thì mục hiện "Chưa có tệp". *Thứ tự* nhỏ hiện trước.
 - **Cấu hình site**: nội dung chân trang. Khóa gồm `org_name`, `issn`, `contact`, `license`, `copyright`, `publisher` (chịu trách nhiệm xuất bản), `editors` (biên tập; mỗi dòng một tên). Sửa giá trị, không đổi tên khóa.
 - **Đăng ký email**: danh sách người đăng ký nhận tin. Người đăng ký phải bấm liên kết trong email xác nhận (cột *Đã xác nhận*); chỉ người đã xác nhận mới nhận thư báo số mới. Mỗi thư có liên kết để người nhận tự hủy đăng ký.
 - **Thư báo số mới (tự động)**: khi một số được đánh dấu **Công bố trên website** lần đầu, hệ thống tự gửi mỗi người đã xác nhận đăng ký nhận tin một thư báo số mới (tên số, giới thiệu, danh sách bài, liên kết đọc). Trước khi công bố, trang quản trị hỏi xác nhận. Mỗi số chỉ gửi một lần: sửa số, hoặc bỏ công bố rồi công bố lại, không gửi thêm. Vì vậy nên nhập xong mục lục rồi mới công bố. Kết quả gửi xem ở **Hộp thư đi**.
@@ -103,6 +115,7 @@ Tệp được phép tải lên: jpg, jpeg, png, webp, pdf, doc, docx, xls, xlsx
   - *Danh sách banner*: mỗi banner có ảnh, **vị trí** (đầu trang, dưới Tiêu điểm, trên Chuyên mục, trên Tin hoạt động, trên Kho lưu trữ, cuối trang), thứ tự, liên kết khi bấm (tùy chọn), mô tả ảnh. Các banner **cùng vị trí tự chạy thành slider** (có nút ‹ ›, vuốt được trên điện thoại, tự dừng khi rê chuột vào); một banner thì hiện ảnh tĩnh. Bỏ đánh dấu *Hiển thị* để ẩn tạm.
   - *Cấu hình theo vị trí*: **Hiển thị** (bỏ đánh dấu để tạm ẩn cả vị trí, mọi banner ở đó không hiện nhưng vẫn giữ nguyên; bấm *Lưu cấu hình vị trí*), chiều cao trên máy tính và điện thoại, độ rộng (theo khung nội dung hoặc tràn màn hình), cách hiện ảnh (cắt cho vừa khung hoặc hiện đủ ảnh), thời gian tự chuyển. Nên dùng ảnh cùng tỉ lệ với khung để không bị cắt mất chữ.
 - **Giao diện › Menu điều hướng** (quản trị viên): thêm, đổi tên, sắp thứ tự, xóa các mục trên thanh menu. Có thể chọn nhanh các Trang nội dung, hoặc nhập liên kết tới trang web bên ngoài (`https://…`, mở ở tab mới). Bỏ đánh dấu cột *Hiển thị* để tạm ẩn một mục khỏi website mà vẫn giữ trong danh sách (cần ít nhất một mục đang hiển thị). *Dùng menu mặc định* để trở về menu ban đầu.
+- **Giao diện › Bố cục trang chủ** (quản trị viên): các khối của trang chủ theo thứ tự từ trên xuống: *Tiêu điểm và Số mới nhất*, *Dải số liệu*, *Chuyên mục*, *Bài viết*, *Tin hoạt động*, *Kho lưu trữ*, *Gửi bài và Đăng ký nhận tin*. Bỏ đánh dấu **Hiển thị** để ẩn một khối (dữ liệu không mất), dùng nút ↑ ↓ để đổi thứ tự, sửa **tiêu đề hiển thị** của khối và **số mục** (khối Bài viết). Muốn có danh sách bài viết ở trang chủ: đánh dấu **Hiển thị** cho khối **Bài viết**, đặt vị trí và số bài; khối lấy các bài đã *công bố* ở Nội dung › Bài viết (mới nhất trước) và tự ẩn khi chưa có bài nào. Banner đi theo khối đứng ngay sau nó. *Dùng bố cục mặc định* để trở về như ban đầu.
 - **Báo cáo › Thống kê** (quản trị viên, biên tập viên): chọn kỳ (7 ngày, 30 ngày, 90 ngày, năm nay, 12 tháng hoặc tự chọn từ ngày–đến ngày).
   - *Bài gửi*: số bài nhận được, tỷ lệ chấp nhận (trên số bài đã có quyết định Chấp nhận/Từ chối), thời gian trung bình đến quyết định, thời gian phản hồi đầu tiên, số bài theo trạng thái và theo tháng.
   - *Lượt xem và lượt tải*: lượt xem trang (mục lục số và trang bài), lượt đọc PDF, lượt tải PDF; biểu đồ theo ngày (rê chuột để xem số, hoặc bấm *Xem bảng số liệu*); bài và số được xem nhiều nhất. Không tính máy tìm kiếm, số chưa công bố và lượt lặp lại của cùng người đọc trong 30 phút.
@@ -146,7 +159,7 @@ Thẻ **Người dùng** → **Thêm người dùng**: nhập email đăng nhậ
 | Vai trò | Được làm gì |
 |---|---|
 | **Quản trị viên** | Toàn quyền: gồm quản lý người dùng, cấu hình site, danh sách đăng ký email, xóa bài gửi |
-| **Biên tập viên** | Số đặc san (tạo, sửa, **công bố**, xóa), mục lục, chuyên mục, hoạt động, thông báo, tư liệu, tạo mục lục từ PDF, **xử lý bài gửi** |
+| **Biên tập viên** | Số đặc san (tạo, sửa, **công bố**, xóa), mục lục, chuyên mục, hoạt động, bài viết, tạo mục lục từ PDF, **xử lý bài gửi** |
 | **Cộng tác viên** | Chỉ **nhập/sửa mục lục và toàn văn của số chưa công bố**. Không công bố số, không tạo/xóa số, không xóa dòng mục lục, không xem bài gửi |
 
 Quy trình gợi ý: cộng tác viên nhập mục lục và toàn văn khi số còn ở trạng thái chưa công bố, biên tập viên kiểm tra rồi đánh dấu **Công bố trên website**. Sau khi số đã công bố, cộng tác viên không sửa được nữa.

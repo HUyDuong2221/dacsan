@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from ..config import settings
 from ..db import get_db
-from ..models import BANNER_POSITIONS, Banner, Document, Issue, Setting
+from ..models import BANNER_POSITIONS, Banner, Issue, Setting
 from ..security import EDIT, STAFF, require_roles
 from ..services import audit, scanner
 
@@ -49,7 +49,7 @@ ALLOWED = {".jpg", ".jpeg", ".png", ".webp", ".pdf", ".doc", ".docx", ".xls", ".
 
 @router.post("/upload", dependencies=[Depends(require_roles(*STAFF))])
 async def upload(file: UploadFile, request: Request, kind: str = ""):
-    """kind: "" = kho chung (bìa, tư liệu...), "logo", "banner" = kho riêng của từng loại ảnh giao diện."""
+    """kind: "" = kho chung (bìa số, ảnh bài...), "logo", "banner" = kho riêng của từng loại ảnh giao diện."""
     ext = os.path.splitext(file.filename or "")[1].lower()
     if ext not in ALLOWED:
         raise HTTPException(415, f"Định dạng không được phép: {ext or '?'}")
@@ -77,15 +77,12 @@ async def upload(file: UploadFile, request: Request, kind: str = ""):
 
 
 def _media_usage(db: Session) -> dict[str, list[str]]:
-    """url -> nơi đang dùng (số đặc san, tư liệu, cấu hình site)."""
+    """url -> nơi đang dùng (số đặc san, banner, cấu hình site)."""
     use: dict[str, list[str]] = {}
     for i in db.scalars(select(Issue)):
         for u in (i.cover_url, i.pdf_url):
             if u:
                 use.setdefault(u, []).append(i.label)
-    for d in db.scalars(select(Document)):
-        if d.file_url:
-            use.setdefault(d.file_url, []).append(d.title)
     for b in db.scalars(select(Banner)):
         use.setdefault(b.image_url, []).append("Banner: " + (b.alt or BANNER_POSITIONS.get(b.position, b.position)))
     for st in db.scalars(select(Setting)):

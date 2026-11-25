@@ -11,8 +11,8 @@ from .services.audit import AuditMiddleware
 from .config import settings
 from .db import SessionLocal, engine
 from .models import Activity, ActivityType, Base, Issue, User
-from .routers import (accounts, admin, audit_logs, backups, mail, media, public, reviews, stats, submissions,
-                      toc_import, users)
+from .routers import (accounts, admin, audit_logs, backups, mail, media, pdf_articles, public, reviews, stats,
+                      submissions, toc_import, users)
 from .security import hash_password
 from .seed import seed
 
@@ -102,6 +102,7 @@ app.include_router(stats.admin_router, prefix="/api/v1/admin")
 app.include_router(mail.admin_router, prefix="/api/v1/admin")
 app.include_router(mail.public_router, prefix="/api/v1/public")
 app.include_router(backups.router, prefix="/api/v1/admin")
+app.include_router(pdf_articles.router, prefix="/api/v1/admin")
 os.makedirs(settings.media_dir, exist_ok=True)
 app.mount("/media", StaticFiles(directory=settings.media_dir), name="media")
 

@@ -8,8 +8,8 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ..db import get_db
-from ..models import (BANNER_POSITIONS, Activity, ActivityType, Banner, Document, Field, Issue, Page, Setting, Subscriber,
-                      TocEntry, User)
+from ..models import (BANNER_POSITIONS, Activity, ActivityType, Banner, Field, Issue, Page, Post, Setting,
+                      Subscriber, TocEntry, User)
 from ..security import ADMIN, EDIT, STAFF, make_preview_token, require_roles
 from ..services import audit, mailer, newsletter
 from .crud import crud
@@ -66,6 +66,16 @@ def guard_entry(user: User, db: Session, data: dict, obj: TocEntry | None) -> No
             raise HTTPException(403, "Số này đã công bố, chỉ biên tập viên được sửa")
 
 
+def prepare_post(data: dict, existing: Post | None) -> None:
+    """Tiêu đề bắt buộc; bài mới chưa có ngày đăng thì lấy ngày hôm nay."""
+    if existing is None or "title" in data:
+        data["title"] = " ".join(str(data.get("title") or "").split())
+        if not data["title"]:
+            raise HTTPException(422, "Thiếu trường: title")
+    if existing is None and not data.get("published_at"):
+        data["published_at"] = date.today().isoformat()
+
+
 def prepare_banner(data: dict, existing: Banner | None) -> None:
     """Vị trí phải nằm trong BANNER_POSITIONS; liên kết (nếu có) là đường dẫn trong site hoặc http(s)."""
     if existing is None:
@@ -86,10 +96,11 @@ router.include_router(crud(Issue, "/issues", [Issue.number.desc()], slug_from="l
                            after=after_issue))
 router.include_router(crud(TocEntry, "/toc-entries", [TocEntry.issue_id.desc(), TocEntry.sort_order, TocEntry.id], slug_from="title",
                            write=STAFF, guard=guard_entry))
+router.include_router(crud(Post, "/posts", [Post.published_at.desc().nullslast(), Post.id.desc()], slug_from="title",
+                           read=EDIT, prepare=prepare_post))
 router.include_router(crud(Field, "/fields", [Field.sort_order, Field.id]))
 router.include_router(crud(Activity, "/activities", [Activity.event_date.desc().nullslast()], read=EDIT))
 router.include_router(crud(ActivityType, "/activity-types", [ActivityType.sort_order, ActivityType.id], read=EDIT))
-router.include_router(crud(Document, "/documents", [Document.sort_order, Document.id], read=EDIT))
 router.include_router(crud(Setting, "/settings", [Setting.key], read=ADMIN, write=ADMIN, remove=ADMIN))
 router.include_router(crud(Page, "/pages", [Page.sort_order, Page.id], slug_from="title", read=EDIT))
 router.include_router(crud(Banner, "/banners", [Banner.position, Banner.sort_order, Banner.id], prepare=prepare_banner,

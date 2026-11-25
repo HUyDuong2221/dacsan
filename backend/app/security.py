@@ -19,7 +19,7 @@ bearer = HTTPBearer(auto_error=False)
 
 # Vai trò:
 #   admin       - toàn quyền, quản lý người dùng, cấu hình, danh sách đăng ký email
-#   editor      - biên tập viên: số đặc san, mục lục, chuyên mục, hoạt động, thông báo, tư liệu, bài gửi; được công bố/xóa
+#   editor      - biên tập viên: số đặc san, mục lục, chuyên mục, hoạt động, bài viết, bài gửi; được công bố/xóa
 #   contributor - cộng tác viên: nhập/sửa mục lục và toàn văn của số CHƯA công bố; không công bố, không xóa
 ROLES = ("admin", "editor", "contributor")
 # nhóm vai trò dùng với require_roles(*...)

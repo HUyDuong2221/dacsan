@@ -7,8 +7,10 @@ import SubmissionsManager from '@/components/admin/SubmissionsManager';
 import ImageSetting from '@/components/admin/ImageSetting';
 import AuditLogView from '@/components/admin/AuditLogView';
 import NavMenuEditor from '@/components/admin/NavMenuEditor';
+import HomeLayoutEditor from '@/components/admin/HomeLayoutEditor';
 import BannerAdmin from '@/components/admin/BannerAdmin';
 import StatsView from '@/components/admin/StatsView';
+import PdfArticleImport from '@/components/admin/PdfArticleImport';
 import OutboxView from '@/components/admin/OutboxView';
 import BackupView from '@/components/admin/BackupView';
 import AuthScreen from '@/components/admin/AuthScreen';
@@ -160,7 +162,7 @@ export default function Admin() {
             {cur.key === 'users' && (
               <p className="muted" style={{ marginTop: 0, lineHeight: 1.7 }}>
                 <b>Quản trị viên</b>: toàn quyền, gồm quản lý người dùng, cấu hình site, danh sách đăng ký email. ·{' '}
-                <b>Biên tập viên</b>: quản lý số đặc san, mục lục, chuyên mục, hoạt động, thông báo, tư liệu và xử lý bài gửi; được công bố và xóa. ·{' '}
+                <b>Biên tập viên</b>: quản lý số đặc san, mục lục, chuyên mục, hoạt động, bài viết và xử lý bài gửi; được công bố và xóa. ·{' '}
                 <b>Cộng tác viên</b>: chỉ nhập/sửa mục lục và toàn văn của số <b>chưa công bố</b>; không công bố, không xóa, không xem bài gửi.
               </p>
             )}
@@ -173,6 +175,8 @@ export default function Admin() {
               <BannerAdmin token={token} onAuthError={logout} />
             ) : cur.key === 'menu' ? (
               <NavMenuEditor token={token} onAuthError={logout} />
+            ) : cur.key === 'home' ? (
+              <HomeLayoutEditor token={token} onAuthError={logout} />
             ) : cur.key === 'backups' ? (
               <BackupView token={token} onAuthError={logout} />
             ) : cur.key === 'outbox' ? (
@@ -191,6 +195,11 @@ export default function Admin() {
                     <IssueToc issue={row} token={token} role={role} onAuthError={logout} />
                     <IssuePreviewButton issue={row} token={token} onAuthError={logout} />
                   </>
+                ) : cur.key === 'posts' ? (row) => (
+                  row.published ? <a className="btn ghost sm" href={`/bai-viet/${row.slug}`} target="_blank" rel="noreferrer">Xem bài</a> : null
+                ) : undefined}
+                formExtra={cur.key === 'posts' ? (edit, setEdit, remountEditor) => (
+                  <PdfArticleImport token={token} edit={edit} setEdit={setEdit} remountEditor={remountEditor} onAuthError={logout} />
                 ) : undefined}
               />
             )}

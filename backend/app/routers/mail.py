@@ -1,7 +1,5 @@
 """Email: hộp thư đi (admin); đăng ký / xác nhận / hủy nhận tin (công khai).
 Thư báo số mới gửi tự động khi công bố số: services/newsletter.py."""
-from datetime import datetime, timezone
-
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from pydantic import BaseModel
 from sqlalchemy import func, or_, select
@@ -10,7 +8,7 @@ from sqlalchemy.orm import Session
 from ..services import audit, mailer
 from ..config import settings
 from ..db import get_db
-from ..models import EMAIL_KINDS, EMAIL_STATUSES, EmailOutbox, Issue, Subscriber
+from ..models import EMAIL_KINDS, EMAIL_STATUSES, EmailOutbox, Subscriber
 from ..security import client_ip, require_roles, subscribe_limiter
 from .users import EMAIL_RE
 

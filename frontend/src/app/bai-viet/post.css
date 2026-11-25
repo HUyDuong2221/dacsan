@@ -1,0 +1,57 @@
+/* Bài viết độc lập (/bai-viet): kiểu chữ Times New Roman cho cả danh sách và trang đọc. */
+.post{--ink:#111A2E;--ink2:#38425A;--mute:#5B6478;--line:#D9DCE3;--blue:#03368D;font-family:"Times New Roman",Times,"Liberation Serif",serif;color:var(--ink)}
+.post a{color:inherit;text-decoration:none}
+.post .crumb{margin:6px 0 18px;font-size:15px;color:var(--mute)}
+.post .crumb a:hover{text-decoration:underline;text-underline-offset:3px}
+
+/* ---- trang đọc ---- */
+.post-doc{max-width:760px;margin:0 auto;padding-bottom:56px}
+.post-doc h1{margin:0 0 14px;font-size:clamp(28px,3.4vw,40px);line-height:1.25;font-weight:700;letter-spacing:-.005em;text-wrap:balance}
+.post-meta{display:flex;flex-wrap:wrap;gap:4px 18px;margin:0 0 26px;padding-bottom:16px;border-bottom:1px solid var(--line);font-size:17px;color:var(--mute)}
+.post-meta b{color:var(--ink);font-weight:700}
+.post-toc{margin:0 0 26px;padding:14px 18px;border:1px solid var(--line);background:#F7F8FB;font-size:17px}
+.post-toc b{display:block;margin-bottom:6px}
+.post-toc ol{margin:0;padding-left:22px;line-height:1.7}
+.post-toc a:hover{color:var(--blue);text-decoration:underline}
+.post-body{font-size:20px;line-height:1.75;hyphens:auto;overflow-wrap:anywhere}
+/* mỗi đoạn thụt đầu dòng như bản in; đoạn ngay sau đề mục hoặc ảnh thì không thụt */
+.post-body p{margin:0 0 .55em;text-align:justify;text-indent:1.6em}
+.post-body h2+p,.post-body h3+p,.post-body h4+p,.post-body figure+p,.post-body blockquote+p,.post-body ul+p,.post-body ol+p{text-indent:0}
+.post-body li p,.post-body blockquote p,.post-body td p,.post-body th p{text-indent:0}
+.post-body h2,.post-body h3,.post-body h4{margin:1.6em 0 .6em;line-height:1.3;font-weight:700;scroll-margin-top:70px}
+.post-body h2{font-size:26px}
+.post-body h3{font-size:22px}
+.post-body h4{font-size:20px}
+.post-body a{color:var(--blue);text-decoration:underline;text-underline-offset:3px}
+.post-body ul,.post-body ol{margin:0 0 1em;padding-left:1.6em}
+.post-body li{margin:.2em 0}
+.post-body blockquote{margin:1.2em 0;padding:.2em 1.2em;border-left:4px solid var(--line);color:var(--ink2);font-style:italic}
+.post-body hr{border:0;border-top:1px solid var(--line);margin:1.6em 0}
+.post-body figure{margin:1.6em auto;text-align:center}
+.post-body figure.image{display:table;max-width:100%}
+.post-body figure.image img{display:block;max-width:100%;height:auto;margin:0 auto;border:1px solid var(--line)}
+.post-body figure.image figcaption{display:table-caption;caption-side:bottom;margin-top:8px;font-size:16px;font-style:italic;color:var(--mute);text-align:center}
+.post-body figure.image-style-side{float:right;max-width:50%;margin:.4em 0 1em 1.4em}
+.post-body figure.table{display:block;overflow-x:auto;margin:1.2em 0}
+.post-body img{max-width:100%;height:auto}
+.post-body table{border-collapse:collapse;max-width:100%}
+.post-body td,.post-body th{border:1px solid var(--line);padding:6px 10px;vertical-align:top}
+.post-body::after{content:"";display:block;clear:both}
+
+/* ---- danh sách ---- */
+.post-head{padding:8px 0 20px;margin-bottom:26px;border-bottom:2px solid var(--ink)}
+.post-head small{display:block;margin-bottom:8px;font-size:13px;font-weight:700;letter-spacing:.16em;color:#C8102E}
+.post-head h1{margin:0;font-size:clamp(30px,3.6vw,44px);font-weight:700;color:var(--blue)}
+.post-head p{margin:10px 0 0;max-width:64ch;font-size:18px;line-height:1.6;color:var(--ink2)}
+.post-empty{padding:40px 0;font-size:18px;color:var(--mute)}
+.post-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(320px,100%),1fr));gap:28px}
+.post-card{display:flex;flex-direction:column;border:1px solid var(--line);background:#fff;transition:box-shadow .2s,transform .2s}
+.post-card:hover{box-shadow:0 14px 30px rgba(3,54,141,.12);transform:translateY(-3px)}
+.post-card figure{margin:0;aspect-ratio:16/10;background:#EEF1F7;overflow:hidden}
+.post-card img{width:100%;height:100%;object-fit:cover;display:block}
+.post-card div{display:flex;flex-direction:column;gap:8px;padding:18px 20px 22px}
+.post-card h2{margin:0;font-size:23px;line-height:1.3;font-weight:700}
+.post-card:hover h2{color:var(--blue)}
+.post-card small{font-size:15.5px;color:var(--mute)}
+.post-card p{margin:0;font-size:17.5px;line-height:1.6;color:var(--ink2)}
+@media(max-width:720px){.post-body{font-size:18.5px}.post-body p{text-align:left;text-indent:1.2em}.post-body figure.image-style-side{float:none;max-width:100%;margin:1.2em auto}.post-doc h1{font-size:28px}}

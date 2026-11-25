@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from . import demo_content as demo
-from .models import Activity, TocEntry, Document, Field, Issue, Setting
+from .models import Activity, TocEntry, Field, Issue, Setting
 from .services.util import slugify
 
 FIELDS = ["Đại hội đại biểu LHH Đà Nẵng lần thứ I", "Nhân vật", "Câu chuyện văn hóa", "Câu chuyện quốc tế", "Thông tin"]
@@ -165,15 +165,5 @@ def seed(db: Session) -> None:
         ("Đoàn công tác Liên hiệp Hội làm việc với các hội thành viên khu vực phía Nam thành phố", "Hoạt động hội", d(2026, 7, 21)),
     ]:
         db.add(Activity(title=t, kind=k, event_date=dt, url="https://lhh.danang.gov.vn/chi-tiet-tin-tuc?danhmuc=1"))
-
-
-    for n, (t, ty) in enumerate([
-        ("Quy định về xuất bản Đặc san Khoa học và Công nghệ", "QUY ĐỊNH"),
-        ("Hướng dẫn thể lệ gửi bài và định dạng bản thảo", "HƯỚNG DẪN"),
-        ("Quy tắc đạo đức công bố khoa học và xử lý vi phạm", "QUY TẮC"),
-        ("Quy trình phản biện kín hai chiều", "QUY TRÌNH"),
-        ("Mẫu bản thảo và mẫu cam kết bản quyền", "BIỂU MẪU"),
-    ]):
-        db.add(Document(title=t, doc_type=ty, sort_order=n))
 
     db.commit()

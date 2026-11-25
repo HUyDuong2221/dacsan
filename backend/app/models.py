@@ -109,16 +109,6 @@ class Activity(Stamped, Base):
     published: Mapped[bool] = mapped_column(Boolean, default=True)
 
 
-class Document(Stamped, Base):
-    __tablename__ = "documents"
-    id: Mapped[int] = mapped_column(primary_key=True)
-    title: Mapped[str] = mapped_column(String(600))
-    doc_type: Mapped[str] = mapped_column(String(60), default="")
-    file_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
-    sort_order: Mapped[int] = mapped_column(Integer, default=0)
-    published: Mapped[bool] = mapped_column(Boolean, default=True)
-
-
 # Thứ tự xử lý: Mới nhận → Đang xét duyệt → Phân công phản biện → Chấp nhận / Yêu cầu sửa / Từ chối → Đã nhận đăng.
 # Giữ nguyên các mã cũ (dữ liệu đã có không phải đổi); "accepted" vẫn là trạng thái cuối "Đã nhận đăng".
 SUBMISSION_STATUSES = {
@@ -261,6 +251,21 @@ class Page(Stamped, Base):
     content: Mapped[str | None] = mapped_column(Text, nullable=True)  # HTML từ CKEditor 5
     sort_order: Mapped[int] = mapped_column(Integer, default=0)
     published: Mapped[bool] = mapped_column(Boolean, default=True)
+
+
+class Post(Stamped, Base):
+    """Bài viết độc lập (không thuộc số đặc san nào), ví dụ tạo từ PDF ở công cụ "Tạo bài từ PDF"; hiển thị tại /bai-viet/<slug>.
+    body là HTML do trình soạn thảo CKEditor 5 tạo ra (cùng cách với Activity.content và Page.content)."""
+
+    __tablename__ = "posts"
+    __table_args__ = {"info": ALEMBIC_INFO}
+    id: Mapped[int] = mapped_column(primary_key=True)
+    slug: Mapped[str] = mapped_column(String(200), unique=True, index=True)
+    title: Mapped[str] = mapped_column(String(600))
+    author: Mapped[str] = mapped_column(String(300), default="")
+    body: Mapped[str | None] = mapped_column(Text, nullable=True)
+    published_at: Mapped[date | None] = mapped_column(Date, nullable=True)
+    published: Mapped[bool] = mapped_column(Boolean, default=False)
 
 
 # Vị trí đặt banner trên trang chủ (theo thứ tự từ trên xuống); frontend: lib/banners.ts

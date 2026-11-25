@@ -6,9 +6,9 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
 from ..db import get_db
-from ..models import BANNER_POSITIONS, Activity, Banner, Document, Field, Issue, Page, Setting, TocEntry
+from ..models import BANNER_POSITIONS, Activity, Banner, Field, Issue, Page, Post, Setting, TocEntry
 from ..security import preview_issue_id
-from ..services.util import headings
+from ..services.util import headings, html_add_heading_ids, html_excerpt, html_first_image
 
 router = APIRouter()
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
@@ -254,6 +254,29 @@ def article_detail(slug: str, preview: str | None = None, db: Session = Depends(
     }
 
 
+def post_card(p: Post) -> dict:
+    """Thẻ bài viết: đoạn đầu làm tóm tắt, ảnh đầu tiên (nếu có) làm ảnh đại diện. p.body là HTML từ trình soạn thảo."""
+    return {"slug": p.slug, "title": p.title, "author": p.author, "published_at": p.published_at.isoformat() if p.published_at else None,
+            "excerpt": html_excerpt(p.body), "cover": html_first_image(p.body)}
+
+
+@router.get("/posts")
+def posts_list(db: Session = Depends(get_db)):
+    """Bài viết độc lập đã công bố, mới nhất trước."""
+    q = select(Post).where(Post.published.is_(True)).order_by(Post.published_at.desc().nullslast(), Post.id.desc())
+    return [post_card(p) for p in db.scalars(q)]
+
+
+@router.get("/posts/{slug}")
+def post_detail(slug: str, db: Session = Depends(get_db)):
+    p = db.scalars(select(Post).where(Post.slug == slug, Post.published.is_(True))).first()
+    if not p:
+        raise HTTPException(404, "Không tìm thấy bài viết")
+    body, toc = html_add_heading_ids(p.body)
+    return {**post_card(p), "body": body, "toc": toc,
+            "updated_at": p.updated_at.isoformat() if p.updated_at else None}
+
+
 SEARCH_LIMIT = 100
 
 
@@ -309,12 +332,6 @@ def research(db: Session = Depends(get_db)):
     return [article_card(a) for a in rows]
 
 
-@router.get("/documents")
-def documents(db: Session = Depends(get_db)):
-    rows = db.scalars(select(Document).where(Document.published.is_(True)).order_by(Document.sort_order, Document.id)).all()
-    return [{"id": d.id, "title": d.title, "doc_type": d.doc_type, "file_url": d.file_url, "updated": d.updated_at.date().isoformat()} for d in rows]
-
-
 @router.get("/activities")
 def activities(db: Session = Depends(get_db)):
     rows = db.scalars(select(Activity).where(Activity.published.is_(True)).order_by(Activity.event_date.desc().nullslast())).all()
@@ -354,7 +371,7 @@ def chat(body: ChatIn, db: Session = Depends(get_db)):
         raise HTTPException(422, "Câu hỏi quá ngắn")
     low = q.lower()
     if "gửi bài" in low or "thể lệ" in low or "bản thảo" in low:
-        return {"answer": "Bạn có thể gửi bản thảo trực tiếp bằng biểu mẫu Gửi bài; thể lệ, mẫu bản thảo và quy trình phản biện có ở mục Tư liệu.", "link": "/gui-bai", "articles": []}
+        return {"answer": "Bạn có thể gửi bản thảo trực tiếp bằng biểu mẫu Gửi bài; thể lệ và quy trình gửi bài có ở trang Hỏi đáp.", "link": "/gui-bai", "articles": []}
     words = [w for w in re.split(r"\W+", q) if len(w) >= 3]
     conds = [like(TocEntry.title, q), like(TocEntry.author, q)]
     conds += [like(TocEntry.title, w) for w in words[:6]] + [like(TocEntry.author, w) for w in words[:6]]

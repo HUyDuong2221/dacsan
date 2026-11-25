@@ -43,7 +43,7 @@ def test_alembic_migrations_on_existing_db(tmp_path):
     assert "toc_entry_id" in {col["name"] for col in insp.get_columns("submissions")}
     assert any(fk["referred_table"] == "toc_entries" for fk in insp.get_foreign_keys("submissions"))
     with eng.connect() as c:
-        assert c.execute(text("SELECT version_num FROM alembic_version")).scalar() == "0008_notify_backfill"
+        assert c.execute(text("SELECT version_num FROM alembic_version")).scalar() == "0009_posts"
         assert c.execute(text("SELECT count(*) FROM pages")).scalar() == 3  # 3 trang khung
         assert [tuple(r) for r in c.execute(text("SELECT image_url, link, alt, position FROM banners"))] == [
             ("/media/banner/cu.jpg", "/issues", "Banner cũ", "top")]

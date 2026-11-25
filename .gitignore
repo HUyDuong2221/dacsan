@@ -43,3 +43,35 @@ Thumbs.db
 *.log
 npm-debug.log*
 sodacsan/
+
+# ===== Bổ sung =====
+# Dữ liệu người dùng / đặc san nguồn để nhập (PDF, ảnh bìa) và bản sao lưu tải về
+sodacsan*/
+backups/
+dacsan-*.tar.gz
+*.dump
+
+# Khóa, chứng chỉ, mật khẩu: không bao giờ đưa lên git
+*.pem
+*.key
+*.crt
+*.p12
+secrets/
+
+# Cache công cụ kiểm tra / build
+.mypy_cache/
+.ruff_cache/
+.eslintcache
+dist/
+build/
+coverage/
+.nyc_output/
+
+# File tạm, bản sao, rác của editor và hệ điều hành
+*.tmp
+*.bak
+*.orig
+*.rej
+*.swp
+*~
+Desktop.ini

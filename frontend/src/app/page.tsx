@@ -1,6 +1,7 @@
 import { toTile } from '@/components/reader/IssueTile';
 import type { Metadata } from 'next';
-import { get } from '@/lib/api';
+import { fmtDate, get } from '@/lib/api';
+import { parseHomeLayout } from '@/lib/homeLayout';
 import HomeV7, { type HomeProps } from './_home/HomeV7';
 
 export const metadata: Metadata = { title: 'Trang chủ' };
@@ -12,6 +13,12 @@ export default async function Home() {
     get('/issues').catch(() => ({ issues: [] as any[] })),
     get('/banners').catch(() => [] as HomeProps['banners']),
   ]);
+  // Khối "Bài viết" chỉ lấy dữ liệu khi đang bật ở Giao diện › Bố cục trang chủ
+  const postsBlock = parseHomeLayout(site.home_layout).find((b) => b.key === 'posts');
+  const postRows: any[] = postsBlock && !postsBlock.hidden ? await get('/posts').catch(() => []) : [];
+  const posts = postRows.slice(0, postsBlock?.count || 4).map((x) => ({
+    slug: x.slug, title: x.title, author: x.author || '', date: fmtDate(x.published_at), excerpt: x.excerpt || '', cover: x.cover || null,
+  }));
   const latest = d.latest_issue;
   const articles: any[] = d.articles || [];
 
@@ -71,6 +78,7 @@ export default async function Home() {
     acts,
     issues,
     banners,
+    posts,
   };
 
   return <HomeV7 {...props} />;

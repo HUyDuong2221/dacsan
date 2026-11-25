@@ -203,3 +203,18 @@ body:has(.v7){background:#FBFAF7}
   .v7-submit{padding-top:44px;padding-bottom:44px}
   .v7-sbox h3{font-size:24px}
 }
+
+/* ---- Bài viết (khối bật ở Giao diện › Bố cục trang chủ): gọn, 4 cột, kiểu chữ Times New Roman ---- */
+.v7-posts{padding-top:40px;padding-bottom:4px;font-family:"Times New Roman",Times,"Liberation Serif",serif}
+.v7-posts .v7-h2{font-size:clamp(24px,2.4vw,32px)}
+.v7-posts-g{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:22px;padding-top:18px}
+.v7-post{display:flex;flex-direction:column;gap:5px;color:#111A2E}
+.v7-post .pc{display:block;aspect-ratio:4/3;overflow:hidden;background:#EEF1F7;margin-bottom:3px}
+.v7-post .pc img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .35s}
+.v7-post:hover .pc img{transform:scale(1.04)}
+.v7-post strong{font-size:17px;line-height:1.3;font-weight:700}
+.v7-post:hover strong{color:#03368D;text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px}
+.v7-post small{font-size:13.5px;color:#5B6478}
+.v7-post .px{font-size:15px;line-height:1.5;color:#38425A;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+@media(max-width:1000px){.v7-posts-g{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:560px){.v7-posts-g{grid-template-columns:minmax(0,1fr)}}
