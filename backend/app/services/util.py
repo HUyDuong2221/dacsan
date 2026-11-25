@@ -2,6 +2,17 @@ import re
 import unicodedata
 
 
+def clean_text(text: str) -> str:
+    """Bỏ ký tự rác khi lấy chữ từ PDF (ô vuông □, ký tự vùng riêng của font, điều khiển, độ rộng bằng 0) và gộp khoảng trắng."""
+    bad = "□■�"
+    words = []
+    for w in text.split():  # tách theo khoảng trắng trước, để xuống dòng/tab không dính hai từ
+        w = "".join(c for c in w if c not in bad and unicodedata.category(c) not in ("Co", "Cc", "Cf", "Cs"))
+        if w:
+            words.append(w)
+    return " ".join(words)
+
+
 def slugify(text: str) -> str:
     text = text.replace("đ", "d").replace("Đ", "D")
     text = unicodedata.normalize("NFKD", text)

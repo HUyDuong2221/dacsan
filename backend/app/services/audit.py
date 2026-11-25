@@ -26,7 +26,7 @@ ENTITY_LABELS = {
     "submissions": "Bài gửi", "activities": "Hoạt động", "activity-types": "Loại hoạt động",
     "documents": "Tư liệu", "pages": "Trang nội dung", "settings": "Cấu hình site", "subscribers": "Đăng ký email",
     "upload": "Tệp tải lên", "media": "Kho ảnh", "banners": "Banner", "outbox": "Hộp thư đi",
-    "backups": "Sao lưu", "pdf-articles": "Bài từ PDF", "posts": "Bài viết", "submissions_public": "Bài gửi (tác giả)",
+    "backups": "Sao lưu", "pdf-articles": "Bài từ PDF", "posts": "Bài viết", "spotlights": "Tiêu điểm", "submissions_public": "Bài gửi (tác giả)",
 }
 ACTION_LABELS = {
     "create": "Thêm", "update": "Sửa", "delete": "Xóa", "login": "Đăng nhập", "login_failed": "Đăng nhập thất bại",
@@ -34,7 +34,7 @@ ACTION_LABELS = {
     "decision": "Quyết định biên tập", "reviews": "Phân công phản biện", "remind": "Nhắc hạn phản biện",
     "link": "Tạo lại liên kết phản biện", "toc-entry": "Đưa vào mục lục",
     "forgot_password": "Yêu cầu đặt lại mật khẩu", "reset_password": "Đặt lại mật khẩu", "register": "Tự đăng ký tài khoản",
-    "resend": "Gửi lại thư", "test": "Gửi thư thử",
+    "resend": "Gửi lại thư", "reset-link": "Gửi liên kết đặt lại mật khẩu", "test": "Gửi thư thử",
     "run": "Sao lưu ngay", "download": "Tải bản sao lưu", "download-link": "Tạo liên kết tải bản sao lưu", "malware": "Chặn tệp có mã độc",
 }
 

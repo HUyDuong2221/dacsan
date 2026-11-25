@@ -6,7 +6,7 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
 from ..db import get_db
-from ..models import BANNER_POSITIONS, Activity, Banner, Field, Issue, Page, Post, Setting, TocEntry
+from ..models import BANNER_POSITIONS, Activity, Banner, Field, Issue, Page, Post, Setting, Spotlight, TocEntry
 from ..security import preview_issue_id
 from ..services.util import headings, html_add_heading_ids, html_excerpt, html_first_image
 
@@ -88,6 +88,51 @@ def latest_issue(db: Session) -> Issue | None:
     return db.scalars(select(Issue).where(Issue.published.is_(True)).order_by(Issue.number.desc())).first()
 
 
+def spotlight_items(db: Session, limit: int | None = None) -> list[dict]:
+    """Tiêu điểm đã chọn trong quản trị, theo thứ tự sắp xếp. Bỏ qua nội dung đã xóa hoặc chưa công bố.
+    Mỗi mục có kind (issue|activity|page|post), tiêu đề, tóm tắt, ảnh, đường dẫn; title/excerpt/image_url nhập tay được ưu tiên."""
+    out: list[dict] = []
+    rows = db.scalars(select(Spotlight).where(Spotlight.published.is_(True)).order_by(Spotlight.sort_order, Spotlight.id)).all()
+    for r in rows:
+        if r.issue_id:
+            i = db.get(Issue, r.issue_id)
+            if not i or not i.published:
+                continue
+            it = {"kind": "issue", "slug": i.slug, "label": i.label, "kicker": f"Đặc san {i.label.lower()}",
+                  "title": i.title or i.theme, "excerpt": i.summary or "", "href": f"/issues/{i.slug}", "img": i.cover_url,
+                  "date": i.published_at.isoformat() if i.published_at else None}
+        elif r.activity_id:
+            a = db.get(Activity, r.activity_id)
+            if not a or not a.published:
+                continue
+            it = {"kind": "activity", "kicker": a.kind or "Hoạt động", "title": a.title, "excerpt": html_excerpt(a.content),
+                  "href": f"/tin-hoat-dong/{a.id}", "img": html_first_image(a.content),
+                  "date": a.event_date.isoformat() if a.event_date else None}
+        elif r.page_id:
+            pg = db.get(Page, r.page_id)
+            if not pg or not pg.published:
+                continue
+            it = {"kind": "page", "kicker": "Giới thiệu", "title": pg.title, "excerpt": html_excerpt(pg.content),
+                  "href": f"/trang/{pg.slug}", "img": html_first_image(pg.content), "date": None}
+        elif r.post_id:
+            po = db.get(Post, r.post_id)
+            if not po or not po.published:
+                continue
+            it = {"kind": "post", "kicker": po.author or "Bài viết", "title": po.title, "excerpt": html_excerpt(po.body),
+                  "href": f"/bai-viet/{po.slug}", "img": html_first_image(po.body),
+                  "date": po.published_at.isoformat() if po.published_at else None}
+        else:
+            continue
+        it["key"] = f"spot-{r.id}"
+        it["title"] = r.title or it["title"]
+        it["excerpt"] = r.excerpt or it["excerpt"]
+        it["img"] = r.image_url or it["img"]
+        out.append(it)
+        if limit and len(out) >= limit:
+            break
+    return out
+
+
 def like(col, q: str):
     q = q.replace("%", r"\%").replace("_", r"\_")
     return func.unaccent(col).ilike(func.unaccent(f"%{q}%"), escape="\\")
@@ -110,22 +155,12 @@ def home(db: Session = Depends(get_db)):
     latest = latest_issue(db)
     site_ = {s.key: s.value for s in db.scalars(select(Setting))}
     slides = []
-    # Tiêu điểm: 10 số đặc san mới nhất được đánh dấu "Tiêu điểm" trong trang quản trị.
-    spot = db.scalars(
-        select(Issue).where(Issue.published.is_(True), Issue.featured.is_(True))
-        .order_by(Issue.published_at.desc().nullslast(), Issue.number.desc()).limit(10)
-    ).all()
-    for i in spot:
-        slides.append({
-            "key": f"issue-{i.slug}",
-            "kicker": f"Đặc san {i.label.lower()}",
-            "title": i.title or i.theme,
-            "excerpt": i.summary or "",
-            "href": f"/issues/{i.slug}",
-            "img": i.cover_url,
-        })
+    # Tiêu điểm: các mục chọn trong quản trị "Tiêu điểm" (số đặc san, hoạt động, trang nội dung, bài viết), tối đa 10.
+    spot = spotlight_items(db, 10)
+    for it in spot:
+        slides.append({k: it[k] for k in ("key", "kicker", "title", "excerpt", "href", "img")} | {"kind": it["kind"]})
     featured = []
-    if not spot:  # chưa chọn số tiêu điểm nào: giữ cách hiển thị cũ (số mới nhất + bài nổi bật)
+    if not spot:  # chưa chọn mục tiêu điểm nào: giữ cách hiển thị cũ (số mới nhất + bài nổi bật)
         if latest:
             slides.append({
                 "key": f"issue-{latest.slug}",
@@ -347,16 +382,9 @@ def activity(aid: int, db: Session = Depends(get_db)):
 
 
 @router.get("/featured")
-def featured_issues(db: Session = Depends(get_db)):
-    """Trang "Tiêu điểm": mọi số đặc san đã công bố được đánh dấu "Tiêu điểm" trong quản trị, mới nhất trước."""
-    c = counts(db)
-    rows = db.scalars(
-        select(Issue).where(Issue.published.is_(True), Issue.featured.is_(True))
-        .order_by(Issue.published_at.desc().nullslast(), Issue.number.desc())
-    ).all()
-    return [issue_card(i, c) for i in rows]
-
-
+def featured_items(db: Session = Depends(get_db)):
+    """Trang "Tiêu điểm": mọi mục chọn trong quản trị (số đặc san, hoạt động, trang nội dung, bài viết), theo thứ tự sắp xếp."""
+    return spotlight_items(db)
 
 
 class ChatIn(BaseModel):

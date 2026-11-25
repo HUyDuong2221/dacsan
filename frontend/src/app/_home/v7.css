@@ -218,3 +218,5 @@ body:has(.v7){background:#FBFAF7}
 .v7-post .px{font-size:15px;line-height:1.5;color:#38425A;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 @media(max-width:1000px){.v7-posts-g{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:560px){.v7-posts-g{grid-template-columns:minmax(0,1fr)}}
+.v7-face.back.has-img{padding:0;background:#fff}
+.v7-face.back.has-img img{width:100%;height:100%;object-fit:cover;display:block}

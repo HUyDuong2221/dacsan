@@ -3,6 +3,8 @@ quên mật khẩu, đặt lại mật khẩu, tự đăng ký (chờ quản tr�
 
 Các phản hồi không cho biết một email có tài khoản hay không (chống dò tài khoản).
 """
+import re
+
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from pydantic import BaseModel
 from sqlalchemy import select
@@ -44,9 +46,36 @@ def login(body: LoginIn, request: Request, db: Session = Depends(get_db)):
     return {"token": make_token(user), "email": user.email, "role": user.role, "full_name": user.full_name}
 
 
+def profile_dict(user: User) -> dict:
+    return {"email": user.email, "role": user.role, "full_name": user.full_name, "phone": user.phone or "",
+            "position": user.position or "", "created_at": user.created_at.isoformat() if user.created_at else None}
+
+
 @router.get("/me")
 def me(user: User = Depends(current_user)):
-    return {"email": user.email, "role": user.role, "full_name": user.full_name}
+    return profile_dict(user)
+
+
+class ProfileIn(BaseModel):
+    full_name: str
+    phone: str = ""
+    position: str = ""
+
+
+@router.put("/me")
+def update_me(body: ProfileIn, request: Request, user: User = Depends(current_user), db: Session = Depends(get_db)):
+    name = body.full_name.strip()
+    phone = body.phone.strip()
+    if not name:
+        raise HTTPException(422, "Họ tên không được để trống")
+    if phone and not re.fullmatch(r"[0-9+\-\s().]{8,20}", phone):
+        raise HTTPException(422, "Số điện thoại không hợp lệ")
+    user.full_name = name[:200]
+    user.phone = phone
+    user.position = body.position.strip()[:200]
+    audit.note(request, f"Cập nhật hồ sơ {user.email}", user_id=user.id, email=user.email)
+    db.commit()
+    return profile_dict(user)
 
 
 class ChangePasswordIn(BaseModel):
@@ -55,12 +84,15 @@ class ChangePasswordIn(BaseModel):
 
 
 @router.post("/change-password")
-def change_password(body: ChangePasswordIn, user: User = Depends(current_user), db: Session = Depends(get_db)):
+def change_password(body: ChangePasswordIn, request: Request, user: User = Depends(current_user), db: Session = Depends(get_db)):
     if not verify_password(body.old_password, user.password_hash):
         raise HTTPException(422, "Mật khẩu hiện tại không đúng")
     if len(body.new_password) < 8:
         raise HTTPException(422, "Mật khẩu mới phải có ít nhất 8 ký tự")
+    if verify_password(body.new_password, user.password_hash):
+        raise HTTPException(422, "Mật khẩu mới phải khác mật khẩu hiện tại")
     user.password_hash = hash_password(body.new_password)
+    audit.note(request, f"Đổi mật khẩu tài khoản {user.email}", user_id=user.id, email=user.email)
     db.commit()
     return {"ok": True}
 

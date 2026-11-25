@@ -15,15 +15,18 @@ import OutboxView from '@/components/admin/OutboxView';
 import BackupView from '@/components/admin/BackupView';
 import AuthScreen from '@/components/admin/AuthScreen';
 import IssuePreviewButton from '@/components/admin/IssuePreviewButton';
+import SpotlightAdmin from '@/components/admin/SpotlightAdmin';
+import UserResetButton from '@/components/admin/UserResetButton';
 import './admin.css';
 
 export default function Admin() {
   const [token, setToken] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
-  const [tab, setTab] = useState('issues');
+  const [tab, setTabRaw] = useState('issues');
+  const [pwView, setPwView] = useState(false); // trang Đổi mật khẩu (vẫn nằm trong khung quản trị)
+  const setTab = (k: string) => { setPwView(false); setTabRaw(k); };
   const [menuOpen, setMenuOpen] = useState<Record<string, boolean>>({});
-  const [me, setMe] = useState<{ email: string; full_name: string; role: string } | null>(null);
-  const [pwOpen, setPwOpen] = useState(false);
+  const [me, setMe] = useState<{ email: string; full_name: string; role: string; phone?: string; position?: string; created_at?: string | null } | null>(null);
   const [q, setQ] = useState('');
   const [newSubs, setNewSubs] = useState(0); // số bài gửi "Mới nhận", hiện cạnh mục Bài gửi
   const [pendingUsers, setPendingUsers] = useState(0); // tài khoản tự đăng ký chờ duyệt, cạnh mục Người dùng
@@ -66,7 +69,7 @@ export default function Admin() {
 
   const role = me.role;
   const tabs = RESOURCES.filter((r) => (TAB_ROLES[r.key] || ADMIN).includes(role));
-  const cur = tabs.find((r) => r.key === tab) || tabs[0];
+  const cur: ResourceDef = pwView ? { key: 'password', title: 'Tài khoản của tôi', fields: [] } : tabs.find((r) => r.key === tab) || tabs[0];
   // cộng tác viên chỉ xem danh sách số, vào "Mục lục" để nhập; không thêm/sửa/xóa số
   const res: ResourceDef = cur.key === 'issues' && role === 'contributor' ? { ...cur, readonly: true, noDelete: true } : cur;
 
@@ -144,7 +147,7 @@ export default function Admin() {
               <div><b>{who}</b><span>{ROLE_LABELS[role] || role}</span></div>
             </div>
             <div className="adm-row2">
-              <button type="button" className="adm-gbtn" aria-expanded={pwOpen} onClick={() => setPwOpen(!pwOpen)}>Đổi mật khẩu</button>
+              <button type="button" className={'adm-gbtn' + (pwView ? ' on' : '')} aria-current={pwView ? 'page' : undefined} onClick={() => setPwView(true)}>Tài khoản</button>
               <button type="button" className="adm-gbtn" onClick={logout}>Đăng xuất</button>
             </div>
           </div>
@@ -157,7 +160,6 @@ export default function Admin() {
             <span aria-hidden="true">›</span><b aria-current="page">{cur.title}</b>
           </nav>
           <div className="adm-head" key={cur.key}><h1 className="serif">{cur.title}</h1></div>
-          {pwOpen && <ChangePassword token={token} onDone={() => setPwOpen(false)} onAuthError={logout} />}
           <div className="adm-body" key={'b-' + cur.key}>
             {cur.key === 'users' && (
               <p className="muted" style={{ marginTop: 0, lineHeight: 1.7 }}>
@@ -166,7 +168,11 @@ export default function Admin() {
                 <b>Cộng tác viên</b>: chỉ nhập/sửa mục lục và toàn văn của số <b>chưa công bố</b>; không công bố, không xóa, không xem bài gửi.
               </p>
             )}
-            {cur.key === 'logo' ? (
+            {cur.key === 'password' ? (
+              <AccountPage me={me} token={token} onSaved={(p) => setMe({ ...me, ...p })} onAuthError={logout} />
+            ) : cur.key === 'spotlights' ? (
+              <SpotlightAdmin token={token} onAuthError={logout} />
+            ) : cur.key === 'logo' ? (
               <ImageSetting token={token} onAuthError={logout} settingKey="logo_url" kind="logo"
                 label="Logo đặc san"
                 hint="Nên dùng ảnh PNG/WebP nền trong suốt, dạng ngang (ví dụ 600×160px). Logo hiện ở đầu trang chủ và các trang. Để trống để dùng logo chữ mặc định."
@@ -195,6 +201,8 @@ export default function Admin() {
                     <IssueToc issue={row} token={token} role={role} onAuthError={logout} />
                     <IssuePreviewButton issue={row} token={token} onAuthError={logout} />
                   </>
+                ) : cur.key === 'users' ? (row) => (
+                  <UserResetButton user={row} token={token} onAuthError={logout} />
                 ) : cur.key === 'posts' ? (row) => (
                   row.published ? <a className="btn ghost sm" href={`/bai-viet/${row.slug}`} target="_blank" rel="noreferrer">Xem bài</a> : null
                 ) : undefined}
@@ -222,27 +230,97 @@ function initials(name: string) {
   return t.toUpperCase();
 }
 
-function ChangePassword({ token, onDone, onAuthError }: { token: string; onDone: () => void; onAuthError: () => void }) {
+function ChangePassword({ token, onAuthError }: { token: string; onAuthError: () => void }) {
   const [oldP, setOld] = useState('');
   const [newP, setNew] = useState('');
+  const [again, setAgain] = useState('');
   const [msg, setMsg] = useState('');
   const [err, setErr] = useState('');
+  const [busy, setBusy] = useState(false);
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setErr(''); setMsg('');
+    if (newP !== again) { setErr('Mật khẩu nhập lại không khớp'); return; }
+    setBusy(true);
     try {
       await adm('/auth/change-password', token, { method: 'POST', body: JSON.stringify({ old_password: oldP, new_password: newP }) });
-      setMsg('Đã đổi mật khẩu'); setOld(''); setNew('');
-      setTimeout(onDone, 1200);
+      setMsg('Đã đổi mật khẩu'); setOld(''); setNew(''); setAgain('');
     } catch (e: any) { e.status === 401 ? onAuthError() : setErr(e.message); }
+    setBusy(false);
   }
   return (
-    <form className="form" style={{ maxWidth: 520 }} onSubmit={submit}>
-      <label className="full">Mật khẩu hiện tại<input className="input" type="password" required value={oldP} onChange={(e) => setOld(e.target.value)} autoComplete="current-password" /></label>
-      <label className="full">Mật khẩu mới (tối thiểu 8 ký tự)<input className="input" type="password" required minLength={8} value={newP} onChange={(e) => setNew(e.target.value)} autoComplete="new-password" /></label>
-      {err && <div className="err full">{err}</div>}
-      {msg && <div className="ok full">{msg}</div>}
-      <div className="full row"><button className="btn">Đổi mật khẩu</button><button type="button" className="btn ghost" onClick={onDone}>Hủy</button></div>
+    <form className="acc-card" onSubmit={submit}>
+      <div className="acc-ch"><h2>Đổi mật khẩu</h2><p>Tối thiểu 8 ký tự, khác mật khẩu hiện tại.</p></div>
+      <div className="acc-grid one">
+        <label className="acc-f">Mật khẩu hiện tại<input className="input" type="password" required value={oldP} onChange={(e) => setOld(e.target.value)} autoComplete="current-password" /></label>
+        <label className="acc-f">Mật khẩu mới<input className="input" type="password" required minLength={8} value={newP} onChange={(e) => setNew(e.target.value)} autoComplete="new-password" /></label>
+        <label className="acc-f">Nhập lại mật khẩu mới<input className="input" type="password" required minLength={8} value={again} onChange={(e) => setAgain(e.target.value)} autoComplete="new-password" /></label>
+      </div>
+      {err && <div className="err" role="alert">{err}</div>}
+      {msg && <div className="ok" role="status">{msg}</div>}
+      <div className="acc-act"><button className="btn" disabled={busy}>{busy ? 'Đang lưu…' : 'Đổi mật khẩu'}</button></div>
     </form>
+  );
+}
+
+function ProfileForm({ me, token, onSaved, onAuthError, pwOpen, onTogglePw }: { pwOpen: boolean; onTogglePw: () => void; me: { email: string; full_name: string; role: string; phone?: string; position?: string; created_at?: string | null }; token: string; onSaved: (p: any) => void; onAuthError: () => void }) {
+  const [name, setName] = useState(me.full_name || '');
+  const [phone, setPhone] = useState(me.phone || '');
+  const [position, setPosition] = useState(me.position || '');
+  const [msg, setMsg] = useState('');
+  const [err, setErr] = useState('');
+  const [busy, setBusy] = useState(false);
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    setErr(''); setMsg(''); setBusy(true);
+    try {
+      const d = await adm('/auth/me', token, { method: 'PUT', body: JSON.stringify({ full_name: name, phone, position }) });
+      onSaved(d); setMsg('Đã lưu thông tin');
+    } catch (e: any) { e.status === 401 ? onAuthError() : setErr(e.message); }
+    setBusy(false);
+  }
+  return (
+    <form className="acc-card" onSubmit={submit}>
+      <div className="acc-ch"><h2>Thông tin cá nhân</h2><p>Tên hiển thị trong menu và nhật ký hoạt động.</p></div>
+      <div className="acc-grid">
+        <label className="acc-f">Họ và tên<input className="input" required maxLength={200} value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" /></label>
+        <label className="acc-f">Số điện thoại<input className="input" type="tel" maxLength={20} value={phone} onChange={(e) => setPhone(e.target.value)} autoComplete="tel" /></label>
+        <label className="acc-f wide">Đơn vị / chức danh<input className="input" maxLength={200} value={position} onChange={(e) => setPosition(e.target.value)} autoComplete="organization-title" /></label>
+        <label className="acc-f wide">Email đăng nhập<input className="input" value={me.email} readOnly disabled /><small>Email không tự đổi được, hãy nhờ quản trị viên.</small></label>
+      </div>
+      {err && <div className="err" role="alert">{err}</div>}
+      {msg && <div className="ok" role="status">{msg}</div>}
+      <div className="acc-act">
+        <button className="btn" disabled={busy}>{busy ? 'Đang lưu…' : 'Lưu thông tin'}</button>
+        <button type="button" className="btn ghost" aria-expanded={pwOpen} aria-controls="acc-pw" onClick={onTogglePw}>{pwOpen ? 'Đóng đổi mật khẩu' : 'Đổi mật khẩu'}</button>
+      </div>
+    </form>
+  );
+}
+
+type Me = { email: string; full_name: string; role: string; phone?: string; position?: string; created_at?: string | null };
+
+function AccountPage({ me, token, onSaved, onAuthError }: { me: Me; token: string; onSaved: (p: any) => void; onAuthError: () => void }) {
+  const [pwOpen, setPwOpen] = useState(false);
+  const since = me.created_at ? new Date(me.created_at).toLocaleDateString('vi-VN') : '';
+  return (
+    <div className="acc">
+      <header className="acc-hero">
+        <span className="acc-av" aria-hidden="true">{initials(me.full_name || me.email)}</span>
+        <div className="acc-id">
+          <h2 className="serif">{me.full_name || me.email}</h2>
+          <p>{me.email}</p>
+        </div>
+        <dl className="acc-meta">
+          <div><dt>Vai trò</dt><dd><span className="acc-role">{ROLE_LABELS[me.role] || me.role}</span></dd></div>
+          {since && <div><dt>Tham gia từ</dt><dd>{since}</dd></div>}
+          {me.phone ? <div><dt>Điện thoại</dt><dd>{me.phone}</dd></div> : null}
+        </dl>
+      </header>
+      <div className="acc-cols">
+        <ProfileForm me={me} token={token} onSaved={onSaved} onAuthError={onAuthError} pwOpen={pwOpen} onTogglePw={() => setPwOpen(!pwOpen)} />
+        {pwOpen && <div id="acc-pw"><ChangePassword token={token} onAuthError={onAuthError} /></div>}
+      </div>
+    </div>
   );
 }

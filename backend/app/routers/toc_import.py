@@ -10,7 +10,7 @@ from ..db import get_db
 from ..models import Field, Issue, TocEntry
 from ..security import EDIT, require_roles
 from ..services import audit
-from ..services.util import slugify
+from ..services.util import clean_text, slugify
 from .media import media_path
 
 router = APIRouter()
@@ -73,7 +73,7 @@ def toc_import(issue_id: int, body: TocImportIn, request: Request, db: Session =
     order = max((a.sort_order for a in existing), default=-1) + 1
     created = skipped = 0
     for it in body.items:
-        title = " ".join(it.title.split())
+        title = clean_text(it.title)
         if not title or it.page < 0:
             skipped += 1
             continue
@@ -96,7 +96,7 @@ def toc_import(issue_id: int, body: TocImportIn, request: Request, db: Session =
             n += 1
             slug = f"{base}-{n}"
         db.add(TocEntry(slug=slug, issue_id=issue.id, field_id=field.id if field else None, title=title[:600],
-                       author=it.author.strip()[:300], page_label=label, sort_order=order))
+                       author=clean_text(it.author)[:300], page_label=label, sort_order=order))
         seen.add((slugify(title), label))
         order += 1
         created += 1

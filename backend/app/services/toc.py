@@ -12,6 +12,8 @@ from collections import Counter
 
 import fitz  # PyMuPDF
 
+from .util import clean_text
+
 SKIP_HEADS = {"MỤC LỤC", "MUC LUC", "CONTENTS", "NỘI DUNG", "NOI DUNG", "TABLE OF CONTENTS"}
 TRAIL = re.compile(r"^(.*?)[\s.·…_]*\s(\d{1,3})$")
 AUTHOR_SPLIT = re.compile(r"\s+[-–—]\s+")
@@ -33,7 +35,7 @@ def _norm(ln: str) -> str:
 
 
 def split_author(text: str) -> tuple[str, str]:
-    text = " ".join(text.split())
+    text = clean_text(text)
     parts = AUTHOR_SPLIT.split(text, maxsplit=1)
     if len(parts) == 2:
         left = parts[0].strip(" -–—")

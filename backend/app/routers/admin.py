@@ -4,12 +4,12 @@ from datetime import date
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from pydantic import BaseModel
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from ..db import get_db
 from ..models import (BANNER_POSITIONS, Activity, ActivityType, Banner, Field, Issue, Page, Post, Setting,
-                      Subscriber, TocEntry, User)
+                      Spotlight, Subscriber, TocEntry, User)
 from ..security import ADMIN, EDIT, STAFF, make_preview_token, require_roles
 from ..services import audit, mailer, newsletter
 from .crud import crud
@@ -76,6 +76,33 @@ def prepare_post(data: dict, existing: Post | None) -> None:
         data["published_at"] = date.today().isoformat()
 
 
+SPOT_REFS = {"issue_id": Issue, "activity_id": Activity, "page_id": Page, "post_id": Post}
+
+
+def guard_spotlight(user: User, db: Session, data: dict, existing: Spotlight | None) -> None:
+    """Mỗi dòng Tiêu điểm trỏ tới đúng một nội dung (số đặc san, hoạt động, trang nội dung hoặc bài viết) và nội dung đó phải tồn tại."""
+    refs: dict[str, int | None] = {}
+    for k in SPOT_REFS:
+        v = data[k] if k in data else (getattr(existing, k) if existing else None)
+        try:
+            refs[k] = int(v) if v not in (None, "") else None
+        except (TypeError, ValueError):
+            raise HTTPException(422, "Nội dung được chọn không hợp lệ")
+    chosen = [k for k, v in refs.items() if v is not None]
+    if existing is None:  # mục mới luôn lên đầu danh sách (trang chủ lấy 10 mục đầu, tức 10 mục thêm gần nhất)
+        data["sort_order"] = (db.scalar(select(func.min(Spotlight.sort_order))) or 0) - 1 if db.scalar(select(func.count(Spotlight.id))) else 0
+    if len(chosen) != 1:
+        raise HTTPException(422, "Hãy chọn đúng một nội dung: số đặc san, hoạt động, trang nội dung hoặc bài viết")
+    if not db.get(SPOT_REFS[chosen[0]], refs[chosen[0]]):
+        raise HTTPException(422, "Nội dung được chọn không còn tồn tại")
+    data.update(refs)
+    for k in ("title", "excerpt"):
+        if k in data:
+            data[k] = " ".join(str(data[k] or "").split())
+    if "image_url" in data:
+        data["image_url"] = (data["image_url"] or "").strip() or None
+
+
 def prepare_banner(data: dict, existing: Banner | None) -> None:
     """Vị trí phải nằm trong BANNER_POSITIONS; liên kết (nếu có) là đường dẫn trong site hoặc http(s)."""
     if existing is None:
@@ -103,6 +130,7 @@ router.include_router(crud(Activity, "/activities", [Activity.event_date.desc().
 router.include_router(crud(ActivityType, "/activity-types", [ActivityType.sort_order, ActivityType.id], read=EDIT))
 router.include_router(crud(Setting, "/settings", [Setting.key], read=ADMIN, write=ADMIN, remove=ADMIN))
 router.include_router(crud(Page, "/pages", [Page.sort_order, Page.id], slug_from="title", read=EDIT))
+router.include_router(crud(Spotlight, "/spotlights", [Spotlight.sort_order, Spotlight.id], read=EDIT, guard=guard_spotlight))
 router.include_router(crud(Banner, "/banners", [Banner.position, Banner.sort_order, Banner.id], prepare=prepare_banner,
                            read=ADMIN, write=ADMIN, remove=ADMIN))
 

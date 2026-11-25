@@ -76,6 +76,17 @@ def test_user_safeguards_and_change_password(client, auth):
     _, h = _login(client, "pw@t.vn", "old-password-1")
     assert client.post(f"{A}/auth/change-password", headers=h, json={"old_password": "sai", "new_password": "new-password-1"}).status_code == 422
     assert client.post(f"{A}/auth/change-password", headers=h, json={"old_password": "old-password-1", "new_password": "short"}).status_code == 422
+    assert client.post(f"{A}/auth/change-password", headers=h, json={"old_password": "old-password-1", "new_password": "old-password-1"}).status_code == 422
     assert client.post(f"{A}/auth/change-password", headers=h, json={"old_password": "old-password-1", "new_password": "new-password-1"}).status_code == 200
     assert _login(client, "pw@t.vn", "new-password-1")[0].status_code == 200
     client.delete(f"{A}/users/{u['id']}", headers=auth)
+
+
+def test_update_profile(client, auth):
+    h = auth
+    r = client.put(f"{A}/auth/me", headers=h, json={"full_name": "Nguyễn Văn A", "phone": "0905 123 456", "position": "Biên tập"})
+    assert r.status_code == 200 and r.json()["phone"] == "0905 123 456"
+    me = client.get(f"{A}/auth/me", headers=h).json()
+    assert me["full_name"] == "Nguyễn Văn A" and me["position"] == "Biên tập" and me["created_at"]
+    assert client.put(f"{A}/auth/me", headers=h, json={"full_name": " "}).status_code == 422
+    assert client.put(f"{A}/auth/me", headers=h, json={"full_name": "A", "phone": "abc"}).status_code == 422

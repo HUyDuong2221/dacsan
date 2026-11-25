@@ -70,6 +70,21 @@ def test_forgot_and_reset_password(client, auth):
     reset_fails()
 
 
+def test_admin_sends_reset_link(client, auth):
+    reset_fails()
+    client.post(f"{A}/users", headers=auth, json={"email": "rs@t.vn", "password": "mat-khau-cu-1", "role": "editor"})
+    uid = next(u["id"] for u in client.get(f"{A}/users", headers=auth).json() if u["email"] == "rs@t.vn")
+    r = client.post(f"{A}/users/{uid}/reset-link", headers=auth)
+    assert r.status_code == 200 and "dat-lai-mat-khau?token=" in r.json()["link"]
+    tok = r.json()["link"].split("token=")[1]
+    assert client.post(f"{A}/auth/reset-password", json={"token": tok, "password": "mat-khau-moi-9"}).status_code == 200
+    assert client.post(f"{A}/users/999999/reset-link", headers=auth).status_code == 404
+    client.put(f"{A}/users/{uid}", headers=auth, json={"is_active": False})
+    assert client.post(f"{A}/users/{uid}/reset-link", headers=auth).status_code == 422
+    client.delete(f"{A}/users/{uid}", headers=auth)
+    reset_fails()
+
+
 def test_self_register_pending_approval(client, auth):
     reset_fails()
     R = f"{A}/auth/register"

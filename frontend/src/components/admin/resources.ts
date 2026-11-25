@@ -3,8 +3,8 @@
 import type { ResourceDef } from './ResourceManager';
 
 export const GROUPS: { title: string; keys: string[] }[] = [
-  { title: 'Nội dung', keys: ['issues', 'posts', 'submissions', 'fields', 'pages'] },
-  { title: 'Truyền thông', keys: ['activities', 'activity-types'] },
+  { title: 'Nội dung', keys: ['issues', 'posts', 'submissions', 'fields'] },
+  { title: 'Truyền thông', keys: ['spotlights', 'activities', 'activity-types', 'pages'] },
   { title: 'Báo cáo', keys: ['stats'] },
   { title: 'Hệ thống', keys: ['appearance', 'users', 'settings', 'subscribers', 'outbox', 'backups', 'audit'] },
 ];
@@ -12,6 +12,7 @@ export const GROUPS: { title: string; keys: string[] }[] = [
 export const SUBMENUS: Record<string, string[]> = { appearance: ['logo', 'banner', 'menu', 'home'] };
 export const SUB_KEYS = Object.values(SUBMENUS).flat();
 export const ICONS: Record<string, string> = {
+  spotlights: 'M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z',
   issues: 'M4 5h6a2 2 0 0 1 2 2v12a2 2 0 0 0-2-2H4zM20 5h-6a2 2 0 0 0-2 2v12a2 2 0 0 1 2-2h6z',
   submissions: 'M3 7l9 6 9-6M5 5h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z',
   fields: 'M4 6h16M4 12h16M4 18h10',
@@ -35,7 +36,7 @@ export const EDIT = ['admin', 'editor'];
 export const ADMIN = ['admin'];
 // Vai trò được thấy từng thẻ (máy chủ vẫn kiểm tra quyền ở mọi API)
 export const TAB_ROLES: Record<string, string[]> = {
-  issues: STAFF, posts: EDIT, submissions: EDIT, fields: EDIT, activities: EDIT, 'activity-types': EDIT,
+  issues: STAFF, spotlights: EDIT, posts: EDIT, submissions: EDIT, fields: EDIT, activities: EDIT, 'activity-types': EDIT,
   users: ADMIN, appearance: ADMIN, logo: ADMIN, banner: ADMIN, menu: ADMIN, home: ADMIN, settings: ADMIN, subscribers: ADMIN,
   pages: EDIT, audit: ADMIN, stats: EDIT, outbox: ADMIN, backups: ADMIN,
 };
@@ -55,10 +56,19 @@ export const RESOURCES: ResourceDef[] = [
       { key: 'published', label: 'Công bố trên website', listLabel: 'Công bố', type: 'bool', list: true,
         hint: 'Chưa đánh dấu thì số và mục lục của số chưa hiện ra ngoài. Lần công bố đầu tiên, hệ thống tự gửi thư báo số mới tới những người đã đăng ký nhận tin.',
         confirmTrue: (row) => (row.notified_at ? null : 'Công bố số này? Hệ thống sẽ tự gửi thư báo số mới tới những người đã đăng ký nhận tin (chỉ gửi một lần cho mỗi số).') },
-      { key: 'featured', label: 'Tiêu điểm', type: 'bool', list: true, hint: 'Đánh dấu để đưa số này lên khối Tiêu điểm ở trang chủ (hiện 10 số tiêu điểm mới nhất).' },
     ],
   },
   { key: 'submissions', title: 'Bài gửi', fields: [] },
+  { key: 'spotlights', title: 'Tiêu điểm', addLabel: 'Thêm vào Tiêu điểm', editLabel: 'Sửa mục Tiêu điểm', hideId: true, fields: [
+    { key: 'issue_id', label: 'Số đặc san', listLabel: 'Số đặc san', list: true, optionsFrom: { resource: 'issues', labelKey: 'label' }, hint: 'Chọn ĐÚNG MỘT trong bốn ô: số đặc san, hoạt động, trang nội dung hoặc bài viết.' },
+    { key: 'activity_id', label: 'Hoạt động', list: true, optionsFrom: { resource: 'activities', labelKey: 'title' } },
+    { key: 'page_id', label: 'Trang nội dung', listLabel: 'Trang', list: true, optionsFrom: { resource: 'pages', labelKey: 'title' } },
+    { key: 'post_id', label: 'Bài viết', list: true, optionsFrom: { resource: 'posts', labelKey: 'title' } },
+    { key: 'title', label: 'Tiêu đề hiển thị', full: true, hint: 'Để trống thì lấy tiêu đề của nội dung gốc.' },
+    { key: 'excerpt', label: 'Mô tả ngắn', type: 'textarea', full: true, hint: 'Để trống thì lấy đoạn đầu của nội dung gốc.' },
+    { key: 'image_url', label: 'Ảnh', type: 'image', full: true, hint: 'Để trống thì lấy bìa số đặc san hoặc ảnh đầu tiên trong nội dung.' },
+    { key: 'sort_order', label: 'Thứ tự', type: 'number', list: true, def: 0, hint: 'Số nhỏ hiện trước. Trang chủ hiện tối đa 10 mục đầu.' },
+    { key: 'published', label: 'Hiển thị', type: 'bool', list: true, def: true }] },
   { key: 'pages', title: 'Trang nội dung', addLabel: 'Thêm trang', editLabel: 'Sửa trang', hideId: true, fields: [
     { key: 'title', label: 'Tiêu đề', required: true, list: true, full: true },
     { key: 'slug', label: 'Đường dẫn', list: true, hint: 'Trang hiện tại /trang/<đường dẫn>, ví dụ gioi-thieu. Để trống thì tự tạo từ tiêu đề. Đổi đường dẫn thì nhớ sửa lại Menu điều hướng.' },

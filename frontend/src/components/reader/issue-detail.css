@@ -153,3 +153,5 @@ body:has(.idt){background:#FBFAF7}
   .idt *,.idt *::before{animation:none!important;transition:none!important}
   .idt-item{opacity:1;transform:none}
 }
+.idt-cover .face.back.has-img{padding:0;background:#fff}
+.idt-cover .face.back.has-img img{width:100%;height:100%;object-fit:cover;display:block}

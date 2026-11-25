@@ -23,6 +23,9 @@ class User(Base):
     password_hash: Mapped[str] = mapped_column(String(255))
     role: Mapped[str] = mapped_column(String(20), default="admin")  # admin | editor | contributor
     full_name: Mapped[str] = mapped_column(String(200), default="")
+    # hồ sơ cá nhân (cột thêm bằng Alembic 0010)
+    phone: Mapped[str] = mapped_column(String(30), default="", server_default="")
+    position: Mapped[str] = mapped_column(String(200), default="", server_default="")
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     # tự đăng ký ở trang đăng nhập, chờ quản trị viên duyệt (cột thêm bằng Alembic 0007)
     pending: Mapped[bool] = mapped_column(Boolean, default=False)
@@ -289,6 +292,25 @@ class Banner(Stamped, Base):
     link: Mapped[str | None] = mapped_column(String(500), nullable=True)
     alt: Mapped[str] = mapped_column(String(300), default="")
     position: Mapped[str] = mapped_column(String(30), default="top")
+    sort_order: Mapped[int] = mapped_column(Integer, default=0)
+    published: Mapped[bool] = mapped_column(Boolean, default=True)
+
+
+class Spotlight(Stamped, Base):
+    """Mục "Tiêu điểm" (carousel trang chủ và trang /tieu-diem). Mỗi dòng trỏ tới đúng MỘT nội dung:
+    số đặc san, hoạt động, trang nội dung hoặc bài viết. Không có khóa ngoại: nội dung bị xóa/ẩn thì dòng tự bị bỏ qua.
+    title/excerpt/image_url để trống thì lấy từ nội dung gốc."""
+
+    __tablename__ = "spotlights"
+    __table_args__ = {"info": ALEMBIC_INFO}
+    id: Mapped[int] = mapped_column(primary_key=True)
+    issue_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    activity_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    page_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    post_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    title: Mapped[str] = mapped_column(String(600), default="")
+    excerpt: Mapped[str] = mapped_column(String(1000), default="")
+    image_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
     sort_order: Mapped[int] = mapped_column(Integer, default=0)
     published: Mapped[bool] = mapped_column(Boolean, default=True)
 

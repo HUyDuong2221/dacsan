@@ -185,7 +185,14 @@ export default function HomeV7(p: HomeProps) {
                             <div className="ph"><small>ĐẶC SAN</small><strong>Khoa học &amp; Phát triển</strong><small>THÀNH PHỐ ĐÀ NẴNG</small><em>{latest.label}</em></div>
                           )}
                         </div>
-                        <div className="v7-face back"><span>Khoa học &amp; Phát triển<br />Đà Nẵng</span></div>
+                        <div className={'v7-face back' + (latest.cover ? ' has-img' : '')}>
+                          {latest.cover ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={latest.cover} alt="" aria-hidden="true" />
+                          ) : (
+                            <span>Khoa học &amp; Phát triển<br />Đà Nẵng</span>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>

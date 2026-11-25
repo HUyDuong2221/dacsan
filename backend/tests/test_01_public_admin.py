@@ -109,18 +109,46 @@ def test_issue_label_derived_from_number_and_date(client, auth):
     client.delete(f"{A}/issues/{i['id']}", headers=auth)
 
 
-def test_featured_issues_replace_hero(client, auth):
+def test_spotlights_replace_hero(client, auth):
     i = client.post(f"{A}/issues", headers=auth, json={
-        "number": 77, "published_at": "2027-01-10", "theme": "Số tiêu điểm", "published": True, "featured": True}).json()
+        "number": 77, "published_at": "2027-01-10", "theme": "Số tiêu điểm", "published": True}).json()
+    act = client.post(f"{A}/activities", headers=auth, json={"title": "Hội thảo tiêu điểm", "kind": "Hội thảo", "content": "<p>Nội dung hội thảo</p>", "published": True}).json()
+    pg = client.post(f"{A}/pages", headers=auth, json={"title": "Giới thiệu tiêu điểm", "content": "<p>Về đặc san</p>", "published": True}).json()
+    po = client.post(f"{A}/posts", headers=auth, json={"title": "Bài tiêu điểm", "body": "<p>Bài</p>", "published": True}).json()
+    S = f"{A}/spotlights"
+    # đúng một nội dung, và phải tồn tại
+    assert client.post(S, headers=auth, json={}).status_code == 422
+    assert client.post(S, headers=auth, json={"issue_id": i["id"], "page_id": pg["id"]}).status_code == 422
+    assert client.post(S, headers=auth, json={"issue_id": 999999}).status_code == 422
+    rows = [client.post(S, headers=auth, json=d).json() for d in (  # mục thêm sau luôn đứng trước
+        {"post_id": po["id"]}, {"page_id": pg["id"], "title": "Tên riêng"}, {"activity_id": act["id"]}, {"issue_id": i["id"]})]
     hero = client.get(f"{P}/home").json()["hero"]
-    assert [h["href"] for h in hero] == [f"/issues/{i['slug']}"] and hero[0]["title"] == "Số tiêu điểm"
-    client.put(f"{A}/issues/{i['id']}", headers=auth, json={"title": "Tên số riêng"})
-    assert client.get(f"{P}/home").json()["hero"][0]["title"] == "Tên số riêng"
-    assert [x["slug"] for x in client.get(f"{P}/featured").json()] == [i["slug"]]  # trang Tiêu điểm
-    client.put(f"{A}/issues/{i['id']}", headers=auth, json={"featured": False})
+    assert [h["href"] for h in hero] == [f"/issues/{i['slug']}", f"/tin-hoat-dong/{act['id']}", f"/trang/{pg['slug']}", f"/bai-viet/{po['slug']}"]
+    assert hero[0]["title"] == "Số tiêu điểm" and hero[2]["title"] == "Tên riêng"
+    # hơn 10 mục: trang chủ chỉ lấy 10 mục thêm gần nhất
+    extra = [client.post(S, headers=auth, json={"page_id": pg["id"], "title": f"Mục {n}"}).json() for n in range(8)]
+    hero = client.get(f"{P}/home").json()["hero"]
+    assert [h["title"] for h in hero[:8]] == [f"Mục {n}" for n in range(7, -1, -1)]
+    assert len(hero) == 10 and hero[8]["href"] == f"/issues/{i['slug']}" and hero[9]["href"] == f"/tin-hoat-dong/{act['id']}"
+    assert len(client.get(f"{P}/featured").json()) == 12
+    for r_ in extra:
+        client.delete(f"{S}/{r_['id']}", headers=auth)
+    assert [x["kind"] for x in client.get(f"{P}/featured").json()] == ["issue", "activity", "page", "post"]
+    # ẩn nội dung gốc hoặc ẩn dòng tiêu điểm thì không hiện
+    client.put(f"{A}/activities/{act['id']}", headers=auth, json={"published": False})
+    client.put(f"{S}/{rows[3]['id']}", headers=auth, json={"published": False})
+    assert len(client.get(f"{P}/featured").json()) == 2
+    # đổi sang nội dung khác: các tham chiếu cũ bị xóa
+    r = client.put(f"{S}/{rows[0]['id']}", headers=auth, json={"issue_id": "", "post_id": po["id"]})
+    assert r.status_code == 200 and r.json()["issue_id"] is None and r.json()["post_id"] == po["id"]
+    for r_ in rows:
+        client.delete(f"{S}/{r_['id']}", headers=auth)
     assert client.get(f"{P}/featured").json() == []
-    assert len(client.get(f"{P}/home").json()["hero"]) == 6  # không còn số tiêu điểm -> cách hiển thị cũ
+    assert len(client.get(f"{P}/home").json()["hero"]) == 6  # không còn mục tiêu điểm -> cách hiển thị cũ
     client.delete(f"{A}/issues/{i['id']}", headers=auth)
+    client.delete(f"{A}/activities/{act['id']}", headers=auth)
+    client.delete(f"{A}/pages/{pg['id']}", headers=auth)
+    client.delete(f"{A}/posts/{po['id']}", headers=auth)
 
 
 def test_activity_detail(client, auth):

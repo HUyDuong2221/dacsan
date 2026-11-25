@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from ..services import audit, mailer
 from ..db import get_db
 from ..models import User
-from ..security import ROLES, hash_password, require_roles
+from ..security import RESET_MINUTES, ROLES, hash_password, make_reset_token, require_roles
 
 router = APIRouter(prefix="/users")
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
@@ -125,6 +125,29 @@ def update_user(user_id: int, body: UserIn, request: Request, bg: BackgroundTask
     if mail_ids:
         bg.add_task(mailer.deliver, mail_ids)
     return user_dict(u)
+
+
+@router.post("/{user_id}/reset-link")
+def send_reset_link(user_id: int, request: Request, bg: BackgroundTasks, db: Session = Depends(get_db),
+                    me: User = Depends(require_roles("admin"))):
+    """Quản trị viên gửi liên kết đặt lại mật khẩu cho một người dùng (cùng luồng với "Quên mật khẩu").
+    Trả thêm liên kết để chuyển tay khi chưa cấu hình SMTP."""
+    u = db.get(User, user_id)
+    if not u:
+        raise HTTPException(404, "Không tìm thấy người dùng")
+    if u.pending or not u.is_active:
+        raise HTTPException(422, "Chỉ đặt lại mật khẩu cho tài khoản đang hoạt động")
+    link = mailer.site_url(f"/admin/dat-lai-mat-khau?token={make_reset_token(u)}")
+    text, page = mailer.render(db, "Đặt lại mật khẩu", [
+        f"Chào {u.full_name or u.email},",
+        "Quản trị viên đã gửi cho bạn liên kết đặt lại mật khẩu tài khoản quản trị Đặc san. Bấm nút dưới đây để đặt mật khẩu mới.",
+        f"Liên kết có hiệu lực trong {RESET_MINUTES} phút và chỉ dùng được một lần.",
+    ], ("Đặt mật khẩu mới", link), "Nếu bạn không mong đợi email này, hãy bỏ qua; mật khẩu hiện tại vẫn giữ nguyên.")
+    row = mailer.queue(db, u.email, "Đặt lại mật khẩu tài khoản Đặc san KH&PT", text, "reset_password", page)
+    audit.note(request, f"Gửi liên kết đặt lại mật khẩu cho {u.email}")
+    db.commit()
+    bg.add_task(mailer.deliver, [row.id])
+    return {"message": f"Đã gửi liên kết đặt lại mật khẩu tới {u.email}", "link": link, "minutes": RESET_MINUTES}
 
 
 @router.delete("/{user_id}", status_code=204)

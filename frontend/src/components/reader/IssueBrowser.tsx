@@ -168,7 +168,14 @@ export default function IssueBrowser({ d, initialField }: { d: any; initialField
                     <div className="ph"><small>ĐẶC SAN</small><strong>Khoa học &amp; Phát triển</strong><small>THÀNH PHỐ ĐÀ NẴNG</small><em>{issue.label}</em></div>
                   )}
                 </div>
-                <div className="face back"><span>Khoa học &amp; Phát triển<br />Đà Nẵng</span></div>
+                <div className={'face back' + (issue.cover_url ? ' has-img' : '')}>
+                  {issue.cover_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={issue.cover_url} alt="" aria-hidden="true" />
+                  ) : (
+                    <span>Khoa học &amp; Phát triển<br />Đà Nẵng</span>
+                  )}
+                </div>
               </div>
             </div>
             <span className="idt-hint">{open ? 'Chạm để gập bìa' : 'Rê chuột / chạm để mở bìa'}</span>

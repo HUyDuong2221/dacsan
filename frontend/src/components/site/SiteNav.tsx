@@ -25,7 +25,7 @@ export default function SiteNav({ site, dateStr, latestLabel }: { site: Record<s
   const path = usePathname() || '/';
   const [menu, setMenu] = useState(false);
   useEffect(() => setMenu(false), [path]);
-  const logo = site.logo_url || '/logo.jpg';
+  const logo = site.logo_url || '/logo.png';
   const NAV = toNav(visibleMenu(site.nav_menu)); // menu sửa ở admin: Giao diện › Menu điều hướng
 
   return (
