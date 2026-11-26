@@ -3,6 +3,8 @@ setlocal
 set "SRC=%~dp0moi"
 set "DST=%~dp0..\frontend"
 copy /y "%SRC%\public\logo-co-lien-hiep.png" "%DST%\public\logo-co-lien-hiep.png" >nul || goto loi
+copy /y "%SRC%\public\logo-ngang-co-lien-hiep.png" "%DST%\public\logo-ngang-co-lien-hiep.png" >nul || goto loi
+copy /y "%SRC%\public\logo-ngang.png" "%DST%\public\logo-ngang.png" >nul || goto loi
 copy /y "%SRC%\public\logo.png" "%DST%\public\logo.png" >nul || goto loi
 copy /y "%SRC%\src\app\_home\HomeV7.tsx" "%DST%\src\app\_home\HomeV7.tsx" >nul || goto loi
 copy /y "%SRC%\src\app\_home\v7.css" "%DST%\src\app\_home\v7.css" >nul || goto loi

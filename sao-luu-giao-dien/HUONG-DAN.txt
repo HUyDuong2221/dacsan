@@ -6,7 +6,9 @@ moi\   giao diện mới: đầu trang đỏ có chuyển màu, thân trang xanh
 
 logo\  ảnh logo rời, nền trong suốt:
          logo-co-lien-hiep.png      có dòng "Liên hiệp các Hội Khoa học và Kỹ thuật..."
-         logo-khong-lien-hiep.png   không có dòng đó (trang web đang dùng)
+         logo-khong-lien-hiep.png   không có dòng đó (bản dùng trước đây)
+         logo-ngang.png             bản ngang hơn, chữ "thành phố Đà Nẵng" to hơn (trang web đang dùng)
+         logo-ngang-co-lien-hiep.png   bản ngang, có dòng "Liên hiệp các Hội..."
        Đổi logo mà không cần build lại: trang quản trị, Giao diện > Logo, tải ảnh lên.
 
 CÁCH DÙNG (nhấp đúp vào file)
@@ -21,6 +23,8 @@ LƯU Ý
 - Hai file .bat GHI ĐÈ các file dưới đây. Nếu sau ngày trên bạn có sửa thêm vào chúng,
   phần sửa đó sẽ mất:
     frontend\public\logo-co-lien-hiep.png
+    frontend\public\logo-ngang-co-lien-hiep.png
+    frontend\public\logo-ngang.png
     frontend\public\logo.png
     frontend\src\app\_home\HomeV7.tsx
     frontend\src\app\_home\v7.css

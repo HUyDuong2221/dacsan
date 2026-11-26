@@ -13,7 +13,7 @@
 /* masthead */
 .v7h.v7-mast{padding-top:12px}
 .v7h.v7-mast .v7-w{display:flex;flex-direction:column;align-items:center}
-.v7h .v7-logo{display:block;width:min(340px,100%)}
+.v7h .v7-logo{display:block;width:min(600px,100%)}
 .v7h .v7-logo img{display:block;width:100%;height:auto}
 .v7h .v7-mast-meta{width:100%;margin-top:12px;border-top:2px solid var(--v7-red);border-bottom:1px solid var(--v7-red);padding:6px 0;display:flex;flex-wrap:wrap;gap:8px 24px;justify-content:center;font-size:11px;letter-spacing:.12em;color:var(--v7-red);font-weight:600;text-transform:uppercase}
 .v7h .v7-mast-meta i{font-style:normal;color:#D9979B}
@@ -56,6 +56,23 @@
 .v7h .v7-links a.on{border-bottom-color:transparent;background:linear-gradient(90deg,#B5121B,#E6A817) bottom/100% 3px no-repeat}
 .v7h a.v7-cta,.v7h .v7-drawer a.v7-drawer-cta{background:var(--v7-grad);box-shadow:0 4px 12px rgba(181,18,27,.25)}
 .v7h a.v7-cta:hover{background:var(--v7-grad);filter:brightness(1.1)}
+/* Máy tính: menu và nút to gấp 1,5 lần (21px) khi đủ rộng, màn hẹp hơn thì tự thu dần về 14px cho vừa một hàng.
+   --v7-navh là chiều cao thanh menu, dùng để đặt các thanh dính và điểm cuộn tới nằm ngay bên dưới. */
+@media(min-width:961px){
+  :root{--v7-menu:clamp(14px,calc(2.15vw - 6.5px),21px);--v7-navh:calc(var(--v7-menu) * 2.9 + 4px)}
+  .v7h .v7-links{font-size:var(--v7-menu);gap:0 1.2em;flex-wrap:wrap}
+  .v7h .v7-links a{padding:.75em 0 .65em;line-height:1.5}
+  .v7h a.v7-cta{font-size:calc(var(--v7-menu) * .96);padding:.5em 1em;border-radius:.5em}
+  .v7h .v7-nav-r .v7-ibtn{width:calc(var(--v7-menu) * 2.4);height:calc(var(--v7-menu) * 2.4);border-radius:.6em}
+  .v7h .v7-nav-r .v7-ibtn svg{width:50%;height:50%}
+  body .preview-bar,body .ar-bar{top:var(--v7-navh)}
+  body .shell .side{top:calc(var(--v7-navh) + 24px)}
+  body .idt-side{top:calc(var(--v7-navh) + 27px)}
+  body .ar-side{top:calc(var(--v7-navh) + 76px)}
+  body .idt-sec{scroll-margin-top:calc(var(--v7-navh) + 19px)}
+  body .body h2,body .leadbox{scroll-margin-top:calc(var(--v7-navh) + 45px)}
+  body .post-body h2,body .post-body h3,body .post-body h4{scroll-margin-top:calc(var(--v7-navh) + 25px)}
+}
 /* Điện thoại: đầu trang một hàng (logo trái, tìm kiếm và menu phải), bám trên cùng khi cuộn. Cao 72px. */
 .v7h .v7-nav-logo{display:none}
 @media(max-width:720px){
