@@ -21,8 +21,10 @@ function toNav(items: { label: string; href: string }[]): NavItem[] {
 const ALT = 'Đặc san Khoa học & Phát triển thành phố Đà Nẵng';
 
 // Header dùng chung cho mọi trang công khai (trang admin tự ẩn qua admin.css).
-export default function SiteNav({ site, dateStr, latestLabel }: { site: Record<string, string>; dateStr: string; latestLabel?: string }) {
-  const path = usePathname() || '/';
+// previewPath: khung xem trước trong admin giả lập đang ở một trang công khai.
+export default function SiteNav({ site, dateStr, latestLabel, previewPath }: { site: Record<string, string>; dateStr: string; latestLabel?: string; previewPath?: string }) {
+  const current = usePathname() || '/';
+  const path = previewPath || current;
   const [menu, setMenu] = useState(false);
   useEffect(() => setMenu(false), [path]);
   const logo = site.logo_url || '/logo.png';
@@ -57,6 +59,11 @@ export default function SiteNav({ site, dateStr, latestLabel }: { site: Record<s
 
       <nav className="v7h v7-nav" aria-label="Điều hướng chính">
         <div className="v7-w">
+          {/* Điện thoại: logo nằm cùng hàng với nút tìm kiếm và menu (thanh ngày và khối logo lớn được ẩn) */}
+          <Link href="/" className="v7-nav-logo" aria-label={ALT}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={logo} alt={ALT} />
+          </Link>
           <button className="v7-ibtn v7-menu-btn" onClick={() => setMenu(!menu)} aria-label="Mở menu" aria-expanded={menu}>
             <span className="v7-bars"><span /><span /><span /></span>
           </button>

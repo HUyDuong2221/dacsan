@@ -17,6 +17,8 @@ import AuthScreen from '@/components/admin/AuthScreen';
 import IssuePreviewButton from '@/components/admin/IssuePreviewButton';
 import SpotlightAdmin from '@/components/admin/SpotlightAdmin';
 import UserResetButton from '@/components/admin/UserResetButton';
+import { get } from '@/lib/api';
+import useCardTables from '@/components/admin/useCardTables';
 import './admin.css';
 
 export default function Admin() {
@@ -53,6 +55,21 @@ export default function Admin() {
     adm('/users', token).then((us: any[]) => setPendingUsers(us.filter((u) => u.pending).length)).catch(() => {});
   }, [token, me, tab]);
 
+  // Logo ở đầu menu trái: cùng ảnh với website (logo tải lên ở Giao diện › Logo, nếu không có thì mặc định).
+  const [logo, setLogo] = useState('/logo.png');
+  useEffect(() => { get('/site').then((s: any) => setLogo(s.logo_url || '/logo.png')).catch(() => {}); }, [tab]);
+
+  // Điện thoại: menu trái là ngăn kéo, mở bằng nút ở thanh trên cùng.
+  const [navOpen, setNavOpen] = useState(false);
+  const go = (k: string) => { setTab(k); setNavOpen(false); window.scrollTo({ top: 0 }); };
+  useEffect(() => {
+    if (!navOpen) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setNavOpen(false); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [navOpen]);
+  useCardTables();
+
   function logout() {
     try { localStorage.removeItem('dacsan_token'); } catch {}
     setToken(null);
@@ -85,12 +102,21 @@ export default function Admin() {
 
   return (
     <div className="wrap page adm-root adm-app">
+      <div className="adm-top">
+        <button type="button" className="adm-burger" aria-label="Mở menu quản trị" aria-expanded={navOpen} onClick={() => setNavOpen(true)}>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
+          {newSubs + pendingUsers > 0 && <i aria-hidden="true" />}
+        </button>
+        <b>{cur.title}</b>
+        <button type="button" className="adm-top-av" aria-label="Tài khoản của tôi" onClick={() => { setPwView(true); window.scrollTo({ top: 0 }); }}>{initials(who)}</button>
+      </div>
       <div className="adm-shell">
-        <aside className="adm-side" aria-label="Menu quản trị">
+        {navOpen && <div className="adm-scrim" onClick={() => setNavOpen(false)} />}
+        <aside className={'adm-side' + (navOpen ? ' open' : '')} aria-label="Menu quản trị">
+          <button type="button" className="adm-close" aria-label="Đóng menu" onClick={() => setNavOpen(false)}>✕</button>
           <a href="/" className="adm-logo" aria-label="Về trang chủ">
-            <small>ĐẶC SAN</small>
-            <b>Khoa học &amp; Phát triển</b>
-            <i>THÀNH PHỐ ĐÀ NẴNG</i>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={logo} alt="Đặc san Khoa học & Phát triển thành phố Đà Nẵng" />
           </a>
           <label className="adm-search">
             <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="M20 20l-4-4" /></svg>
@@ -111,7 +137,7 @@ export default function Admin() {
                     const cntText = r.key === 'users' ? 'tài khoản chờ duyệt' : 'bài gửi mới nhận';
                     if (!subs.length)
                       return (
-                        <button key={r.key} type="button" className={'adm-item' + (cur.key === r.key ? ' on' : '')} aria-current={cur.key === r.key ? 'page' : undefined} onClick={() => setTab(r.key)}
+                        <button key={r.key} type="button" className={'adm-item' + (cur.key === r.key ? ' on' : '')} aria-current={cur.key === r.key ? 'page' : undefined} onClick={() => go(r.key)}
                           aria-label={cnt ? `${r.title}, ${cnt} ${cntText}` : undefined}>
                           <svg viewBox="0 0 24 24" aria-hidden="true"><path d={ICONS[r.key]} /></svg><span className="lbl">{r.title}</span>
                           {cnt > 0 && <span className="cnt warn" aria-hidden="true" title={`${cnt} ${cntText}`}>{cnt > 99 ? '99+' : cnt}</span>}
@@ -129,7 +155,7 @@ export default function Admin() {
                         {open && (
                           <div className="adm-sub" id={`adm-sub-${r.key}`}>
                             {subs.map((x) => (
-                              <button key={x.key} type="button" className={'adm-subitem' + (cur.key === x.key ? ' on' : '')} aria-current={cur.key === x.key ? 'page' : undefined} onClick={() => setTab(x.key)}>{x.title}</button>
+                              <button key={x.key} type="button" className={'adm-subitem' + (cur.key === x.key ? ' on' : '')} aria-current={cur.key === x.key ? 'page' : undefined} onClick={() => go(x.key)}>{x.title}</button>
                             ))}
                           </div>
                         )}
@@ -147,7 +173,7 @@ export default function Admin() {
               <div><b>{who}</b><span>{ROLE_LABELS[role] || role}</span></div>
             </div>
             <div className="adm-row2">
-              <button type="button" className={'adm-gbtn' + (pwView ? ' on' : '')} aria-current={pwView ? 'page' : undefined} onClick={() => setPwView(true)}>Tài khoản</button>
+              <button type="button" className={'adm-gbtn' + (pwView ? ' on' : '')} aria-current={pwView ? 'page' : undefined} onClick={() => { setPwView(true); setNavOpen(false); window.scrollTo({ top: 0 }); }}>Tài khoản</button>
               <button type="button" className="adm-gbtn" onClick={logout}>Đăng xuất</button>
             </div>
           </div>
@@ -175,7 +201,7 @@ export default function Admin() {
             ) : cur.key === 'logo' ? (
               <ImageSetting token={token} onAuthError={logout} settingKey="logo_url" kind="logo"
                 label="Logo đặc san"
-                hint="Nên dùng ảnh PNG/WebP nền trong suốt, dạng ngang (ví dụ 600×160px). Logo hiện ở đầu trang chủ và các trang. Để trống để dùng logo chữ mặc định."
+                hint="Nên dùng ảnh PNG/WebP nền trong suốt, dạng ngang (ví dụ 1300×600px). Logo hiện ở đầu trang chủ và các trang. Để trống để dùng logo mặc định."
                 doneText="Đã lưu. Logo mới sẽ hiện trên website." resetLabel="Dùng logo mặc định" />
             ) : cur.key === 'banner' ? (
               <BannerAdmin token={token} onAuthError={logout} />

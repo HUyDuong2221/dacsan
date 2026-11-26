@@ -1,0 +1,29 @@
+/* Chuyển màu xanh cho thân trang (đầu trang đỏ nằm ở components/site/site-nav.css).
+   Muốn trở về màu xanh phẳng: bỏ dòng import file này trong layout.tsx. */
+body {
+  --body-grad: linear-gradient(120deg, #021E57 0%, #03368D 45%, #1C6DD0 100%);
+  --body-line: linear-gradient(90deg, #03368D 0%, #1C6DD0 55%, #38BDF8 100%);
+}
+
+/* Trang chủ */
+body .v7 .v7-stats,
+body .v7 .v7-sbox,
+body .v7 .v7-tag,
+body .v7 .v7-years button.on,
+body .v7 .v7-btns a.p { background: var(--body-grad); }
+body .v7 .v7-btns a.p:hover { background: var(--body-grad); filter: brightness(1.12); }
+body .v7 .v7-h2 { width: fit-content; background: var(--body-grad); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; padding-right: .12em; }
+body .v7 .v7-tintro i { background: var(--body-line); }
+body .v7 .v7-side-h { border-bottom: 2px solid; border-image: var(--body-line) 1; }
+body .v7 .v7-arch { background: linear-gradient(180deg, #E3EDFD 0%, #F4F7FC 100%); }
+
+/* Chân trang */
+body .v7-foot { background: linear-gradient(120deg, #011440 0%, #02266A 50%, #0A4A9E 100%); }
+body .v7-foot::before { content: ''; display: block; height: 3px; background: var(--body-line); }
+
+/* Nút và hộp hỗ trợ dùng chung (trang quản trị giữ nguyên) */
+body:not(:has(.adm-root)) .btn:not(.ghost):not(.danger) { background: var(--body-grad); border-color: transparent; }
+body:not(:has(.adm-root)) .btn:not(.ghost):not(.danger):hover { filter: brightness(1.12); }
+body:not(:has(.adm-root)) .bubbles button.main,
+body:not(:has(.adm-root)) .chat header { background: var(--body-grad); }
+body .news-acts a.p { background: var(--body-grad); }

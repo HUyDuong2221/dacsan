@@ -45,3 +45,31 @@
 .v7h .v7-drawer a.v7-drawer-x{color:var(--v7-red);font-size:14.5px}
 .v7h .v7-drawer a.v7-drawer-cta{justify-content:center;margin-top:14px;padding:12px 16px;border:0;border-radius:8px;background:var(--v7-red);color:#fff;font-weight:600}
 @media(min-width:561px){.v7h .v7-drawer a.v7-drawer-cta{display:none}}
+/* ===== Chuyển màu (gradient): đỏ → cam → vàng lấy theo logo. Xóa cả khối này nếu muốn trở về màu phẳng. ===== */
+.v7h{--v7-grad:linear-gradient(135deg,#8C0E15 0%,#C8161D 55%,#C2410C 100%);--v7-line:linear-gradient(90deg,#B5121B 0%,#E6A817 50%,#B5121B 100%)}
+.v7h.v7-util{background:var(--v7-grad);color:#fff;border-bottom:0}
+.v7h.v7-util .v7-util-r a{color:#fff}
+.v7h.v7-mast{background:radial-gradient(58% 130% at 50% 0%,#FFE6C4 0%,rgba(255,230,196,0) 72%),linear-gradient(180deg,#FFF3E4 0%,#FBFAF7 100%)}
+.v7h .v7-mast-meta{border:0;padding:8px 0 7px;background:var(--v7-line) top/100% 2px no-repeat,var(--v7-line) bottom/100% 1px no-repeat}
+.v7h .v7-mast-meta i{color:#E6A817}
+.v7h.v7-nav{background:linear-gradient(180deg,rgba(251,250,247,.96),rgba(255,243,228,.96));border-bottom-color:#F0DFC8}
+.v7h .v7-links a.on{border-bottom-color:transparent;background:linear-gradient(90deg,#B5121B,#E6A817) bottom/100% 3px no-repeat}
+.v7h a.v7-cta,.v7h .v7-drawer a.v7-drawer-cta{background:var(--v7-grad);box-shadow:0 4px 12px rgba(181,18,27,.25)}
+.v7h a.v7-cta:hover{background:var(--v7-grad);filter:brightness(1.1)}
+/* Điện thoại: đầu trang một hàng (logo trái, tìm kiếm và menu phải), bám trên cùng khi cuộn. Cao 72px. */
+.v7h .v7-nav-logo{display:none}
+@media(max-width:720px){
+  .v7h.v7-util,.v7h.v7-mast{display:none}
+  .v7h.v7-nav{background:#fff;border-bottom:3px solid transparent;border-image:var(--v7-line) 1}
+  .v7h.v7-nav>.v7-w{min-height:69px;gap:8px}
+  .v7h .v7-nav-logo{display:block;order:-1;min-width:0;margin-right:auto}
+  .v7h .v7-nav-logo img{display:block;height:56px;width:auto;max-width:100%;object-fit:contain;object-position:left center}
+  .v7h .v7-menu-btn{margin-left:0}
+  .v7h .v7-ibtn{width:40px;height:40px;flex:none}
+  .v7h .v7-drawer{max-height:calc(100vh - 72px);max-height:calc(100dvh - 72px);overflow-y:auto}
+  /* các thanh dính và điểm cuộn tới nằm dưới đầu trang cao 72px */
+  body .preview-bar,body .ar-bar,body .idt-side{top:72px}
+  body .idt-sec{scroll-margin-top:138px}
+  body .body h2,body .leadbox{scroll-margin-top:118px}
+  body .post-body h2,body .post-body h3,body .post-body h4{scroll-margin-top:98px}
+}

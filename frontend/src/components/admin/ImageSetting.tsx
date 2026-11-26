@@ -1,5 +1,8 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
+import SiteNav from '@/components/site/SiteNav';
+import { get } from '@/lib/api';
+import { latestIssueLabel, viDate } from '@/lib/siteHeader';
 import { adm } from './ResourceManager';
 
 type Props = {
@@ -21,6 +24,9 @@ export default function ImageSetting({ token, onAuthError, settingKey: KEY, labe
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
   const [media, setMedia] = useState<any[]>([]);
+  const [site, setSite] = useState<Record<string, string>>({});
+  const [latestLabel, setLatestLabel] = useState<string>();
+  useEffect(() => { get('/issues').then((d: any) => setLatestLabel(latestIssueLabel(d.issues?.[0]))).catch(() => {}); }, []);
 
   function fail(e: any) {
     if (e.status === 401) return onAuthError();
@@ -33,6 +39,7 @@ export default function ImageSetting({ token, onAuthError, settingKey: KEY, labe
       const rows: any[] = await adm('/settings', token);
       const r = rows.find((x) => x.key === KEY) || null;
       setRow(r);
+      setSite(Object.fromEntries(rows.map((x) => [x.key, x.value])));
       setUrl(r?.value || '');
     } catch (e) { fail(e); }
   }
@@ -97,8 +104,9 @@ export default function ImageSetting({ token, onAuthError, settingKey: KEY, labe
       </label>
       <div>
         <div className="muted" style={{ marginBottom: 6 }}>Xem trước đúng như hiển thị trên trang chủ</div>
-        <Scaled width={1280} height={84}>
-          <HeaderMock url={url.trim()} />
+        <Scaled width={1280}>
+          {/* Dùng đúng thành phần đầu trang của website nên giao diện đổi thì khung này đổi theo */}
+          <SiteNav site={{ ...site, logo_url: url.trim() }} dateStr={viDate()} latestLabel={latestLabel} previewPath="/" />
         </Scaled>
       </div>
       <div>
@@ -138,53 +146,24 @@ export default function ImageSetting({ token, onAuthError, settingKey: KEY, labe
 }
 
 /* Thu nhỏ khung 1280px vừa bề rộng khung xem trước, giữ nguyên tỉ lệ thật của trang chủ */
-function Scaled({ width, height, children }: { width: number; height: number; children: React.ReactNode }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [k, setK] = useState(0.5);
+function Scaled({ width, children }: { width: number; children: React.ReactNode }) {
+  const box = useRef<HTMLDivElement>(null);
+  const inner = useRef<HTMLDivElement>(null);
+  const [size, setSize] = useState({ k: 0.5, h: 260 });
   useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const ro = new ResizeObserver(() => setK(el.clientWidth / width));
+    const el = box.current, body = inner.current;
+    if (!el || !body) return;
+    body.setAttribute('inert', ''); // chỉ để xem: không bấm, không nhận tiêu điểm bàn phím
+    const measure = () => setSize({ k: el.clientWidth / width, h: body.offsetHeight });
+    const ro = new ResizeObserver(measure);
     ro.observe(el);
-    setK(el.clientWidth / width);
+    ro.observe(body);
+    measure();
     return () => ro.disconnect();
   }, [width]);
   return (
-    <div ref={ref} style={{ width: '100%', height: height * k, overflow: 'hidden', border: '1px solid #DCE5F0', borderRadius: 8, background: '#fff', position: 'relative' }}>
-      <div style={{ width, height, transform: `scale(${k})`, transformOrigin: 'top left', position: 'absolute', left: 0, top: 0, pointerEvents: 'none' }}>{children}</div>
+    <div ref={box} className="hdr-prev" style={{ width: '100%', height: size.h * size.k + 2, overflow: 'hidden', border: '1px solid #DCE5F0', borderRadius: 8, background: '#fff', position: 'relative' }}>
+      <div ref={inner} style={{ width, transform: `scale(${size.k})`, transformOrigin: 'top left', position: 'absolute', left: 0, top: 0, pointerEvents: 'none' }}>{children}</div>
     </div>
   );
 }
-
-const NAVTXT = ['Trang chủ', 'Tiêu điểm', 'Đặc san', 'Nghiên cứu – Trao đổi', 'Tin hoạt động'];
-const TNR = '"Times New Roman",Times,serif';
-
-function LogoMock({ url }: { url: string }) {
-  if (url)
-    // eslint-disable-next-line @next/next/no-img-element
-    return <img src={url} alt="" style={{ display: 'block', height: 56, width: 'auto', maxWidth: 300, objectFit: 'contain' }} />;
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1, color: '#0B3C7A', minWidth: 250, fontFamily: TNR }}>
-      <span style={{ fontSize: 13, fontWeight: 700, letterSpacing: '.08em' }}>ĐẶC SAN</span>
-      <span style={{ fontStyle: 'italic', fontSize: 30, fontWeight: 700, margin: '4px 0 2px' }}>Khoa học &amp; Phát triển</span>
-      <span style={{ fontSize: 12, fontWeight: 600, letterSpacing: '.12em', textAlign: 'center' }}>THÀNH PHỐ ĐÀ NẴNG</span>
-    </div>
-  );
-}
-
-function NavMock({ url }: { url: string }) {
-  return (
-    <div style={{ height: 84, display: 'flex', alignItems: 'center', gap: 32, padding: '0 48px', background: '#fff', borderBottom: '1px solid #DCE5F0', boxSizing: 'border-box', fontFamily: TNR }}>
-      <LogoMock url={url} />
-      <div style={{ display: 'flex', gap: 28, flex: 1, fontSize: 18, color: '#0B2F5E' }}>
-        {NAVTXT.map((t, i) => <span key={t} style={{ fontWeight: i === 0 ? 700 : 500, borderBottom: i === 0 ? '2px solid #0B4F9C' : 0, paddingBottom: 4 }}>{t}</span>)}
-      </div>
-      <span style={{ background: '#0B4F9C', color: '#fff', fontWeight: 700, fontSize: 17, padding: '12px 28px', borderRadius: 6 }}>Gửi bài</span>
-    </div>
-  );
-}
-
-function HeaderMock({ url }: { url: string }) {
-  return <NavMock url={url} />;
-}
-

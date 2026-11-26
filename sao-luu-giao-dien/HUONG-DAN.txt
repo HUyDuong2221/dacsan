@@ -1,7 +1,13 @@
-﻿SAO LƯU GIAO DIỆN PHẦN ĐẦU TRANG VÀ KHỐI TIÊU ĐIỂM (tạo ngày 26/11/2026)
+﻿SAO LƯU GIAO DIỆN (tạo ngày 26/11/2026)
 
-cu\    giao diện cũ: menu xanh, logo xanh, ảnh Tiêu điểm trên nền xanh (như commit af0412a)
-moi\   giao diện mới: menu đỏ, logo lấy từ bìa tạp chí, ảnh Tiêu điểm phủ kín khung
+cu\    giao diện cũ: màu xanh, logo xanh (như commit af0412a)
+moi\   giao diện mới: đầu trang đỏ có chuyển màu, thân trang xanh có chuyển màu, logo lấy từ bìa tạp chí,
+       ảnh Tiêu điểm phủ kín khung
+
+logo\  ảnh logo rời, nền trong suốt:
+         logo-co-lien-hiep.png      có dòng "Liên hiệp các Hội Khoa học và Kỹ thuật..."
+         logo-khong-lien-hiep.png   không có dòng đó (trang web đang dùng)
+       Đổi logo mà không cần build lại: trang quản trị, Giao diện > Logo, tải ảnh lên.
 
 CÁCH DÙNG (nhấp đúp vào file)
   khoi-phuc-giao-dien-cu.bat   quay lại giao diện cũ
@@ -14,10 +20,20 @@ Nếu chạy trên server, cần build lại:
 LƯU Ý
 - Hai file .bat GHI ĐÈ các file dưới đây. Nếu sau ngày trên bạn có sửa thêm vào chúng,
   phần sửa đó sẽ mất:
+    frontend\public\logo-co-lien-hiep.png
     frontend\public\logo.png
-    frontend\src\components\site\SiteNav.tsx
-    frontend\src\components\site\site-nav.css
     frontend\src\app\_home\HomeV7.tsx
     frontend\src\app\_home\v7.css
+    frontend\src\app\admin\admin.css
+    frontend\src\app\admin\page.tsx
+    frontend\src\app\layout.tsx
+    frontend\src\app\theme-gradient.css
+    frontend\src\components\admin\AuditLogView.tsx
+    frontend\src\components\admin\ImageSetting.tsx
+    frontend\src\components\admin\useCardTables.ts
+    frontend\src\components\site\SiteNav.tsx
+    frontend\src\components\site\site-nav.css
+    frontend\src\lib\siteHeader.ts
 - Dữ liệu (bài viết, số đặc san, tài khoản...) không bị ảnh hưởng.
+- Trang quản trị giữ nguyên màu xanh ở cả hai giao diện.
 - Logo tải lên trong trang quản trị (nếu có) được ưu tiên hơn logo.png ở cả hai giao diện.

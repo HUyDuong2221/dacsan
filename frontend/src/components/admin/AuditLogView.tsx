@@ -68,7 +68,7 @@ export default function AuditLogView({ token, onAuthError }: { token: string; on
 
   return (
     <div>
-      <form className="form" onSubmit={apply} style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(200px,1fr))', padding: 18 }}>
+      <form className="form adm-filter" onSubmit={apply} style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(200px,1fr))', padding: 18 }}>
         <label>Đối tượng
           <select className="input" value={f.entity} onChange={(e) => setF({ ...f, entity: e.target.value })}>
             <option value="">Tất cả</option>

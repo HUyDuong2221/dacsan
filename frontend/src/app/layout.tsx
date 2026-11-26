@@ -1,26 +1,20 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
+import './theme-gradient.css';
 import SiteNav from '@/components/site/SiteNav';
 import Footer from '@/components/site/Footer';
 import ChatWidget from '@/components/site/ChatWidget';
 import { get } from '@/lib/api';
+import { latestIssueLabel, viDate } from '@/lib/siteHeader';
 
 export const metadata: Metadata = {
   title: { default: 'Đặc san Khoa học & Phát triển thành phố Đà Nẵng', template: '%s · Đặc san KH&PT Đà Nẵng' },
   description: 'Đặc san Khoa học & Phát triển của Liên hiệp các Hội Khoa học và Kỹ thuật thành phố Đà Nẵng – đọc toàn văn trực tuyến.',
 };
 
-export const viewport: Viewport = { width: 'device-width', initialScale: 1, themeColor: '#03368D' };
+export const viewport: Viewport = { width: 'device-width', initialScale: 1, themeColor: '#FFFFFF' };
 
 export const dynamic = 'force-dynamic';
-
-const WEEKDAYS = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
-
-// Ngày theo giờ Việt Nam (máy chủ có thể chạy UTC).
-function viDate() {
-  const d = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Ho_Chi_Minh' }));
-  return `${WEEKDAYS[d.getDay()]}, ${d.getDate()} tháng ${d.getMonth() + 1}, ${d.getFullYear()}`;
-}
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const [site, all, pages] = await Promise.all([
@@ -28,12 +22,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     get('/issues').catch(() => ({ issues: [] as any[] })),
     get('/pages').catch(() => [] as { slug: string; title: string }[]),
   ]);
-  // Dòng dưới logo: "Số 17 · Tháng 6/2026", lấy từ số và ngày đăng của số mới nhất trong DB.
-  const latest = all.issues?.[0];
-  const [y, m] = (latest?.published_at || '').slice(0, 10).split('-');
-  const latestLabel: string | undefined = latest
-    ? (y && m ? `Số ${latest.number} · Tháng ${Number(m)}/${y}` : latest.label)
-    : undefined;
+  const latestLabel = latestIssueLabel(all.issues?.[0]);
   return (
     <html lang="vi">
       <head>
