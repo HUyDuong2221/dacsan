@@ -1,0 +1,23 @@
+﻿SAO LƯU GIAO DIỆN PHẦN ĐẦU TRANG VÀ KHỐI TIÊU ĐIỂM (tạo ngày 26/11/2026)
+
+cu\    giao diện cũ: menu xanh, logo xanh, ảnh Tiêu điểm trên nền xanh (như commit af0412a)
+moi\   giao diện mới: menu đỏ, logo lấy từ bìa tạp chí, ảnh Tiêu điểm phủ kín khung
+
+CÁCH DÙNG (nhấp đúp vào file)
+  khoi-phuc-giao-dien-cu.bat   quay lại giao diện cũ
+  dung-giao-dien-moi.bat       đổi sang giao diện mới
+
+Sau đó mở trang web và bấm Ctrl+F5.
+Nếu chạy trên server, cần build lại:
+  docker compose -f docker-compose.server.yml up -d --build
+
+LƯU Ý
+- Hai file .bat GHI ĐÈ các file dưới đây. Nếu sau ngày trên bạn có sửa thêm vào chúng,
+  phần sửa đó sẽ mất:
+    frontend\public\logo.png
+    frontend\src\components\site\SiteNav.tsx
+    frontend\src\components\site\site-nav.css
+    frontend\src\app\_home\HomeV7.tsx
+    frontend\src\app\_home\v7.css
+- Dữ liệu (bài viết, số đặc san, tài khoản...) không bị ảnh hưởng.
+- Logo tải lên trong trang quản trị (nếu có) được ưu tiên hơn logo.png ở cả hai giao diện.

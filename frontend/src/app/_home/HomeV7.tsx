@@ -36,6 +36,17 @@ export default function HomeV7(p: HomeProps) {
   const { latest, slides } = p;
   const [hero, setHero] = useState(0);
   const [paused, setPaused] = useState(false);
+  // Ảnh dọc (bìa số, poster) hiện trọn trên nền mờ của chính nó; ảnh ngang phủ kín khung.
+  const [tall, setTall] = useState<Record<string, boolean>>({});
+  const stage = useRef<HTMLDivElement>(null);
+  const measure = (img: HTMLImageElement) => {
+    const key = img.dataset.key;
+    if (!key || !img.naturalWidth) return;
+    const t = img.naturalHeight > img.naturalWidth;
+    setTall((m) => (m[key] === t ? m : { ...m, [key]: t }));
+  };
+  // Ảnh tải xong trước khi React gắn sự kiện thì onLoad không chạy, nên đo lại một lượt ở đây.
+  useEffect(() => { stage.current?.querySelectorAll<HTMLImageElement>('img[data-key]').forEach(measure); }, [slides]);
   const [cover, setCover] = useState(false);
   const [topic, setTopic] = useState(0);
   const years = Array.from(new Set(p.issues.map((i) => i.year)));
@@ -110,13 +121,16 @@ export default function HomeV7(p: HomeProps) {
           <div className="v7-front-row">
             <article className="v7-lead" aria-roledescription="carousel" aria-label="Bài tiêu điểm"
               onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}>
-              <div className="v7-stage">
+              <div className="v7-stage" ref={stage}>
                 <div className="v7-track" style={{ transform: `translateX(${-100 * hero}%)` }}>
                   {slides.map((s, i) => (
-                    <Link key={s.key} href={s.href} className="v7-slide" aria-hidden={i !== hero} tabIndex={i === hero ? 0 : -1}>
+                    <Link key={s.key} href={s.href} className={'v7-slide' + (s.img ? ' has-img' : '') + (tall[s.key] ? ' tall' : '')} aria-hidden={i !== hero} tabIndex={i === hero ? 0 : -1}>
                       {s.img ? (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={s.img} alt={s.title} />
+                        <>
+                          {tall[s.key] && <img src={s.img} alt="" aria-hidden="true" className="v7-blur" />}
+                          <img src={s.img} alt={s.title} data-key={s.key} onLoad={(e) => measure(e.currentTarget)} />
+                        </>
                       ) : (
                         <span aria-hidden="true">{pad(i + 1)}</span>
                       )}

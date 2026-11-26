@@ -68,8 +68,8 @@ export default function SiteNav({ site, dateStr, latestLabel }: { site: Record<s
             ))}
           </div>
           <div className="v7-nav-r">
-            <Link href="/search" className="v7-ibtn" aria-label="Tìm kiếm">
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#03368D" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5" /><path d="M16 16l4.5 4.5" /></svg>
+            <Link href="/search" className="v7-ibtn v7-search" aria-label="Tìm kiếm">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5" /><path d="M16 16l4.5 4.5" /></svg>
             </Link>
             <Link href="/gui-bai" className="v7-cta">Gửi bài</Link>
           </div>
@@ -79,16 +79,16 @@ export default function SiteNav({ site, dateStr, latestLabel }: { site: Record<s
             <div className="v7-w">
               {NAV.map((m) => m.external ? (
                 <a key={m.href} href={m.href} target="_blank" rel="noopener noreferrer">
-                  {m.label}<span style={{ color: '#03368D' }} aria-hidden="true">↗</span>
+                  {m.label}<span aria-hidden="true">↗</span>
                 </a>
               ) : (
                 <Link key={m.href} href={m.href} className={m.match(path) ? 'on' : ''} onClick={() => setMenu(false)}>
-                  {m.label}<span style={{ color: '#03368D' }} aria-hidden="true">→</span>
+                  {m.label}<span aria-hidden="true">→</span>
                 </Link>
               ))}
               {/* Điện thoại: nút "Gửi bài" và link LHH bị ẩn khỏi thanh trên nên đưa vào menu */}
               <a href="https://lhh.danang.gov.vn" target="_blank" rel="noopener noreferrer" className="v7-drawer-x">
-                lhh.danang.gov.vn<span style={{ color: '#03368D' }} aria-hidden="true">↗</span>
+                lhh.danang.gov.vn<span aria-hidden="true">↗</span>
               </a>
               <Link href="/gui-bai" className="v7-drawer-cta" onClick={() => setMenu(false)}>Gửi bài cho Đặc san</Link>
             </div>

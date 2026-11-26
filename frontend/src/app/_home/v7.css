@@ -13,10 +13,13 @@ body:has(.v7){background:#FBFAF7}
 .v7-front-row{display:flex;flex-wrap:wrap}
 .v7-lead{flex:999 1 600px;min-width:0;padding:0 40px 0 0}
 .v7-side{flex:1 1 400px;min-width:0;max-width:100%;padding:0 0 0 40px;border-left:1px solid #DCDFE6}
-.v7-stage{position:relative;aspect-ratio:16/9;overflow:hidden;background:#03368D}
+.v7-stage{position:relative;aspect-ratio:16/9;overflow:hidden;background:#E6E8EE}
 .v7-track{display:flex;height:100%;transition:transform 700ms cubic-bezier(.65,0,.25,1)}
 .v7-slide{flex:0 0 100%;height:100%;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;background:linear-gradient(135deg,#03368D 0%,#1F4BB8 60%,#2a5bd0 100%)}
-.v7-slide img{height:88%;width:auto;max-width:100%;object-fit:contain;box-shadow:0 14px 34px rgba(0,0,0,.35)}
+.v7-slide.has-img{background:#E6E8EE}
+.v7-slide img{position:relative;width:100%;height:100%;object-fit:cover;object-position:center 25%}
+.v7-slide.tall img{object-fit:contain;object-position:center}
+.v7-slide.tall img.v7-blur{position:absolute;inset:0;object-fit:cover;filter:blur(24px) brightness(.85);transform:scale(1.15)}
 .v7-slide span{color:rgba(255,255,255,.18);font-size:clamp(60px,12vw,150px);font-weight:800;font-style:italic;letter-spacing:-.04em}
 .v7-tag{position:absolute;left:0;bottom:0;background:#03368D;color:#fff;font-size:11.5px;font-weight:700;letter-spacing:.16em;padding:8px 14px}
 .v7-arrows{position:absolute;right:14px;bottom:14px;display:flex;gap:8px}
@@ -167,6 +170,7 @@ body:has(.v7){background:#FBFAF7}
 /* ===== Điện thoại ===== */
 @media(max-width:720px){
   /* Tiêu điểm: chỉ hiện slide đang chọn (không xếp chồng) nên chiều cao theo đúng nội dung, không có khoảng trống */
+  .v7-stage{aspect-ratio:4/3}
   .v7-text[aria-hidden="true"]{display:none}
   .v7-text[aria-hidden="false"]{animation:v7Fade 400ms ease-out}
   .v7-text h2 a{font-size:26px}
