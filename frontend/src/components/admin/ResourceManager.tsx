@@ -175,10 +175,7 @@ export default function ResourceManager({ res, token, onAuthError, rowExtra, for
               ) : f.type === 'bool' ? (
                 <input type="checkbox" checked={!!edit[f.key]} onChange={(e) => setEdit({ ...edit, [f.key]: e.target.checked })} style={{ width: 20, height: 20 }} />
               ) : f.type === 'select' || f.optionsFrom ? (
-                <select className="input" required={f.required} value={edit[f.key] ?? ''} onChange={(e) => setEdit({ ...edit, [f.key]: e.target.value })}>
-                  {!f.required && <option value="">— không chọn —</option>}
-                  {(f.options || opts[f.key] || []).map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                </select>
+                <SelectInput required={f.required} value={edit[f.key]} options={f.options || opts[f.key]} onChange={(v) => setEdit({ ...edit, [f.key]: v })} />
               ) : f.type === 'image' ? (
                 <div className="rm-img">
                   <div className="row" style={{ flexWrap: 'nowrap' }}>
@@ -248,6 +245,20 @@ export default function ResourceManager({ res, token, onAuthError, rowExtra, for
         </table>
       </div>
     </div>
+  );
+}
+
+// Ô chọn: luôn có một <option> khớp với giá trị đang giữ. Nếu thiếu, trình duyệt tự hiện mục đầu danh sách dù người dùng
+// chưa chọn gì, và khi lưu thì mục đó không được ghi. options = undefined: danh sách đang tải.
+function SelectInput({ required, value, options, onChange }: { required?: boolean; value: unknown; options?: { value: string; label: string }[]; onChange: (v: string) => void }) {
+  const v = value == null ? '' : String(value);
+  const missing = v !== '' && !options?.some((o) => o.value === v);
+  return (
+    <select className="input" required={required} value={v} onChange={(e) => onChange(e.target.value)}>
+      {(!required || v === '') && <option value="">{required ? '— Hãy chọn —' : '— không chọn —'}</option>}
+      {missing && <option value={v}>{options ? `${v} (không còn trong danh sách, hãy chọn lại)` : v}</option>}
+      {options?.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+    </select>
   );
 }
 
