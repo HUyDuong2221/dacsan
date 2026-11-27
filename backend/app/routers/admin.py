@@ -81,6 +81,22 @@ def prepare_post(data: dict, existing: Post | None) -> None:
         data["cover_url"] = cover or None
 
 
+def move_theme(db: Session, old: str, new: str) -> int:
+    """Chuyên mục của một số đặc san lưu bằng TÊN (Issue.theme, không có khóa ngoại), nên khi đổi tên hoặc gộp
+    chuyên mục phải đổi theo, nếu không số đó biến mất khỏi khối "Chuyên mục" ở trang chủ. Không tự commit."""
+    return db.query(Issue).filter(func.trim(Issue.theme) == old.strip()).update(
+        {Issue.theme: new}, synchronize_session="fetch")
+
+
+def guard_field(user: User, db: Session, data: dict, obj: Field | None) -> None:
+    """Đổi tên chuyên mục: đổi luôn chuyên mục của các số đặc san, lưu cùng một lần (lỗi thì hoàn tác cả hai)."""
+    if obj is None or "name" not in data:
+        return
+    name = str(data["name"] or "").strip()
+    if name and name != obj.name:
+        move_theme(db, obj.name, name)
+
+
 SPOT_REFS = {"issue_id": Issue, "activity_id": Activity, "page_id": Page, "post_id": Post}
 
 
@@ -130,7 +146,7 @@ router.include_router(crud(TocEntry, "/toc-entries", [TocEntry.issue_id.desc(), 
                            write=STAFF, guard=guard_entry))
 router.include_router(crud(Post, "/posts", [Post.published_at.desc().nullslast(), Post.id.desc()], slug_from="title",
                            read=EDIT, prepare=prepare_post))
-router.include_router(crud(Field, "/fields", [Field.sort_order, Field.id]))
+router.include_router(crud(Field, "/fields", [Field.sort_order, Field.id], guard=guard_field))
 router.include_router(crud(Activity, "/activities", [Activity.event_date.desc().nullslast()], read=EDIT))
 router.include_router(crud(ActivityType, "/activity-types", [ActivityType.sort_order, ActivityType.id], read=EDIT))
 router.include_router(crud(Setting, "/settings", [Setting.key], read=ADMIN, write=ADMIN, remove=ADMIN))
@@ -162,14 +178,15 @@ class MergeIn(BaseModel):
 
 @router.post("/fields/{field_id}/merge", dependencies=[Depends(require_roles(*EDIT))])
 def merge_field(field_id: int, body: MergeIn, request: Request, db: Session = Depends(get_db)):
-    """Gộp chuyên mục vào chuyên mục khác: chuyển mọi dòng mục lục sang chuyên mục đích rồi xóa chuyên mục nguồn."""
+    """Gộp chuyên mục vào chuyên mục khác: chuyển mọi dòng mục lục và số đặc san sang chuyên mục đích rồi xóa chuyên mục nguồn."""
     src, dst = db.get(Field, field_id), db.get(Field, body.target_id)
     if not src or not dst:
         raise HTTPException(404, "Không tìm thấy chuyên mục")
     if src.id == dst.id:
         raise HTTPException(422, "Chọn một chuyên mục khác để gộp")
     moved = db.query(TocEntry).filter(TocEntry.field_id == src.id).update({TocEntry.field_id: dst.id})
-    audit.note(request, f"{src.name} → {dst.name} ({moved} dòng mục lục)")
+    issues = move_theme(db, src.name, dst.name)
+    audit.note(request, f"{src.name} → {dst.name} ({moved} dòng mục lục, {issues} số đặc san)")
     db.delete(src)
     db.commit()
     return {"moved": moved}

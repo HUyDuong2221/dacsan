@@ -122,6 +122,29 @@ def test_sections_are_per_issue_and_replace_import(client, auth):
     client.delete(f"{A}/issues/{iss['id']}", headers=auth)
 
 
+def test_rename_and_merge_field_keep_issue_theme(client, auth):
+    a = client.post(f"{A}/fields", headers=auth, json={"name": "TEN CU"}).json()
+    b = client.post(f"{A}/fields", headers=auth, json={"name": "TEN KHAC"}).json()
+    iss = client.post(f"{A}/issues", headers=auth, json={
+        "number": 301, "published_at": "2027-03-01", "theme": "TEN CU", "published": True}).json()
+
+    def theme():
+        return next(i["theme"] for i in client.get(f"{A}/issues", headers=auth).json() if i["id"] == iss["id"])
+
+    def topic(name):
+        return next(t for t in client.get(f"{P}/home").json()["topics"] if t["name"] == name)
+
+    assert client.put(f"{A}/fields/{a['id']}", headers=auth, json={"name": " TEN MOI "}).status_code == 200
+    assert theme() == "TEN MOI" and topic("TEN MOI")["count"] == 1
+    # đổi sang tên đã có: bị từ chối, chuyên mục của số giữ nguyên
+    assert client.put(f"{A}/fields/{a['id']}", headers=auth, json={"name": "TEN KHAC"}).status_code == 409
+    assert theme() == "TEN MOI"
+    client.post(f"{A}/fields/{a['id']}/merge", headers=auth, json={"target_id": b["id"]})
+    assert theme() == "TEN KHAC" and topic("TEN KHAC")["count"] == 1
+    client.delete(f"{A}/issues/{iss['id']}", headers=auth)
+    client.delete(f"{A}/fields/{b['id']}", headers=auth)
+
+
 def test_merge_field(client, auth):
     a = client.post(f"{A}/fields", headers=auth, json={"name": "GOP A"}).json()
     b = client.post(f"{A}/fields", headers=auth, json={"name": "GOP B"}).json()
