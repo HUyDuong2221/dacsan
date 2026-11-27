@@ -7,7 +7,6 @@ def test_home(client):
     assert d["latest_issue"]["number"] == 17
     assert len(d["hero"]) == 6
     assert len(d["articles"]) == 25
-    assert len(d["issues"]) == 8 and d["issues"][0]["number"] == 16  # không gồm số mới nhất
     assert d["hero"][0]["href"] == "/issues/so-17-6-2026" and d["hero"][0]["excerpt"]
     assert d["hero"][1]["kicker"] == "Phạm Ngọc Linh · tr. 13"
     # 23 bài của số 17 + 25 bài mẫu ở demo_content.py (không tính trang đầu số)

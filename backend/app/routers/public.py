@@ -144,11 +144,6 @@ def site(db: Session = Depends(get_db)):
     return {s.key: s.value for s in db.scalars(select(Setting))}
 
 
-@router.get("/fields")
-def fields(db: Session = Depends(get_db)):
-    return [{"id": f.id, "name": f.name} for f in db.scalars(select(Field).order_by(Field.sort_order, Field.id))]
-
-
 @router.get("/home")
 def home(db: Session = Depends(get_db)):
     c = counts(db)
@@ -181,10 +176,6 @@ def home(db: Session = Depends(get_db)):
             "excerpt": a.hero_excerpt or a.lead or "",
             "href": f"/articles/{a.slug}",
         })
-    recent = db.scalars(
-        select(Issue).where(Issue.published.is_(True), Issue.id != (latest.id if latest else 0))
-        .order_by(Issue.number.desc()).limit(8)
-    ).all()
     in_issue = []
     if latest:
         in_issue = db.scalars(ordered(published_articles().where(TocEntry.issue_id == latest.id))).unique().all()
@@ -208,7 +199,6 @@ def home(db: Session = Depends(get_db)):
         "hero": slides,
         "articles": [article_card(a) for a in in_issue],
         "fields": sections_of(in_issue),
-        "issues": [issue_card(i, c) for i in recent],
         "activities": [activity_dict(a) for a in acts],
         "topics": topics,
         "stats": {"issue_count": n_issues, "article_count": n_articles, "year_from": y0, "year_to": y1},

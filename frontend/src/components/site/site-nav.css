@@ -40,7 +40,6 @@
 @keyframes v7hFade{from{opacity:0}to{opacity:1}}
 @media(max-width:860px){.v7h .v7-links{display:none}.v7h .v7-menu-btn{display:flex;order:3;margin-left:-8px}.v7h .v7-nav-r{margin-left:auto}.v7h .v7-util-r a{display:none}.v7h .v7-mast-meta i.hs{display:none}.v7h .v7-mast-meta{gap:4px 14px;font-size:10.5px;letter-spacing:.08em}.v7h .v7-mast-meta .v7-mm-org{order:3;flex-basis:100%;text-align:center;white-space:normal}}
 @media(max-width:560px){.v7h .v7-w{padding-left:16px;padding-right:16px}.v7h a.v7-cta{display:none}}
-.shell .side{top:69px}
 /* Menu điện thoại: link LHH + nút Gửi bài */
 .v7h .v7-drawer a.v7-drawer-x{color:var(--v7-red);font-size:14.5px}
 .v7h .v7-drawer a.v7-drawer-cta{justify-content:center;margin-top:14px;padding:12px 16px;border:0;border-radius:8px;background:var(--v7-red);color:#fff;font-weight:600}
@@ -66,7 +65,6 @@
   .v7h .v7-nav-r .v7-ibtn{width:calc(var(--v7-menu) * 2.4);height:calc(var(--v7-menu) * 2.4);border-radius:.6em}
   .v7h .v7-nav-r .v7-ibtn svg{width:50%;height:50%}
   body .preview-bar,body .ar-bar{top:var(--v7-navh)}
-  body .shell .side{top:calc(var(--v7-navh) + 24px)}
   body .idt-side{top:calc(var(--v7-navh) + 27px)}
   body .ar-side{top:calc(var(--v7-navh) + 76px)}
   body .idt-sec{scroll-margin-top:calc(var(--v7-navh) + 19px)}

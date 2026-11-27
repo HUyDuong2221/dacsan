@@ -1,6 +1,6 @@
 /* ===== Khu quản trị (theo thiết kế frontend/design/menu-quan-tri) =====
    Màu: navy #0B2F5E, nhấn #0B4F9C, vàng #E0A23B. Font: Noto Serif (tiêu đề), Be Vietnam Pro (nội dung). */
-.adm-root,.adm-main{--a-navy:#0B2F5E;--a-navy2:#092650;--a-accent:#0B4F9C;--a-gold:#E0A23B;--a-ink:#1B2433;--a-mute:#5A6577;--a-line:#DCE5F0;--a-line2:#C9D6E6;--a-soft:#F1F5FA;--a-bg:#F4F7FB;--a-focus:#8FE1FF;font-family:'Be Vietnam Pro',system-ui,sans-serif;color:var(--a-ink)}
+.adm-root,.adm-main{--a-navy:#0B2F5E;--a-navy2:#092650;--a-accent:#0B4F9C;--a-gold:#E0A23B;--a-ink:#1B2433;--a-mute:#5A6577;--a-line:#DCE5F0;--a-line2:#C9D6E6;--a-soft:#F1F5FA;--a-focus:#8FE1FF;font-family:'Be Vietnam Pro',system-ui,sans-serif;color:var(--a-ink)}
 .adm-root .serif{font-family:'Noto Serif',Georgia,serif}
 /* ẩn menu, chân trang và nền trang trí của site trong khu quản trị */
 body:has(.adm-root) header,body:has(.adm-root) footer,body:has(.adm-root) .v7h,body:has(.adm-root) .sci-bg{display:none}
